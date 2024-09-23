@@ -1,0 +1,11 @@
+{
+	"name": "themify-builder-style",
+	"type": "module",
+	"author": "Themify",
+	"version": "1.0",
+	"main": "./app.mjs",
+	"scripts": {
+		"dev":"node ./app.mjs --mode=development",
+		"production":"node ./app.mjs --mode=production"
+	}
+}

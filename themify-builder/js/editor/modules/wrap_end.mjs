@@ -1,0 +1,1 @@
+})(Themify,window, document, Object,requestAnimationFrame,cancelAnimationFrame,setTimeout,clearTimeout,Promise,parseInt,parseFloat,JSON,getComputedStyle,localStorage,Set,Map,Math,themifyBuilder.i18n.label,undefined);

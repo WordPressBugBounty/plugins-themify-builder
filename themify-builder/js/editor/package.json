@@ -1,0 +1,15 @@
+{
+  "name": "themify_builder",
+  "version": "7.5.0",
+  "type": "module",
+  "scripts": {
+    "watch": "webpack -w --mode=development",
+	"dev":"webpack build --mode=development",
+	"production":"webpack build --mode=production",
+	"clean":"node ./cleaner.mjs"
+  },
+  "author": "Themify",
+  "license": "ISC",
+  "description": "",
+  "private": true
+}
