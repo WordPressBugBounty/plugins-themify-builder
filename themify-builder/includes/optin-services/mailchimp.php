@@ -80,7 +80,7 @@ class Builder_Optin_Service_MailChimp extends Builder_Optin_Service {
     }
 
     protected static function request_list() {
-        if (is_wp_error(( $data = self::request('lists')))) {
+        if ( is_wp_error( ( $data = self::request( 'lists?count=1000' ) ) ) ) {
             return $data;
         }
         if (is_array($data) && isset($data['lists'])) {

@@ -52,6 +52,9 @@ foreach ($arr as $mode) :
                 data-height="<?php echo isset($settings['horizontal']) && $settings['horizontal'] === 'yes' ? 'variable' : $settings['height_slider'] ?>"
                 <?php if($is_slider===true ):?>
                     data-effect="<?php echo $settings['effect_slider'] ?>"
+                    <?php if ( $settings['effect_slider'] === 'continuously' && ! empty( $settings['continuous_dir'] ) ) : ?>
+                        data-auto-reverse="true"
+                    <?php endif; ?>
                     data-css_url="<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/carousel,<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/<?php echo $args['mod_name'] ?>"
                     <?php if ($settings['auto_scroll_opt_slider'] !== 'off'): ?>
                     data-auto="<?php echo $settings['auto_scroll_opt_slider'] ?>"

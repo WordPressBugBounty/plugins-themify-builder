@@ -565,7 +565,7 @@ function themify_check_both(string $meta, string $var):bool {
 function themify_shop_pageId() {
     static $id = null;
     if ($id === null) {
-        if (themify_is_woocommerce_active()) {
+        if (themify_is_woocommerce_active() && function_exists( 'wc_get_page_id' ) ) {
             $id = wc_get_page_id('shop');
             if ($id <= 0) {//wc bug, page id isn't from wc settings,the default should be page with slug 'shop'
                 $page = get_page_by_path('shop');
@@ -1630,7 +1630,7 @@ function themify_make_lazy(?string $html, bool $load = true):?string {//@todo mo
                                         $item = strtr($item, $r);
                                     }
                                     unset($r);
-                                    $item = '<div class="' . $c . '">' . $item . '</div>';
+                                    $item = '<div class="' . $c . '" data-playtitle="' . esc_attr__( 'Play/Pause', 'themify' ) . '" data-timeslider="' . esc_attr__( 'Time Slider', 'themify' ) . '">' . $item . '</div>';
                                     $c = null;
                                 }
                                 $part = $item;

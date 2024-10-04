@@ -73,12 +73,16 @@ class Builder_Optin_Service_GetResponse extends Builder_Optin_Service {
         if (is_wp_error(( $data = self::request('campaigns')))) {
             return $data;
         }
-        if (!empty($data) && is_array($data)) {
-            $lists = array();
-            foreach ($data as $v) {
-                $lists[$v['campaignId']] = $v['name'];
+        if ( ! empty( $data ) && is_array( $data ) ) {
+            if ( isset( $data['httpStatus'], $data['message'] ) ) {
+                return new WP_Error( 'getresponse_error', $data['message'] );
+            } else {
+                $lists = array();
+                foreach ($data as $v) {
+                    $lists[$v['campaignId']] = $v['name'];
+                }
+                return $lists;
             }
-            return $lists;
         }
         return new WP_Error('list_error', __('Error retrieving campaigns.', 'themify'));
     }

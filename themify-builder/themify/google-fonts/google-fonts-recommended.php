@@ -2,7 +2,7 @@
 /**
  * List of Google Fonts
  *
- * Updated: 14-04-24
+ * Updated: 02-09-24
  *
  * Glossary:
  *    s : Serif
@@ -61,7 +61,7 @@ return array(
     'Lobster' => 'd',
     'Lora' => [ 's', ['r',500,600,700,'i','500i','600i','700i'] ],
     'Megrim' => 'd',
-    'Monda' => [ 'ss', ['r',700] ],
+    'Monda' => [ 'ss', ['r',500,600,700] ],
     'Monoton' => 'd',
     'Montserrat' => [ 'ss', [100,200,300,'r',500,600,700,800,900,'100i','200i','300i','i','500i','600i','700i','800i','900i'] ],
     'Neuton' => [ 's', [200,300,'r','i',700,800] ],

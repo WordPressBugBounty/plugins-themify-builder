@@ -202,14 +202,14 @@ export class Module extends BaseStyles {
             this.get_expand('acttab', [
                 this.get_tab({
                     n: [
-                        this.get_color('>.tab-nav .current a', 'active_font_color_title', 'colact'),
-                        this.get_image('>.tab-nav .current', 'bg_i', 'active_background_color_title', 'bg_r', 'bg_p'),
-                        this.get_border('>.tab-nav .current', 'active_tab_border')
+                        this.get_color('.ui>.tab-nav .current a', 'active_font_color_title', 'colact'),
+                        this.get_image('.ui>.tab-nav .current', 'bg_i', 'active_background_color_title', 'bg_r', 'bg_p'),
+                        this.get_border('.ui>.tab-nav .current', 'active_tab_border')
                     ],
                     h: [
-                        this.get_color('>.tab-nav .current a:hover', 'active_hover_font_color_title', 'colact'),
-                        this.get_image('>.tab-nav .current:hover', 'bg_i_h', 'active_hover_background_color_title', 'bg_r_h', 'bg_i_h'),
-                        this.get_border('>.tab-nav .current', 't_b','h')
+                        this.get_color('.ui>.tab-nav .current a:hover', 'active_hover_font_color_title', 'colact'),
+                        this.get_image('.ui>.tab-nav .current:hover', 'bg_i_h', 'active_hover_background_color_title', 'bg_r_h', 'bg_i_h'),
+                        this.get_border('.ui>.tab-nav .current', 't_b','h')
                     ]
                 })
             ]),
@@ -264,10 +264,10 @@ export class Module extends BaseStyles {
             this.get_expand('acttab', [
                 this.get_tab({
                     n: [
-                        this.get_color('>.tab-nav .current em', 'active_tab_icon_color')
+                        this.get_color('.ui>.tab-nav .current em', 'active_tab_icon_color')
                     ],
                     h: [
-                        this.get_color('>.tab-nav .current em', 'a_t_i_c', null, null, 'h')
+                        this.get_color('.ui>.tab-nav .current em', 'a_t_i_c', null, null, 'h')
                     ]
                 })
             ])

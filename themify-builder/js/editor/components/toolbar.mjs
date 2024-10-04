@@ -4,6 +4,7 @@
     api.ToolBar =  {
         isLoaded:false,
         el:null,
+        rootEl:null,
         init() {
             if(isFrontend){
                 const topSvg=topWindowDoc.tfId('tf_svg');
@@ -27,6 +28,7 @@
                 bpSt=createElement('style'),
                 fragment=createDocumentFragment(),
                 svg=doc.tfId('tf_svg').cloneNode(true);
+            this.rootEl = root;
 
             let cssText='';
             for(let bp=api.breakpointsReverse,i=bp.length-1;i>-1;--i){
@@ -308,28 +310,27 @@
             if(answer){
                 if(answer==='yes'){
                     await api.Builder.get().save();
-                }
-                try{
-                    api.Spinner.showLoader('show');
-                    const resp=await api.LocalFetch({
-                        action: 'tb_duplicate_page',
-                        tb_is_admin: !api.isVisual?1:0
-                    });
-                    let url=resp.data;
-                    if(!resp.success){
-                        throw url;
+                    try{
+                        api.Spinner.showLoader('show');
+                        const resp=await api.LocalFetch({
+                            action: 'tb_duplicate_page',
+                            tb_is_admin: !api.isVisual?1:0
+                        });
+                        let url=resp.data;
+                        if(!resp.success){
+                            throw url;
+                        }
+                        if(isFrontend){
+                            url+='#builder_active';
+                        }
+                        await api.Spinner.showLoader('done');
+                        topWindow.location.href=url.replaceAll('&amp;', '&');
                     }
-                    if(isFrontend){
-                        url+='#builder_active';
+                    catch(e){
+                        api.Spinner.showLoader('error');
+                        TF_Notification.showHide('error',e,4000);
                     }
-                    await api.Spinner.showLoader('done');
-                    topWindow.location.href=url.replaceAll('&amp;', '&');
                 }
-                catch(e){
-                    api.Spinner.showLoader('error');
-                    TF_Notification.showHide('error',e,4000);
-                }
-                
             }
         },
         modChange(e) {

@@ -156,10 +156,10 @@ export class Module extends BaseStyles {
                     this.get_expand('bg', [
                         this.get_tab({
                             n: [
-                                this.get_color('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_background_color', 'bg_c', 'background-color')
+                                this.get_color('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_background_color', 'bg_c', 'background-color')
                             ],
                             h: [
-                                this.get_color('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'd_b_c', 'bg_c', 'background-color')
+                                this.get_color('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'd_b_c', 'bg_c', 'background-color')
                             ]
                         })
                     ]),
@@ -167,22 +167,22 @@ export class Module extends BaseStyles {
                     this.get_expand('f', [
                         this.get_tab({
                             n: [
-                                this.get_font_family('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'font_dropcap_family'),
-                                this.get_color('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_font_color'),
-                                this.get_font_size('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_font_size'),
-                                this.get_line_height('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_line_height'),
-                                this.get_text_transform('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_letter_transform'),
-                                this.get_font_style('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'font_dropcap', 'font_dropcap_bold'),
-                                this.get_text_decoration('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_decoration_regular'),
-                                this.get_text_shadow('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 't_sh_dr')
+                                this.get_font_family('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'font_dropcap_family'),
+                                this.get_color('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_font_color'),
+                                this.get_font_size('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_font_size'),
+                                this.get_line_height('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_line_height'),
+                                this.get_text_transform('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_letter_transform'),
+                                this.get_font_style('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'font_dropcap', 'font_dropcap_bold'),
+                                this.get_text_decoration('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_decoration_regular'),
+                                this.get_text_shadow('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 't_sh_dr')
                             ],
                             h: [
-                                this.get_font_family('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'f_d_f_h'),
-                                this.get_color('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'd_f_c_h'),
-                                this.get_font_size('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'd_f_s_h'),
-                                this.get_font_style('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'f_d_h', 'f_d_b_h'),
-                                this.get_text_decoration('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'd_d_r_h'),
-                                this.get_text_shadow('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 't_sh_dr_h')
+                                this.get_font_family('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'f_d_f_h'),
+                                this.get_color('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'd_f_c_h'),
+                                this.get_font_size('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'd_f_s_h'),
+                                this.get_font_style('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'f_d_h', 'f_d_b_h'),
+                                this.get_text_decoration('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'd_d_r_h'),
+                                this.get_text_shadow('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 't_sh_dr_h')
                             ]
                         })
                     ]),
@@ -190,10 +190,10 @@ export class Module extends BaseStyles {
                     this.get_expand('p', [
                         this.get_tab({
                             n: [
-                                this.get_padding('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_padding')
+                                this.get_padding('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_padding')
                             ],
                             h: [
-                                this.get_padding('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'd_p_h')
+                                this.get_padding('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'd_p_h')
                             ]
                         })
                     ]),
@@ -201,10 +201,10 @@ export class Module extends BaseStyles {
                     this.get_expand('m', [
                         this.get_tab({
                             n: [
-                                this.get_margin('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_margin')
+                                this.get_margin('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_margin')
                             ],
                             h: [
-                                this.get_margin('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'd_m_h')
+                                this.get_margin('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'd_m_h')
                             ]
                         })
                     ]),
@@ -212,10 +212,10 @@ export class Module extends BaseStyles {
                     this.get_expand('b', [
                         this.get_tab({
                             n: [
-                                this.get_border('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'dropcap_border')
+                                this.get_border('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'dropcap_border')
                             ],
                             h: [
-                                this.get_border('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'd_b_h')
+                                this.get_border('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'd_b_h')
                             ]
                         })
                     ]),
@@ -223,10 +223,10 @@ export class Module extends BaseStyles {
                     this.get_expand('r_c', [
                         this.get_tab({
                             n: [
-                                this.get_border_radius('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'rc_dp')
+                                this.get_border_radius('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'rc_dp')
                             ],
                             h: [
-                                this.get_border_radius('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'rc_dp_h')
+                                this.get_border_radius('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'rc_dp_h')
                             ]
                         })
                     ]),
@@ -234,10 +234,10 @@ export class Module extends BaseStyles {
                     this.get_expand('sh', [
                         this.get_tab({
                             n: [
-                                this.get_box_shadow('.tb_text_dropcap .tb_text_wrap > :first-child:first-letter', 'sh_dp')
+                                this.get_box_shadow('.tb_text_dropcap > .tb_text_wrap:first-child:first-letter', 'sh_dp')
                             ],
                             h: [
-                                this.get_box_shadow('.tb_text_dropcap .tb_text_wrap:hover > :first-child:first-letter', 'sh_dp_h')
+                                this.get_box_shadow('.tb_text_dropcap > .tb_text_wrap:hover:first-child:first-letter', 'sh_dp_h')
                             ]
                         })
                     ])

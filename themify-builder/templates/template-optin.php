@@ -125,7 +125,7 @@ $builder_id = $args['builder_id'];
                 </div>
             <?php endif; ?>
             <?php if ( ! empty( $fields_args['captcha'] ) ) {
-                echo Themify_Builder_Model::get_captcha_field( $fields_args['captcha'] === 'on' ? 'recaptcha' : 'hcaptcha', '<div class="tb_optin_captcha">', '</div>' );
+                echo Themify_Builder_Model::get_captcha_field( $fields_args['captcha'] === 'on' ? 'recaptcha' : $fields_args['captcha'], '<div class="tb_optin_captcha">', '</div>' );
             }
             ?>
             <div class="tb_optin_submit">

@@ -309,6 +309,8 @@ if( ! function_exists('themify_theme_mega_get_posts') ) {
                         'terms' => $term_id
                     )
                 ),
+                'orderby' => themify_get( 'setting-mega_menu_orderby', 'date', true ),
+                'order' => themify_get( 'setting-mega_menu_order', 'desc', true ),
                 'suppress_filters' => false,
                 'posts_per_page' => $postPerPage
             )

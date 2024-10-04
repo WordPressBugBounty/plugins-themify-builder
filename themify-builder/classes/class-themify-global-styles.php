@@ -67,7 +67,7 @@ if (!class_exists('Themify_Global_Styles',false)) :
          */
         private static function register_global_style() {
             if (!class_exists('CPT',false)) {
-                include_once THEMIFY_DIR . '/CPT.php';
+                include_once THEMIFY_DIR . '/class-cpt.php';
             }
 
             // create a template custom post type
@@ -663,9 +663,13 @@ if (!class_exists('Themify_Global_Styles',false)) :
             if (!empty($data)) {
                 foreach ($data as $k => $post) {
                     if ('row' === $post['type'] || 'subrow' === $post['type']) {
-                        $styles[$k] = $post['data'][0]['styling'];
+                        if ( isset( $post['data'][0]['styling'] ) ) {
+                            $styles[$k] = $post['data'][0]['styling'];
+                        }
                     } elseif ('column' === $post['type']) {
-                        $styles[$k] = $post['data'][0]['cols'][0]['styling'];
+                        if ( isset( $post['data'][0]['cols'][0]['styling'] ) ) {
+                            $styles[$k] = $post['data'][0]['cols'][0]['styling'];
+                        }
                     }
                     // Temporary prevent to load unnecessary data
                     /* else {

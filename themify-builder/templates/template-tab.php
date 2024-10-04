@@ -55,7 +55,7 @@ $container_class = apply_filters('themify_builder_module_classes', array(
     $fields_args['css_tab']
 ), $mod_name, $element_id, $fields_args);
 if($fields_args['style_tab']!='' && $fields_args['style_tab']!=='default'){
-    $container_class[] = $fields_args['style_tab'];
+    $container_class[] = 'tab-style-' . $fields_args['style_tab'];
 }
 if(!empty($fields_args['global_styles']) && Themify_Builder::$frontedit_active===false){
     $container_class[] = $fields_args['global_styles'];

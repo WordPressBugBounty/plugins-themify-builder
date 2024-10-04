@@ -117,10 +117,17 @@ abstract class Builder_Optin_Service {
 
         /* CAPTCHA validation */
         if ( isset( $module['captcha'] ) ) {
-            $provider = $module['captcha'] === 'on' ? 'recaptcha' : 'hcaptcha';
-            $response =
-                $provider === 'recaptcha' && ! empty( $_POST['g-recaptcha-response'] ) ? $_POST['g-recaptcha-response']
-                : ( $provider === 'hcaptcha' && ! empty( $_POST['h-captcha-response'] ) ? $_POST['h-captcha-response'] : null );
+            $provider = $module['captcha'] === 'on' ? 'recaptcha' : $module['captcha'];
+
+            $response = null;
+            if ( $provider === 'recaptcha' && ! empty( $_POST['g-recaptcha-response'] ) ) {
+                $response = $_POST['g-recaptcha-response'];
+            } else if ( $provider === 'hcaptcha' && ! empty( $_POST['h-captcha-response'] ) ) {
+                $response = $_POST['h-captcha-response'];
+            } else if ( $provider === 'turnstile' && ! empty( $_POST['cf-turnstile-response'] ) ) {
+                $response = $_POST['cf-turnstile-response'];
+            }
+
             if ( $response ) {
                 $result = Themify_Builder_Model::validate_captcha( $provider, $response );
                 if ( is_wp_error( $result ) ) {

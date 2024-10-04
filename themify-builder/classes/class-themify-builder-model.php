@@ -1116,11 +1116,11 @@ final class Themify_Builder_Model {
                     <p>
                     <?php if ($hasUpdater === true): ?>
                         <?php $tab = $k === 'plugin' ? 2 : 1; ?>
-                        <a role="button" class="button button-primary" href="<?php echo add_query_arg(array('page' => 'themify-license', 'promotion' => $tab), admin_url()) ?>"><?php _e('Update them', 'themify') ?></a>
+                        <a role="button" class="button button-primary" href="<?php echo esc_url( add_query_arg(array('page' => 'themify-license', 'promotion' => $tab), admin_url()) ) ?>"><?php _e('Update them', 'themify') ?></a>
                         <?php elseif ($hasUpdater === false): ?>
-                            <?php printf(__('%s', 'themify'), '<a role="button" class="button" href="' . add_query_arg(array('tf-activate-updater' => 1)) . '">' . __('Activate Themify Updater', 'themify') . '</a>') ?></a>
+                            <?php printf(__('%s', 'themify'), '<a role="button" class="button" href="' . esc_url( add_query_arg(array('tf-activate-updater' => 1)) ) . '">' . __('Activate Themify Updater', 'themify') . '</a>') ?></a>
                         <?php else: ?>
-                            <?php printf(__('Install %s plugin to auto update them.', 'themify'), '<a href="' . add_query_arg(array('page' => 'themify-install-plugins'), admin_url('admin.php')) . '">' . __('Themify Updater', 'themify') . '</a>') ?></a>
+                            <?php printf(__('Install %s plugin to auto update them.', 'themify'), '<a href="' . esc_url( add_query_arg(array('page' => 'themify-install-plugins'), admin_url('admin.php')) ) . '">' . __('Themify Updater', 'themify') . '</a>') ?></a>
                         <?php endif; ?>
                     </p>
                 </div>
@@ -1303,6 +1303,11 @@ final class Themify_Builder_Model {
                 'public' => \themify_builder_get( 'setting-hcaptcha_site', 'hcaptcha_site' ),
                 'private' => \themify_builder_get( 'setting-hcaptcha_secret', 'hcaptcha_secret' )
             ];
+        } else if ( $provider === 'turnstile' ) {
+            return [
+                'public' => \themify_builder_get( 'setting-turnstile_site', 'turnstile_site' ),
+                'private' => \themify_builder_get( 'setting-turnstile_secret', 'turnstile_secret' )
+            ];
         }
     }
 
@@ -1316,6 +1321,8 @@ final class Themify_Builder_Model {
         } else {
             if ( $provider === 'recaptcha' ) {
                 $output .= '<div class="themify_captcha_field ' . ( 'v2' === $keys['version'] ? 'g-recaptcha' : '' ) .'" data-sitekey="' . esc_attr($keys['public'] ) . '" data-ver="' . esc_attr( $keys['version'] ) . '"></div>';
+            } else if ( $provider === 'turnstile' ) {
+                $output .= '<div class="themify_captcha_field turnstile" data-sitekey="' . esc_attr($keys['public'] ) . '"></div>';
             } else if( $provider === 'hcaptcha' ) {
                 $output .= '<div class="themify_captcha_field h-captcha" data-sitekey="' . esc_attr( $keys['public'] ) . '"></div>';
             }
@@ -1335,7 +1342,18 @@ final class Themify_Builder_Model {
             return new WP_Error( 'missing_captcha_key', __( 'Captcha API keys are not provided.', 'themify' ) );
         }
 
-        $url = $provider === 'recaptcha' ? 'https://www.google.com/recaptcha/api/siteverify' : 'https://hcaptcha.com/siteverify';
+        switch ( $provider ) {
+            case 'recaptcha' :
+                $url = 'https://www.google.com/recaptcha/api/siteverify';
+                break;
+            case 'hcaptcha' :
+                $url = 'https://hcaptcha.com/siteverify';
+                break;
+            case 'turnstile' :
+                $url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+                break;
+        }
+
         $url = add_query_arg( [
             'secret' => $keys['private'],
             'response' => $response

@@ -26,9 +26,19 @@
                         {
                             value: 'bing',
                             name: 'Bing'
+                        },
+                        {
+                            value: 'azure',
+                            name: 'Azure'
                         }
                     ],
                     option_js: true
+                },
+                {
+                    type : 'message',
+                    label : '',
+                    comment: 'bingmapdep',
+                    wrap_class: 'tb_group_element_bing'
                 },
                 {
                     id: 'map_display_type',
@@ -58,6 +68,20 @@
                     map: 'google',
                     label: '',
                     wrap_class: 'tb_field_error_msg tb_group_element_google'
+                },
+                {
+                    id: 'azure_map_key',
+                    type: 'check_map_api',
+                    map: 'azure',
+                    label: '',
+                    wrap_class: 'tb_field_error_msg tb_group_element_azure'
+                },
+                {
+                    type : 'text',
+                    id : 'gmap_id',
+                    label : 'gmapid',
+                    help : 'gmapidh',
+                    wrap_class : 'tb_group_element_google tb_disable_dc'
                 },
                 {
                     id: 'bing_map_api_key',
@@ -90,6 +114,22 @@
                                 grayscale: 'grayscale'
                             },
                             wrap_class: 'tb_group_element_bing'
+                        },
+                        {
+                            id : 'azure_type_map',
+                            type : 'select',
+                            label : 'type',
+                            options : {
+                                road : 'road',
+                                satellite : 'stlle',
+                                satellite_road_labels : 'satellite_road_labels',
+                                grayscale_dark : 'grayscaled',
+                                grayscale_light : 'grayscalel',
+                                night : 'night',
+                                road_shaded_relief : 'azroad',
+                                high_contrast_dark : 'azcntrd'
+                            },
+                            wrap_class: 'tb_group_element_azure'
                         },
                         {
                             id: 'zoom_map',
@@ -274,7 +314,8 @@
                 map_control: 'no',
                 draggable_disable_mobile_map: 'yes',
                 map_provider: 'google',
-                map_display_type: 'dynamic'
+                map_display_type: 'dynamic',
+                azure_type_map: 'road'
             },
             numericDef={
                 w_map:100,
@@ -301,10 +342,13 @@
                 delete settings.b_color_map;
             }
             
-            if(settings.map_provider!=='bing'){
+            if ( settings.map_provider !== 'bing' ) {
                 delete settings.bing_type_map;
             }
-            else{
+            if ( settings.map_provider !== 'azure' ) {
+                delete settings.azure_type_map;
+            }
+            if ( settings.map_provider ) { // ! google
                 delete settings.map_display_type;
                 delete settings.type_map;
             }
@@ -359,10 +403,12 @@
             }
             else if( address || latlong ) {
                 map = createElement('','themify_map');
-                if(provider!=='google'){
-                    map.className+=' themify_bing_map';
-                }
                 const dataset=map.dataset;
+                if ( provider === 'google' ) {
+                    map.dataset.mapid = data.gmap_id || '';
+                } else {
+                    map.className += ' themify_' + provider + '_map';
+                }
                 map.style.width=w_map+(data.w_map_unit || '%');
                 map.style.height=h_map+(data.h_map_unit || 'px');
                 dataset.mapProvider=provider;
@@ -370,7 +416,7 @@
                 dataset.reverseGeocoding=!address && latlong;
                 dataset.control=data.map_control !== 'no' ? 0 : 1;
                 dataset.zoom=zoom_map;
-                dataset.type=provider=== 'google'?roadMap:(data.bing_type_map || 'aerial');
+                dataset.type = provider === 'google' ? roadMap : ( provider === 'bing' ? data.bing_type_map || 'aerial' : data.azure_type_map || 'road' );
                 dataset.scroll=data.scrollwheel_map === 'enable'?1:0;
                 dataset.drag=0;//disable draggable for UI
                 dataset.mdrag=0;

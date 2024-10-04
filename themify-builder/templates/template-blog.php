@@ -482,7 +482,7 @@ $container_props['class'] = implode(' ', $container_props['class']);
                         Themify_Enqueue_Assets::loadinfiniteCss();
                     }
                     $url = is_single() ? add_query_arg(array('tf-page' => ($args['paged'] + 1)), get_permalink(get_queried_object_id())) : next_posts($the_query->max_num_pages, false);
-                    echo '<p class="tf_load_more tf_textc tf_clear"><a data-id="', $element_id, '" href="', $url, '" data-page="', esc_attr($args['paged']), '" class="load-more-button">', __('Load More', 'themify'), '</a></p>';
+                    echo '<p class="tf_load_more tf_textc tf_clear"><a data-id="', $element_id, '" href="', esc_url( $url ), '" data-page="', esc_attr($args['paged']), '" class="load-more-button">', __('Load More', 'themify'), '</a></p>';
                 }
                 ?>
         <?php else: ?>

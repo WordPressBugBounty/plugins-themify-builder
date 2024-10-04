@@ -319,9 +319,9 @@ if (!function_exists('themify_get_pagenav')) {
             if ($args['paged'] > 1 && $pages_to_show < $args['max_page']) {
 
                 $link = $key !== false ? add_query_arg(array($key => ($args['paged'] - 1)),$request_url) : get_pagenum_link($args['paged'] - 1);
-                $prefetch = '<link rel="prefetch" as="document" href="' . $link . '"/>';
+                $prefetch = '<link rel="prefetch" as="document" href="' . esc_url( $link ) . '"/>';
                 $attr = apply_filters('previous_posts_link_attributes', '');
-                $out .= '<a href="' . $link . '" ' . $attr . ' class="number prevp">&lsaquo;</a>';
+                $out .= '<a href="' . esc_url( $link ) . '" ' . $attr . ' class="number prevp">&lsaquo;</a>';
             }
 
             for ($i = $start_page; $i <= $end_page; ++$i) {
@@ -329,19 +329,19 @@ if (!function_exists('themify_get_pagenav')) {
                     $out .= ' <span class="number current">' . $i . '</span>';
                 } else {
                     $link = $key !== false ? add_query_arg(array($key => $i),$request_url) : get_pagenum_link($i);
-                    $out .= ' <a href="' . $link . '" class="number">' . $i . '</a>';
+                    $out .= ' <a href="' . esc_url( $link ) . '" class="number">' . $i . '</a>';
                 }
             }
             if (($args['paged'] + 1) < $args['max_page'] && $pages_to_show < $args['max_page']) {
                 $link = $key !== false ? add_query_arg(array($key => ($args['paged'] + 1),$request_url)) : get_pagenum_link($args['paged'] + 1);
                 $prefetch .= '<link rel="prefetch" as="document" href="' . $link . '"/>';
                 $attr = apply_filters('next_posts_link_attributes', '');
-                $out .= '<a href="' . $link . '" ' . $attr . ' class="number nextp">&rsaquo;</a>';
+                $out .= '<a href="' . esc_url( $link ) . '" ' . $attr . ' class="number nextp">&rsaquo;</a>';
             }
             if ($end_page < $args['max_page']) {
                 $last_page_text = '&raquo;';
                 $link = $key !== false ? add_query_arg(array($key => $args['max_page']),$request_url) : get_pagenum_link($args['max_page']);
-                $out .= '<a href="' . $link . '" title="' . $last_page_text . '" class="number lastp">&raquo;</a>';
+                $out .= '<a href="' . esc_url( $link ) . '" title="' . $last_page_text . '" class="number lastp">&raquo;</a>';
             }
             $out .= '</div>' . $args['after'];
             return $prefetch . $out;
@@ -767,8 +767,8 @@ if (!function_exists('themify_post_media')) {
 
                 <?php if (themify_check('setting-excerpt_more', true) && (!is_single() || isset($themify->post_module_hook))) : ?>
 
-                    <p class="more-link-wrap"><a href="<?php $link = themify_permalink_attr(array(), false);
-                echo $link['href']; ?>" class="more-link"><?php echo $more_text; ?></a></p>
+                    <div class="more-link-wrap"><a href="<?php $link = themify_permalink_attr(array(), false);
+                echo $link['href']; ?>" class="more-link"><?php echo $more_text; ?></a></div>
 
             <?php endif; ?>
 

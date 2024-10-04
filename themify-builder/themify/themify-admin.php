@@ -342,6 +342,10 @@ function themify_sort_config($themify_config) {
         'function' => 'themify_bing_map_key'
         ),
         array(
+        'title' => __('Azure Map API Settings', 'themify'),
+        'function' => 'themify_azure_map_key'
+        ),
+        array(
         'title' => __('Cloudflare API Settings', 'themify'),
         'function' => 'themify_cloudflare_setting'
         ),
@@ -352,6 +356,10 @@ function themify_sort_config($themify_config) {
         array(
             'title' => __( 'hCaptcha API Settings', 'themify' ),
             'function' => 'themify_hcaptcha_setting'
+        ),
+        array(
+            'title' => __('Cloudflare Turnstile API Settings', 'themify'),
+            'function' => 'themify_turnstile_setting'
         ),
      //   array(
         //'title' => __('Youtube/Vimeo GDPR', 'themify'),
@@ -2624,6 +2632,17 @@ function themify_theme_mega_menu_controls( $data = array() ) {
      * @var string
      */
     $key = 'setting-mega_menu';
+    $orderby = [
+        'date' => __('Date', 'ptb'),
+        'id' => __('Id', 'ptb'),
+        'author' => __('Author', 'ptb'),
+        'title' => __('Title', 'ptb'),
+        'name' => __('Name', 'ptb'),
+        'modified' => __('Modified', 'ptb'),
+        'rand' => __('Random', 'ptb'),
+        'comment_count' => __('Comment count', 'ptb'),
+        'menu_order' => __('Menu Order', 'ptb')
+    ];
 
     /**
      * Module markup
@@ -2633,6 +2652,20 @@ function themify_theme_mega_menu_controls( $data = array() ) {
     <p>
         <span class="label">' . __( 'Mega Menu Posts', 'themify' ) .themify_help(__( 'Number of posts to show on mega menu.', 'themify' )) . '</span>
         <input type="text" name="'.$key.'_posts" value="' . esc_attr( themify_get( $key.'_posts', 5,true ) ) . '" class="width2">' . __( 'Posts', 'themify' ) .'
+    </p>';
+    $out .= '
+    <p>
+        <span class="label">' . __( 'Mega Menu Posts Order', 'themify' ) . '</span>
+        <select name="' . $key . '_orderby">';
+        foreach ( $orderby as $option_key => $label ) :
+            $out .= '<option value="' . esc_attr( $option_key ) . '" ' . selected( themify_get( $key . '_orderby', null, true ), $option_key, false ) . '>' . esc_html( $label ) . '</option>';
+        endforeach;
+    $out .='
+        </select>
+        <select name="' . $key . '_order">
+            <option value="desc" ' . selected( themify_get( $key . '_order', null, true ), 'desc', false ) . '>' . __( 'Descending', 'themify' ) . '</option>
+            <option value="asc" ' . selected( themify_get( $key . '_order', null, true ), 'asc', false ) . '>' . __( 'Ascending', 'themify' ) . '</option>
+        </select>
     </p>';
     $out .= '
     <p>
@@ -2670,9 +2703,24 @@ function themify_google_map_key($data=array()){
 function themify_bing_map_key($data=array()){
     $value = themify_get( 'setting-bing_map_key','',true );
     $validate = !empty($value) && strip_tags( $value ) !== $value ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
+    $dep_notice = '<div class="themify-info-link">' . sprintf( __( 'Bing Map service <a href="%s" target="_blank">ends in June 30, 2028</a>. Please switch to Azure maps instead.', 'themify' ), 'https://www.microsoft.com/en-us/maps/bing-maps/discontinued-services' ) . '</div>';
 
     return '<p><span class="label">' . __( 'Bing Maps Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-bing_map_key" value="' . esc_attr( $value ) . '" /> <br />
-                <span class="pushlabel"><small>' . sprintf( __( 'To use Bing Maps, <a href="%s" target="_blank" rel="noopener">generate an API key</a> and insert it here.', 'themify' ), 'https://msdn.microsoft.com/en-us/library/ff428642.aspx' ) . '</small></span>' . $validate . '</p>';
+                <span class="pushlabel"><small>' . sprintf( __( 'To use Bing Maps, <a href="%s" target="_blank" rel="noopener">generate an API key</a> and insert it here.', 'themify' ), 'https://msdn.microsoft.com/en-us/library/ff428642.aspx' ) . '</small></span>' . $validate . $dep_notice . '</p>';
+}
+
+function themify_azure_map_key($data=array()){
+    $value = themify_get( 'setting-azure_map_key','',true );
+    $validate = !empty($value) && strip_tags( $value ) !== $value ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
+
+    $output = '<p><span class="label">' . __( 'Azure Subscription Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-azure_map_key" value="' . esc_attr( $value ) . '" /> <br /><span class="pushlabel">';
+    $output .= '<h4>' . __( 'To get your key:', 'themify' ) . '</h4><small><ol>';
+        $output .= '<li>' . sprintf( __( 'Sign in to <a href="%s" target="_blank" rel="noopener">Azure portal</a>', 'themify' ), 'https://portal.azure.com/' ) . '</li>';
+        $output .= '<li>' . sprintf( __( '<a href="%s" target="_blank" rel="noopener">Create an Azure Map resource</a> if you haven\'t already.', 'themify' ), 'https://learn.microsoft.com/en-us/azure/azure-maps/quick-demo-map-app#create-an-azure-maps-account' ) . '</li>';
+        $output .= '<li>' . sprintf( __( 'Get your <a href="%s" target="_blank" rel="noopener">subscription key (Primary Key)</a> and paste it here.', 'themify' ), 'https://learn.microsoft.com/en-us/azure/azure-maps/quick-demo-map-app#get-the-subscription-key-for-your-account' ) . '</li>';
+    $output .= '</ol></small></span>' . $validate . '</p>';
+
+    return $output;
 }
 
 /**
@@ -2700,9 +2748,8 @@ function themify_cloudflare_setting($data=array()){
 
 /**
  * Display recaptcha api key input
- * @return String
  */
-function themify_recaptcha_setting($data=array()){
+function themify_recaptcha_setting($data=array()) : string {
     $version=Themify_Builder_Model::getReCaptchaOption( 'version');
     $options='';
     for($i=2;$i<4;$i++){
@@ -2722,9 +2769,8 @@ function themify_recaptcha_setting($data=array()){
 
 /**
  * Display hcaptcha api key input
- * @return String
  */
-function themify_hcaptcha_setting($data=array()){
+function themify_hcaptcha_setting($data=array()) : string {
     $secret_key = themify_builder_get( 'setting-hcaptcha_secret', 'hcaptcha_secret' );
     $site_key = themify_builder_get( 'setting-hcaptcha_site', 'hcaptcha_site' );
     $validate = !empty($secret_key) && strip_tags( $secret_key ) !== $secret_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
@@ -2732,6 +2778,20 @@ function themify_hcaptcha_setting($data=array()){
 
     $validate = !empty($site_key) && strip_tags( $site_key ) !== $site_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
     $output .= '<p><span class="label">' . __( 'hCaptcha Site Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-hcaptcha_site" value="' . esc_attr( $site_key ) . '" /><br/><span class="pushlabel"><small>' . sprintf( __( 'You can find the site key from the <a href="%s" target="_blank">sites page</a> on your hCaptcha profile. Note that you also need to add your site domain(s) in the site key.', 'themify' ), 'https://dashboard.hcaptcha.com/sites' ) . '</small></span> ' . $validate . '</p>';
+    return $output;
+}
+
+/**
+ * Display Cloudflare Turnstile api key input
+ */
+function themify_turnstile_setting($data=array()) : string {
+    $secret_key = themify_builder_get( 'setting-turnstile_secret', 'turnstile_secret' );
+    $site_key = themify_builder_get( 'setting-turnstile_site', 'turnstile_site' );
+    $validate = !empty($secret_key) && strip_tags( $secret_key ) !== $secret_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
+    $output = '<p><span class="label">' . __( 'Secret Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_secret" value="' . esc_attr( $secret_key ) . '" />' . $validate . '</p>';
+
+    $validate = !empty($site_key) && strip_tags( $site_key ) !== $site_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
+    $output .= '<p><span class="label">' . __( 'Site Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_site" value="' . esc_attr( $site_key ) . '" /><br/><span class="pushlabel"><small>' . sprintf( __( '<a href="%s">Get sitekey and secret key</a>', 'themify' ), 'https://developers.cloudflare.com/turnstile/get-started/#get-a-sitekey-and-secret-key' ) . '</small></span> ' . $validate . '</p>';
     return $output;
 }
 

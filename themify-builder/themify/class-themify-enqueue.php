@@ -489,8 +489,12 @@ class Themify_Enqueue_Assets {
     }
 
     public static function js_localize() {
-        
-        //remove_action('wp_footer', array(__CLASS__, 'js_localize'), 18);
+        global $wp_scripts;
+        if ( ! isset( $wp_scripts->registered['themify-main-script'] ) ) {
+            /* either something has gone horribly wrong, or the script is intentionally removed; bail. */
+            return;
+        }
+
         self::localize_script('themify-main-script', 'themify_vars', apply_filters('themify_main_script_vars', self::$localiztion));
         if(!is_admin()){
             global $wp_scripts;
@@ -1234,6 +1238,7 @@ class Themify_Enqueue_Assets {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'map_key' => wp_strip_all_tags( themify_builder_get('setting-google_map_key', 'builder_settings_google_map_key') ?: '' ),
                 'bing_map_key' =>wp_strip_all_tags( themify_builder_get('setting-bing_map_key', 'builder_settings_bing_map_key') ?: '' ),
+                'azure_key' => wp_strip_all_tags( themify_builder_get('setting-azure_map_key', 'builder_settings_azure_map_key') ?: '' ),
                 'menu_tooltips' => [],
                 'plugin_url'=>rtrim(plugins_url(),'/'),
                 'content_url'=>content_url(),

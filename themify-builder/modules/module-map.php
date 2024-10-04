@@ -31,11 +31,19 @@ class TB_Map_Module extends Themify_Builder_Component_Module {
         if(!$values['google_api']) {
             $values['google_api_err'] = sprintf( __('Please enter the required <a href="%s" target="_blank">Google Maps API key</a>.','themify'), $url );
         }
+
         $bingAPI = themify_builder_get( 'setting-bing_map_key', 'builder_settings_bing_map_key' );
         $values['bing_api'] =  !empty($bingAPI);
         if(!$values['bing_api']) {
             $values['bing_api_err'] = sprintf( __('Please enter the required <a href="%s" target="_blank">Bing Maps API key</a>.','themify'), $url );
         }
+
+        $azure_key = themify_builder_get( 'setting-azure_map_key', 'builder_settings_azure_map_key' );
+        $values['azure_api'] =  !empty( $azure_key );
+        if ( ! $values['azure_api'] ) {
+            $values['azure_api_err'] = sprintf( __('Please enter the required <a href="%s" target="_blank">Azure subscription key</a>.','themify'), $url );
+        }
+
         return $values;
     }
 

@@ -154,7 +154,7 @@ if (!class_exists('Themify_Builder_Layouts',false)) {
          */
         private static function register_layout() {
             if (!class_exists('CPT',false)) {
-                include THEMIFY_DIR . '/CPT.php';
+                include THEMIFY_DIR . '/class-cpt.php';
             }
 
             // create a template custom post type

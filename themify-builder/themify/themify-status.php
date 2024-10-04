@@ -190,7 +190,7 @@ class Themify_System_Status {
                     $dir = themify_upload_dir();
                     echo '<p><strong>' . __( 'Base Dir ', 'themify' ) . '</strong>: ' . $dir['basedir'] . '<br>' . '<strong>' . __( 'Base URL ', 'themify' ) . '</strong>: ' . $dir['baseurl'] . '</p>';
                     if ( strpos( $dir['baseurl'], 'http' ) === false ) {
-                        echo '<mark class="error"><span class="dashicons dashicons-warning"></span> ' . esc_html__( 'Protocol missing from URL, this can cause missing assets on frontend.', 'themify' ) . '</mark>';
+                        echo '<mark class="error"><span class="dashicons dashicons-warning"></span> ' . sprintf( __( 'Relative paths detected. URLs <a href="%s">should be full paths</a>. Assets may not load properly.', 'themify' ), 'https://developer.wordpress.org/plugins/plugin-basics/determining-plugin-and-content-directories/#constants' ) . '</mark>';
                     }
                     ?>
                 </td>

@@ -768,6 +768,9 @@
                         dataset.thumbs=id;
                         dataset.effect=args.effect_slider;
                         dataset.css_url=cssUrl+'carousel,'+cssUrl+'gallery';
+                        if ( args.effect_slider === 'continuously' && args.continuous_dir ) {
+                            dataset.autoReverse = true;
+                        }
                     }
                     dataset.pager=(isSlider === false || showThumbs===false) && args.show_nav_slider === 'yes'?1:0;
                     dataset.speed=args.speed_opt_slider;

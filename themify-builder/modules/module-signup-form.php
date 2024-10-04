@@ -59,9 +59,16 @@ class TB_Signup_Form_Module extends Themify_Builder_Component_Module {
         if ( empty( $module ) ) {
             $error = __( 'Error retrieving the module.', 'themify' );
         } else if ( $module['captcha'] ) {
-            $response =
-                $module['captcha'] === 'recaptcha' && ! empty( $_POST['g-recaptcha-response'] ) ? $_POST['g-recaptcha-response']
-                : ( $module['captcha'] === 'hcaptcha' && ! empty( $_POST['h-captcha-response'] ) ? $_POST['h-captcha-response'] : null );
+
+            $response = null;
+            if ( $module['captcha'] === 'recaptcha' && ! empty( $_POST['g-recaptcha-response'] ) ) {
+                $response = $_POST['g-recaptcha-response'];
+            } else if ( $module['captcha'] === 'hcaptcha' && ! empty( $_POST['h-captcha-response'] ) ) {
+                $response = $_POST['h-captcha-response'];
+            } else if ( $module['captcha'] === 'turnstile' && ! empty( $_POST['cf-turnstile-response'] ) ) {
+                $response = $_POST['cf-turnstile-response'];
+            }
+
             if ( $response ) {
                 $result = Themify_Builder_Model::validate_captcha( $module['captcha'], $response );
                 if ( is_wp_error( $result ) ) {

@@ -107,6 +107,9 @@ self::sticky_element_props($container_props, $fields_args);
         data-effect="<?php echo $fields_args['effect_slider'] ?>" 
         data-height="<?php echo $fields_args['height_slider'] ?>"
         data-css_url="<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/carousel,<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/<?php echo $mod_name?>"
+        <?php if ( $fields_args['effect_slider'] === 'continuously' && ! empty( $fields_args['continuous_dir'] ) ) : ?>
+            data-auto-reverse="true"
+        <?php endif; ?>
         <?php if ( $fields_args['touch_swipe'] !== '' ) : ?>data-touch_swipe="<?php echo $fields_args['touch_swipe']; ?>" <?php endif; ?>
     <?php if ($template_name === 'video'): ?>data-type="video"<?php endif; ?>>
         <div class="tf_swiper-wrapper tf_lazy tf_rel tf_w tf_h tf_textc">

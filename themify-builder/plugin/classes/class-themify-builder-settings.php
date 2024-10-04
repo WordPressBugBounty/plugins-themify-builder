@@ -500,6 +500,16 @@ if (!class_exists('Themify_Builder_Options',false)) :
                     'desc' => sprintf(__('To use Bing Maps, <a href="%s" target="_blank">generate an API key</a> and insert it here.', 'themify'), 'https://msdn.microsoft.com/en-us/library/ff428642.aspx')
                 ),
                 array(
+                    'label' => __('Azure Map API Key', 'themify'),
+                    'type' => 'text',
+                    'id' => 'builder_settings_azure_map_key',
+                    'desc' => '<h4>' . __( 'To get your key:', 'themify' ) . '</h4><small><ol>'
+                        . '<li>' . sprintf( __( 'Sign in to <a href="%s" target="_blank" rel="noopener">Azure portal</a>', 'themify' ), 'https://portal.azure.com/' ) . '</li>'
+                        . '<li>' . sprintf( __( '<a href="%s" target="_blank" rel="noopener">Create an Azure Map resource</a> if you haven\'t already.', 'themify' ), 'https://learn.microsoft.com/en-us/azure/azure-maps/quick-demo-map-app#create-an-azure-maps-account' ) . '</li>'
+                        . '<li>' . sprintf( __( 'Get your <a href="%s" target="_blank" rel="noopener">subscription key (Primary Key)</a> and paste it here.', 'themify' ), 'https://learn.microsoft.com/en-us/azure/azure-maps/quick-demo-map-app#get-the-subscription-key-for-your-account' ) . '</li>'
+                    . '</ol></small>'
+                ),
+                array(
                     'label' => __('Cloudflare API', 'themify'),
                     'type' => 'group',
                     'options' => array(
@@ -550,6 +560,22 @@ if (!class_exists('Themify_Builder_Options',false)) :
                             'type' => 'text',
                             'id' => 'hcaptcha_site',
                             'label' => __('hCaptcha Site Key','themify'),
+                        )
+                    )
+                ),
+                array(
+                    'label' => __('Cloudflare Turnstile API Settings','themify'),
+                    'type' => 'group',
+                    'options' => array(
+                        array(
+                            'type' =>'text',
+                            'id' => 'turnstile_secret',
+                            'label' => __('Secret Key','themify'),
+                        ),
+                        array(
+                            'type' => 'text',
+                            'id' => 'turnstile_site',
+                            'label' => __('Site Key','themify'),
                         )
                     )
                 ),

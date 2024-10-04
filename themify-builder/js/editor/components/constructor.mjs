@@ -533,7 +533,8 @@ window.ThemifyConstructor = {
                                         'visible_opt_slider',
                                         'tab_visible_opt_slider',
                                         'mob_visible_opt_slider',
-                                        'scroll_opt_slider'
+                                        'scroll_opt_slider',
+                                        'continuous_dir'
                                     ],
                                     show: 'auto_scroll_opt_slider'
                                 },
@@ -542,7 +543,8 @@ window.ThemifyConstructor = {
                                         'visible_opt_slider',
                                         'tab_visible_opt_slider',
                                         'mob_visible_opt_slider',
-                                        'scroll_opt_slider'
+                                        'scroll_opt_slider',
+                                        'continuous_dir'
                                     ],
                                     show: 'auto_scroll_opt_slider'
                                 },
@@ -551,7 +553,8 @@ window.ThemifyConstructor = {
                                         'visible_opt_slider',
                                         'tab_visible_opt_slider',
                                         'mob_visible_opt_slider',
-                                        'scroll_opt_slider'
+                                        'scroll_opt_slider',
+                                        'continuous_dir'
                                     ],
                                     show: 'auto_scroll_opt_slider'
                                 },
@@ -562,7 +565,8 @@ window.ThemifyConstructor = {
                                         'mob_visible_opt_slider',
                                         'auto_scroll_opt_slider',
                                         'scroll_opt_slider'
-                                    ]
+                                    ],
+                                    hide : 'continuous_dir'
                                 },
                                 scroll: {
                                     show: [
@@ -571,18 +575,29 @@ window.ThemifyConstructor = {
                                         'mob_visible_opt_slider',
                                         'auto_scroll_opt_slider',
                                         'scroll_opt_slider'
-                                    ]
+                                    ],
+                                    hide : 'continuous_dir'
                                 },
                                 continuously: {
                                     show: [
                                         'visible_opt_slider',
                                         'tab_visible_opt_slider',
                                         'mob_visible_opt_slider',
-                                        'scroll_opt_slider'
+                                        'scroll_opt_slider',
+                                        'continuous_dir'
                                     ],
                                     hide: 'auto_scroll_opt_slider'
                                 }
                             }
+                        },
+                        {
+                            id : 'continuous_dir',
+                            type : 'select',
+                            options : {
+                                '' : 'rtl',
+                                'r' : 'ltr'
+                            },
+                            label : 'dir'
                         },
                         {
                             id: 'items_per_slide',
@@ -3743,7 +3758,7 @@ window.ThemifyConstructor = {
             let type = el.dataset.type,
                 wrap = el.tfClass('tb_sort_field_dropdown')[0];
             if (!wrap) {
-                wrap = createElement('','tb_sort_field_dropdown tb_sort_field_dropdown_' + type);
+                wrap = createElement('','tb_sort_field_dropdown tb_sort_field_dropdown_' + type + ' tf_scrollbar');
                 let id = el.dataset.id,
                     orig = null,
                     options = data.options[type].options || this._getDefaults(type, self);
@@ -6600,7 +6615,8 @@ window.ThemifyConstructor = {
                     options : {
                         '' : '',
                         [recaptchaKey] : 'recptch',
-                        [hcaptchaKey] : 'hcptch'
+                        [hcaptchaKey] : 'hcptch',
+                        turnstile : 'turnstile'
                     }
                 };
             if ( data.hide_empty ) {
@@ -6611,7 +6627,7 @@ window.ThemifyConstructor = {
                 callback=async e => {
                     const current=e.currentTarget,
                         selected=current.value,
-                        value = selected=== recaptchaKey ? 'recaptcha' : ( selected === hcaptchaKey ? 'hcaptcha' : '' ),
+                        value = selected=== recaptchaKey ? 'recaptcha' : ( selected === hcaptchaKey ? 'hcaptcha' : selected ),
                         error=current.nextElementSibling,
                         cache=this._cache;
                     if ( value === '' ) {
@@ -9143,7 +9159,7 @@ window.ThemifyConstructor = {
                     link_to: true,
                     binding: {
                         permalink: {show: ['open_link','no_follow'], hide: 'custom_link'},
-                        custom: {show: ['open_link','no_follow','custom_link'], hide: 'open_link'},
+                        custom: {show: ['no_follow','custom_link'], hide: 'open_link'},
                         none: {hide: ['custom_link', 'open_link', 'no_follow']}
                     }
                 },

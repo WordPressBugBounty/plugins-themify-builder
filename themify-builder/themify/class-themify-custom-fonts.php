@@ -65,7 +65,7 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
          */
         private static function register_cpt() {
             if (!class_exists('CPT',false)) {
-                include THEMIFY_DIR . '/CPT.php';
+                include THEMIFY_DIR . '/class-cpt.php';
             }
 
             // create a template custom post type

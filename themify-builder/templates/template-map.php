@@ -27,6 +27,7 @@ $fields_args = $args['mod_settings']+ array(
     'b_color_map' => '',
     'type_map' => 'ROADMAP',
     'bing_type_map'=>'aerial',
+    'azure_type_map' => 'road',
     'scrollwheel_map' => 'disable',
     'draggable_map' => 'enable',
     'map_control' => 'no',
@@ -35,6 +36,7 @@ $fields_args = $args['mod_settings']+ array(
     'map_provider' => 'google',
     'map_display_type' => 'dynamic',
     'css_map' => '',
+    'gmap_id' => '',
     'animation_effect' => ''
 );
 if ($fields_args['address_map']!=='') {
@@ -117,14 +119,17 @@ self::sticky_element_props($container_props, $fields_args);
         <?php endif;?>
         <div<?php if(Themify_Builder::$frontedit_active===false):?> data-lazy="1" <?php endif;?>
             data-map-provider="<?php echo $fields_args['map_provider'] ?>"
+            <?php if ( $fields_args['map_provider'] === 'google' ) : ?>
+                data-mapid="<?php echo esc_attr( $fields_args['gmap_id'] ); ?>"
+            <?php endif; ?> 
             data-address="<?php esc_attr_e( $fields_args['address_map'] !== '' ? $fields_args['address_map'] : $fields_args['latlong_map'] ) ?>"
             data-zoom="<?php echo $fields_args['zoom_map']; ?>"
-            data-type="<?php echo $fields_args['map_provider'] === 'google'?$fields_args['type_map']:$fields_args['bing_type_map']; ?>"
+            data-type="<?php echo $fields_args['map_provider'] === 'google' ? $fields_args['type_map'] : $fields_args[ $fields_args['map_provider'] . '_type_map' ]; ?>"
             data-scroll="<?php echo $fields_args['scrollwheel_map'] === 'enable'; ?>"
             data-drag="<?php echo $fields_args['draggable_map'] === 'enable'; ?>"
             data-mdrag="<?php echo $fields_args['draggable_disable_mobile_map'] === 'yes'; ?>"
             data-control="<?php echo $fields_args['map_control'] === 'no'; ?>"
-            class="<?php if(Themify_Builder::$frontedit_active===false):?>tf_lazy <?php endif;?>themify_map<?php echo $fields_args['map_provider'] !== 'google'?' themify_bing_map':''?>"
+            class="<?php if(Themify_Builder::$frontedit_active===false):?>tf_lazy <?php endif;?>themify_map<?php echo $fields_args['map_provider'] !== 'google'?' themify_' . $fields_args['map_provider'] . '_map':''?>"
             style="<?php  echo $style; ?>"
             data-info-window="<?php  esc_attr_e($info_window_map); ?>"
             data-reverse-geocoding="<?php echo empty($fields_args['address_map']) && !empty($fields_args['latlong_map']) ?>">
