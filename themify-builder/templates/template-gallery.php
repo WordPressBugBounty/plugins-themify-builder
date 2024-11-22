@@ -70,11 +70,15 @@ if (!empty($fields_args['shortcode_gallery'])) {
         $fields_args['image_size_gallery'] = $sc_image_size;
     }
 }
+$layout = $fields_args['layout_gallery'];
+if ( $layout !== 'showcase' && $layout !== 'lightboxed' && $layout !== 'slider' ) {
+    $layout = 'grid';
+}
 $container_class = array(
     'module gallery', 
     'module-' . $mod_name,
     $element_id, 
-    'layout-' . $fields_args['layout_gallery'],
+    'layout-' . $layout,
     $fields_args['appearance_gallery'],
     $fields_args['css_gallery']
 );
@@ -90,10 +94,10 @@ $container_props = apply_filters('themify_builder_module_container_props', self:
 if(Themify_Builder::$frontedit_active===false){
     $container_props['data-lazy']=1;
 }
-if($fields_args['layout_gallery']==='showcase' || $fields_args['layout_gallery']==='grid'){
-    Themify_Builder_Model::load_module_self_style($mod_name, $fields_args['layout_gallery']);
+if($layout==='showcase' || $layout==='grid'){
+    Themify_Builder_Model::load_module_self_style($mod_name, $layout);
 }
-if($fields_args['layout_gallery']==='slider' || $fields_args['layout_gallery']==='grid'){
+if($layout==='slider' || $layout==='grid'){
     if ( $fields_args['lightbox'] !=='' ) {
         $fields_args['lightbox'] = 'n' !== $fields_args['lightbox'];
     } 
@@ -110,7 +114,7 @@ self::sticky_element_props($container_props, $fields_args);
     echo Themify_Builder_Component_Module::get_module_title($fields_args,'mod_title_gallery');
     if (!empty($fields_args['gallery_images'])) {
     // render the template
-        self::retrieve_template('template-' . $mod_name . '-' . $fields_args['layout_gallery'] . '.php', array(
+        self::retrieve_template('template-' . $mod_name . '-' . $layout . '.php', array(
             'module_ID' => $element_id,
             'mod_name' => $mod_name,
             'settings' => $fields_args
