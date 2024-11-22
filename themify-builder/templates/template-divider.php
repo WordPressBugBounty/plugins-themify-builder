@@ -37,7 +37,7 @@ if ($fields_args['divider_type'] === 'custom') {
         'border-color'  => 'color_divider',
         'margin-top'    => 'top_margin_divider',
         'margin-bottom' => 'bottom_margin_divider',
-        'width'         => 'divider_width'
+        'max-width'         => 'divider_width'
     );
 
     $style = '';

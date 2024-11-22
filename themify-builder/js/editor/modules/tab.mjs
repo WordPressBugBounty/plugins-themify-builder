@@ -1,4 +1,4 @@
- (api => { 
+(api => { 
     "use strict";
     let isRestore,
         contentTab;
@@ -42,15 +42,15 @@
                                 type: 'text',
                                 label: 'tabt',
                                 control: {
-                                    selector: '.tab-nav a span'
+                                    selector: '.tab-nav a .tb_tab_title'
                                 }
                             },
                             {
                                 id: 'desc',
-                                type: 'textarea',
+                                type: 'text',
                                 label: 'desc',
                                 control: {
-                                    selector: '.tab-nav a small'
+                                    selector: '.tab-nav a .tb_tab_desc'
                                 }
                             },
                             {
@@ -472,17 +472,17 @@
             let tabId='tab-' +this.id+'-'+index,
                 tabTitleWrap=createElement('li',{class:'tb_is_repeat'+(index===0?' current':''),'aria-expanded':index===0}),
                 link=createElement('a',{href:'#'+tabId}),
-                span = createElement('span'),
+                span = createElement('span', 'tb_tab_title'),
                 tabContent=createElement('',{class:'tab-content tf_clear','data-id':tabId,'aria-hidden':index!==0}),
                 builder_content=item.builder_content || getDefaultContent(item),
                 fr=createDocumentFragment(),
                 settings=[],
                 containers=[];
-                 for(let i=0;i<builder_content.length;++i){
-                    let subrow=new api.Subrow(builder_content[i]);
-                    fr.appendChild(subrow.el);
-                    containers.push(subrow.id);
-                }
+            for(let i=0;i<builder_content.length;++i){
+                let subrow=new api.Subrow(builder_content[i]);
+                fr.appendChild(subrow.el);
+                containers.push(subrow.id);
+            }
             
             if(api.is_builder_ready === true){
                 for(let i=0,allItems=fr.querySelectorAll('[data-cid]');i<allItems.length;++i){
@@ -500,7 +500,7 @@
             }
             if(item?.title_tab && data.style_tab!=='icon-only'){
                 link.appendChild(span);
-                this.constructor._setEditableContent(span,'title_tab',item.title_tab,'','tab_content_tab');
+                this.constructor._setEditableContent(span,'title_tab',item.title_tab,'','tab_content_tab', index);
             }
             if(item?.icon_tab){
                 const icon=createElement('em');
@@ -508,10 +508,9 @@
                 link.prepend(icon);
             }
             if ( item?.desc ) {
-                const desc = createElement('small');
-                desc.className = 'tb_tab_desc';
+                const desc = createElement('span', 'tb_tab_desc');
                 link.appendChild(desc);
-                this.constructor._setEditableContent(desc,'desc',item.desc,'','tab_content_tab');
+                this.constructor._setEditableContent(desc,'desc',item.desc,'','tab_content_tab', index);
             }
             tabTitleWrap.append(link,createElement('',{role:'button',class:'tb_del_btn tb_del_tab tf_close tb_disable_sorting',title:'Delete Tab'}));
             
@@ -522,99 +521,106 @@
                 {layout_tab:layout= 'minimal',tab_content_tab:arr=[]}=data,
                 module=createElement(),
                 currentActiveWrap=createElement('','tab-nav-current-active tf_hide'),
+                burgerIconWrap=createElement('span','tab_burger_icon_wrap'),
                 burgerIcon=createElement('span','tab_burger_icon tf_rel'),
                 tabNav=createElement('ul','tab-nav tf_clearfix'),
                 classes=['module','module-tab','ui'],
+                activetab_title = createElement('span', 'tb_activetab_title'),
                 checkClass=[layout,color,data.css_tab];
-                if(data.style_tab){
-                    classes.push('tab-style-'+data.style_tab);
+            if(data.style_tab){
+                classes.push('tab-style-'+data.style_tab);
+            }
+            if(data.tab_appearance_tab){
+                checkClass[data.tab_appearance_tab.split('|').join(' ')];
+            }
+            for(let i=0;i<checkClass.length;++i){
+                if(checkClass[i]){
+                    classes.push(checkClass[i]);
                 }
-                if(data.tab_appearance_tab){
-                    checkClass[data.tab_appearance_tab.split('|').join(' ')];
-                }
-                for(let i=0;i<checkClass.length;++i){
-                    if(checkClass[i]){
-                        classes.push(checkClass[i]);
-                    }
-                }
-                module.className=classes.join(' ');
-                if('allow_tab' === data.allow_tab_breakpoint && '' !== data.tab_breakpoint){
-                    module.dataset.tabBreakpoint=data.tab_breakpoint;
-                }
-                
-                currentActiveWrap.append(
-                    burgerIcon,
-                    this.constructor._setEditableContent(createElement('span','tb_tab_title'),'title_tab',arr[0]?.title_tab,'','tab_content_tab',0)
-                );
-                
-                if(data.mod_title_tab){
-                    module.appendChild(this.constructor.getModuleTitle(data.mod_title_tab,'mod_title_tab'));
-                }
-                module.append(currentActiveWrap,tabNav);
-                if(api.activeModel?.id===this.id && !isRestore){
-                    this.parseHtml(data);
-                }
-                module.tfOn(_CLICK_,e=>{
-                    const target=e.target,
-                        cl=target?.classList;
-                    if(cl.contains('tb_add_tab') || cl.contains('tb_del_tab')){
-                        e.stopPropagation();
-                        if(cl.contains('tb_add_tab')){
-                            if(api.activeModel?.id===this.id){
-                                Themify.triggerEvent(api.LightBox.el.tfClass('add_new')[0],e.type);
-                            }
-                            else{
-                                api.undoManager.start('inlineAdd');
-                                const settings=this.get('mod_settings'),
-                                    ul=this.el.tfClass('tab-nav')[0],
-                                def=this.constructor.default().tab_content_tab?.[0] || {};
-                                settings.tab_content_tab??=[];
-                                const index=settings.tab_content_tab.push(def),
-                                    {tabTitleWrap,tabContent}=this._getItem(def,settings,index);
-                                tabTitleWrap.appendChild(target);
-                                ul.appendChild(tabTitleWrap);
-                                ul.parentNode.appendChild(tabContent);
-                                this.set('mod_settings',settings);
-                                api.undoManager.end('inlineAdd');
-                            }
+            }
+            module.className=classes.join(' ');
+            if('allow_tab' === data.allow_tab_breakpoint && '' !== data.tab_breakpoint){
+                module.dataset.tabBreakpoint=data.tab_breakpoint;
+            }
+
+            burgerIconWrap.appendChild(burgerIcon);
+            activetab_title.append(
+                this.constructor._setEditableContent( createElement( 'span','tb_tab_title' ), 'title_tab', arr[0]?.title_tab,'', 'tab_content_tab', 0 ),
+                // this.constructor._setEditableContent( createElement( 'span','tb_tab_desc' ), 'desc', arr[0]?.desc, '', 'tab_content_tab', 0 )
+            );
+            currentActiveWrap.append(
+                burgerIconWrap,
+                activetab_title
+            );
+            
+            if(data.mod_title_tab){
+                module.appendChild(this.constructor.getModuleTitle(data.mod_title_tab,'mod_title_tab'));
+            }
+            module.append(currentActiveWrap,tabNav);
+            if(api.activeModel?.id===this.id && !isRestore){
+                this.parseHtml(data);
+            }
+            module.tfOn(_CLICK_,e=>{
+                const target=e.target,
+                    cl=target?.classList;
+                if(cl.contains('tb_add_tab') || cl.contains('tb_del_tab')){
+                    e.stopPropagation();
+                    if(cl.contains('tb_add_tab')){
+                        if(api.activeModel?.id===this.id){
+                            Themify.triggerEvent(api.LightBox.el.tfClass('add_new')[0],e.type);
                         }
                         else{
-                            const li=target.closest('li'),
-                                index=Themify.convert(li.parentNode.children).indexOf(li);
-                            if(index!==-1){
-                                if(api.activeModel?.id===this.id){
-                                    Themify.triggerEvent(api.LightBox.el.tfClass('tb_delete_row')[index],e.type);
+                            api.undoManager.start('inlineAdd');
+                            const settings=this.get('mod_settings'),
+                                ul=this.el.tfClass('tab-nav')[0],
+                            def=this.constructor.default().tab_content_tab?.[0] || {};
+                            settings.tab_content_tab??=[];
+                            const index=settings.tab_content_tab.push(def),
+                                {tabTitleWrap,tabContent}=this._getItem(def,settings,index);
+                            tabTitleWrap.appendChild(target);
+                            ul.appendChild(tabTitleWrap);
+                            ul.parentNode.appendChild(tabContent);
+                            this.set('mod_settings',settings);
+                            api.undoManager.end('inlineAdd');
+                        }
+                    }
+                    else{
+                        const li=target.closest('li'),
+                            index=Themify.convert(li.parentNode.children).indexOf(li);
+                        if(index!==-1){
+                            if(api.activeModel?.id===this.id){
+                                Themify.triggerEvent(api.LightBox.el.tfClass('tb_delete_row')[index],e.type);
+                            }
+                            else{
+                                api.undoManager.start('inlineDelete');
+                                const settings=this.get('mod_settings'),
+                                    id=li.tfTag('a')[0].getAttribute('href'),
+                                    addBtn=li.tfClass('tb_add_btn')[0],
+                                    content=this.el.querySelector('[data-id="'+id.replace('#','')+'"]');
+                                settings.tab_content_tab.splice(index, 1); 
+                                this.set('mod_settings',settings);
+                                if(addBtn){
+                                    li.previousElementSibling?.appendChild(addBtn);
                                 }
-                                else{
-                                    api.undoManager.start('inlineDelete');
-                                    const settings=this.get('mod_settings'),
-                                        id=li.tfTag('a')[0].getAttribute('href'),
-                                        addBtn=li.tfClass('tb_add_btn')[0],
-                                        content=this.el.querySelector('[data-id="'+id.replace('#','')+'"]');
-                                    settings.tab_content_tab.splice(index, 1); 
-                                    this.set('mod_settings',settings);
-                                    if(addBtn){
-                                        li.previousElementSibling?.appendChild(addBtn);
-                                    }
-                                    content.remove();
-                                    li.remove();
-                                    api.undoManager.end('inlineDelete');
-                                }
+                                content.remove();
+                                li.remove();
+                                api.undoManager.end('inlineDelete');
                             }
                         }
                     }
-                },{passive:true});
-                
-                
-                for(let i=0,len=arr.length;i<len;++i){
-                    let {tabTitleWrap,tabContent}=this._getItem(arr[i],data, i);
-                    if((len -1)===i){
-                        tabTitleWrap.appendChild(createElement('',{role:'button',class:'tb_add_btn tb_add_tab tf_plus_icon tb_disable_sorting',title:'Add Tab'}));
-                    }
-                    tabNav.appendChild(tabTitleWrap);
-                    module.appendChild(tabContent);
                 }
-                return module;
+            },{passive:true});
+            
+            
+            for(let i=0,len=arr.length;i<len;++i){
+                let {tabTitleWrap,tabContent}=this._getItem(arr[i],data, i);
+                if((len -1)===i){
+                    tabTitleWrap.appendChild(createElement('',{role:'button',class:'tb_add_btn tb_add_tab tf_plus_icon tb_disable_sorting',title:'Add Tab'}));
+                }
+                tabNav.appendChild(tabTitleWrap);
+                module.appendChild(tabContent);
+            }
+            return module;
         }
     };
 })(tb_app);

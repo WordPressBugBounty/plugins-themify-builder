@@ -68,7 +68,7 @@ $tab_id = str_replace('tb_','',$element_id);
 
 $schema = $fields_args['schema'] === 'yes';
 self::sticky_element_props($container_props,$fields_args);
-$fields_args['title_tag'] = esc_attr( $fields_args['title_tag'] );
+$fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
 ?>
 <!-- module accordion -->
 <div <?php echo themify_get_element_attributes($container_props); ?>>

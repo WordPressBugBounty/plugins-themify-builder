@@ -21,7 +21,7 @@ if (!function_exists('themify_logo_image')) :
         if ($location === 'site_logo') {
             Themify_Enqueue_Assets::loadThemeStyleModule('site-logo');
         }
-        $logo_tag = apply_filters('themify_' . $location . '_logo_tag', 'div');
+        $logo_tag = tag_escape( apply_filters('themify_' . $location . '_logo_tag', 'div') );
         $logo_is_image = themify_get('setting-' . $location, false, true) === 'image' && themify_check('setting-' . $location . '_image_value', true);
         $logo_mod = $logo_is_image === true ? get_theme_mod($cssid . '_image') : false;
 
@@ -1349,6 +1349,7 @@ if (!function_exists('themify_masonry_filter')) {
 }
 
 function themify_set_loop_args(array $class, $post_type, $layout, $type = 'main'):array {
+    $post_type = '' === $post_type ? 'post' : $post_type;
     $class = apply_filters('themify_loops_wrapper_class', $class, $post_type, $layout, $type);
     array_unshift($class, 'loops-wrapper');
     $_args = array(

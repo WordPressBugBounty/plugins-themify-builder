@@ -104,4 +104,20 @@ class TB_Tab_Module extends Themify_Builder_Component_Module {
 
 		return $module_data;
 	}
+
+    /**
+     * Returns a flat array of all nested modules
+     */
+    public static function get_nested_modules( array $data ) : array {
+        $modules = [];
+        if ( isset( $data['mod_settings']['tab_content_tab'][0]['builder_content'] ) ) {
+            foreach ( $data['mod_settings']['tab_content_tab'] as $tab ) {
+                foreach ( $tab['builder_content'] as $row ) {
+                    $modules = array_merge( $modules, Themify_Builder::_get_modules_recursive( $row ) );
+                }
+            }
+        }
+
+        return $modules;
+    }
 }

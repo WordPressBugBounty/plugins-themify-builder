@@ -713,6 +713,8 @@
                     await lb.save();
                 }
                 api.ActionBar.clearClicked();
+            } else if ( lbEl.classList.contains( 'tb_custom_css_lightbox' ) ) { // save Custom CSS box
+                await lb.save();
             }
             if(isBuilderEdit===true){
                 _this.editLayoutPart();

@@ -1630,7 +1630,7 @@ function themify_make_lazy(?string $html, bool $load = true):?string {//@todo mo
                                         $item = strtr($item, $r);
                                     }
                                     unset($r);
-                                    $item = '<div class="' . $c . '" data-playtitle="' . esc_attr__( 'Play/Pause', 'themify' ) . '" data-timeslider="' . esc_attr__( 'Time Slider', 'themify' ) . '">' . $item . '</div>';
+                                    $item = '<div class="' . $c . '" data-playtitle="' . esc_attr__( 'Play/Pause', 'themify' ) . '" data-next="' . esc_attr__( 'Next', 'themify' ) . '" data-prev="' . esc_attr__( 'Previous', 'themify' ) . '" data-timeslider="' . esc_attr__( 'Time Slider', 'themify' ) . '">' . $item . '</div>';
                                     $c = null;
                                 }
                                 $part = $item;
@@ -1891,10 +1891,10 @@ function themify_get_template(string $slug, string $name = '', array $args = arr
 }
 
 /* Add category id class in post loop for Masonry filter */
-if (!function_exists('themify_post_filter_class')) {
-
-    function themify_post_filter_class(array $classes, $class, $post_id):array {
-        $categories = wp_get_object_terms($post_id, get_query_var('tf_query_tax', 'category'));
+if ( ! function_exists( 'themify_post_filter_class' ) ) :
+function themify_post_filter_class(array $classes, $class, $post_id):array {
+    $categories = wp_get_object_terms($post_id, get_query_var('tf_query_tax', 'category'));
+    if ( ! is_wp_error( $categories ) ) {
         foreach ($categories as $category) {
             $classes[] = ' cat-' . $category->term_id;
         }
@@ -1906,10 +1906,10 @@ if (!function_exists('themify_post_filter_class')) {
                 $classes[] = 'initial-cat';
             }
         }
-        return $classes;
     }
-
+    return $classes;
 }
+endif;
 
 function themify_custom_except($excerpt) {
     if (has_excerpt()) {

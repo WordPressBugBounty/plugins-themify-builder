@@ -193,7 +193,7 @@ if (($fields_args['layout_' . $mod_name] === 'auto_tiles' || in_array('auto_tile
 }
 $class[] = apply_filters('themify_builder_module_loops_wrapper', $fields_args['layout_' . $mod_name], $fields_args, $mod_name); //deprecated backward compatibility
 $posts_in_lightbox = isset( $fields_args['lbpost'] ) && $fields_args['lbpost'] === 'yes';
-$fields_args['title_tag_' . $mod_name] = esc_attr( $fields_args['title_tag_' . $mod_name] );
+$fields_args['title_tag_' . $mod_name] = tag_escape( $fields_args['title_tag_' . $mod_name] );
 global $themify;
 if (isset($themify) && !empty($posts)) {
     // save a copy

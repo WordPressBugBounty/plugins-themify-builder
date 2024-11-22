@@ -35,6 +35,7 @@ class TB_Fancy_Heading_Module extends Themify_Builder_Component_Module {
             'heading_tag' => 'h1',
             'sub_heading' => ''
         );
+        $mod_settings['heading_tag'] = tag_escape( $mod_settings['heading_tag'] );
         return sprintf('<%s>%s<br/>%s</%s>', $mod_settings['heading_tag'], $mod_settings['heading'], $mod_settings['sub_heading'], $mod_settings['heading_tag']);
     }
 

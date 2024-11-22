@@ -1168,7 +1168,14 @@ $options = array(
         'rtl' => __( 'Right to left', 'themify' ),
         'gmapid' => __( 'Map ID', 'themify' ),
         'gmapidh' => sprintf( __( 'To get a Map ID: go to Cloud Console &gt; <a href="%s" target="_blank">Map Management</a>, click "Create New Map ID".', 'themify' ), 'https://console.cloud.google.com/google/maps-apis/studio/maps' ),
-        'bingmapdep' => '<div class="themify-info-link">' . sprintf( __( 'Bing Map service <a href="%s" target="_blank">ends in June 30, 2028</a>. Please switch to Azure maps instead.', 'themify' ), 'https://www.microsoft.com/en-us/maps/bing-maps/discontinued-services' ) . '</div>'
+        'bingmapdep' => '<div class="themify-info-link">' . sprintf( __( 'Bing Map service <a href="%s" target="_blank">ends in June 30, 2028</a>. Please switch to Azure maps instead.', 'themify' ), 'https://www.microsoft.com/en-us/maps/bing-maps/discontinued-services' ) . '</div>',
+        'msk' => __( 'Mask', 'themify' ),
+        'mskr' => __( 'Mask Repeat', 'themify' ),
+        'mskp' => __( 'Mask Position', 'themify' ),
+        'rmsk' => __( 'Row Mask', 'themify' ),
+        'r_sp' => __( 'Space', 'themify' ),
+        'r_rn' => __( 'Round', 'themify' ),
+        'bckdr' => __( 'Backdrop Blur', 'themify' ),
     ),
     'options' => array(
         'frame' => Themify_Builder_Model::get_frame_layout(),

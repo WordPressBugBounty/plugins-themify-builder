@@ -12,7 +12,7 @@ class TB_Toc_Module extends Themify_Builder_Component_Module {
     }
 
     public static function get_module_icon():string {
-        return 'layout-width-full';
+        return 'list';
     }
 
     public static function get_js_css():array {

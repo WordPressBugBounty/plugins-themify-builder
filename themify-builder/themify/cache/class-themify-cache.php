@@ -780,7 +780,7 @@ if (!class_exists('TFCache',false)) {
             // Sometimes we need to clear all caches ex. when Pro template or Layout Part is edited
             if ($post_id > 0) {
                 $type = get_post_type($post_id);
-                $post_id = 'post' === $type || 'page' === $type ? $post_id : 0;
+                $post_id = in_array( $type, [ 'tbuilder_layout_part', 'tbp_template', 'tglobal_style' ], true ) ? 0 : $post_id;
             }
             foreach ($cache_plugins as $k => $v) {
                 switch ($k) {

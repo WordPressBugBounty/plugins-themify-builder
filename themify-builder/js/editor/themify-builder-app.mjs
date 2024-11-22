@@ -407,6 +407,13 @@
                             }
                         }
                     }
+                    /* Toggle module */
+                    if ( opt.toggle1 ) {
+                        this.clearElementId(opt.toggle1, true);
+                    }
+                    if ( opt.toggle2 ) {
+                        this.clearElementId(opt.toggle1, true);
+                    }
                 }
                 if (item.cols !== undefined) {
                     this.clearElementId(item.cols, _new);

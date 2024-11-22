@@ -82,39 +82,19 @@ defined('ABSPATH') || exit;
                         <td><?php _e('Ctrl + Shift + Z', 'themify') ?></td>
                     </tr>
                     <tr>
-                        <td><?php _e('Duplicate', 'themify') ?></td>
-                        <td><?php _e('Cmd + D', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                        <td><?php _e('Ctrl + D', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
+                        <td><?php _e('Redo', 'themify') ?></td>
+                        <td><?php _e('Cmd + Shift + Z', 'themify') ?></td>
+                        <td><?php _e('Ctrl + Shift + Z', 'themify') ?></td>
                     </tr>
                     <tr>
-                        <td><?php _e('Delete', 'themify') ?></td>
-                        <td><?php _e('Cmd + Delete', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                        <td><?php _e('Ctrl + Delete', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
+                        <td><?php _e('Increase Number Input Value', 'themify') ?></td>
+                        <td><?php _e('Up Arrow', 'themify') ?> <span><?php _e('(with input on focus)', 'themify') ?></span></td>
+                        <td><?php _e('Up Arrow', 'themify') ?> <span><?php _e('(with input on focus)', 'themify') ?></span></td>
                     </tr>
                     <tr>
-                        <td><?php _e('Copy', 'themify') ?></td>
-                        <td><?php _e('Cmd + C', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                        <td><?php _e('Ctrl + C', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                    </tr>
-                    <tr>
-                        <td><?php _e('Paste', 'themify') ?></td>
-                        <td><?php _e('Cmd + V', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                        <td><?php _e('Ctrl + V', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                    </tr>
-                    <tr>
-                        <td><?php _e('Paste Styling', 'themify') ?></td>
-                        <td><?php _e('Cmd + Shift + V', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                        <td><?php _e('Ctrl + Shift + V', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                    </tr>
-                    <tr>
-                        <td><?php _e('Move Up', 'themify') ?></td>
-                        <td><?php _e('Cmd + Up Arrow', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                        <td><?php _e('Ctrl + Up Arrow', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                    </tr>
-                    <tr>
-                        <td><?php _e('Move Down', 'themify') ?></td>
-                        <td><?php _e('Cmd + Down Arrow', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
-                        <td><?php _e('Ctrl + Down Arrow', 'themify') ?><span><?php _e('(With a module selected)', 'themify') ?></span></td>
+                        <td><?php _e('Decrease Number Input Value', 'themify') ?></td>
+                        <td><?php _e('Down Arrow', 'themify') ?> <span><?php _e('(with input on focus)', 'themify') ?></span></td>
+                        <td><?php _e('Down Arrow', 'themify') ?> <span><?php _e('(with input on focus)', 'themify') ?></span></td>
                     </tr>
                 </table>
             </div>

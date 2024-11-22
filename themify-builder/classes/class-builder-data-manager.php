@@ -112,7 +112,7 @@ class ThemifyBuilder_Data_Manager {
                         unset($plain_text);
                     }
                     if(class_exists('Themify_Builder_Revisions',false)){
-                        Themify_Builder_Revisions::create_revision($post_id,$result['builder_data'],$action);
+                        Themify_Builder_Revisions::create_revision($post_id,$result['builder_data'],$action, $custom_css);
                     }
                     // Save used GS
                     Themify_Global_Styles::save_used_global_styles($result['builder_data'], $post_id);

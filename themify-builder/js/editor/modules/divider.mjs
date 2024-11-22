@@ -167,7 +167,7 @@
                     styles = ['border-width:' + strokeW + 'px'];
             if (data.divider_type === 'custom') {
                 classes.push('divider-' + (data.divider_align || 'left'));
-                styles.push('width:' + divider_width + 'px');
+                styles.push('max-width:' + divider_width + 'px');
             }
             if(data.color_divider){
                 styles.push('border-color:' + api.Helper.toRGBA(data.color_divider));

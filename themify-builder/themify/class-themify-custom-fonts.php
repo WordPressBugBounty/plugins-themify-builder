@@ -580,7 +580,7 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
         }
     }
 
-    Themify_Custom_Fonts::init();
+    add_action( 'init', [ 'Themify_Custom_Fonts', 'init' ] );
 endif;
 
 /**

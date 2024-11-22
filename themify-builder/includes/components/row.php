@@ -50,11 +50,17 @@ class Themify_Builder_Component_Row{
     private static function do_color_overlay(array $styling):bool {
 
         $type = !isset($styling['cover_color-type']) || $styling['cover_color-type'] === 'color' ? 'color' : 'gradient';
-        $is_empty = $type === 'color' ? empty($styling['cover_color']) : empty($styling['cover_gradient-gradient']);
+        $is_empty = $type === 'color' ? ( empty($styling['cover_color']) && empty( $styling['cover_bg'] ) ) : empty($styling['cover_gradient-gradient']);
+        if ( $is_empty === true && ! empty( $styling['cover_backdrop'] ) ) {
+            $is_empty = false;
+        }
 
         if ($is_empty === true) {
             $hover_type = !isset($styling['cover_color_hover-type']) || $styling['cover_color_hover-type'] === 'hover_color' ? 'color' : 'gradient';
-            $is_empty_hover = $hover_type === 'color' ? empty($styling['cover_color_hover']) : empty($styling['cover_gradient_hover-gradient']);
+            $is_empty_hover = $hover_type === 'color' ? ( empty($styling['cover_color_hover']) && empty($styling['cover_bg_h']) ) : empty($styling['cover_gradient_hover-gradient']);
+            if ( $is_empty_hover === true && ! empty( $styling['cover_backdrop_h'] ) ) {
+                $is_empty_hover = false;
+            }
         }
         if ($is_empty === false || $is_empty_hover === false) {
             echo '<span class="builder_row_cover tf_abs"></span>';

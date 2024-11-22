@@ -217,7 +217,7 @@ final class Themify_Builder_Revisions {
      * @param int $post_id 
      * @param object $post 
      */
-    public static function create_revision($post_id, $builder_data, $action) {
+    public static function create_revision($post_id, $builder_data, $action, $custom_css = null) {
         if (!wp_is_post_revision($post_id)) {
             $post = get_post($post_id);
             if (!empty($post) && 'auto-draft' !== $post->post_status && wp_revisions_enabled($post) && post_type_supports($post->post_type, 'revisions')) {
@@ -228,6 +228,9 @@ final class Themify_Builder_Revisions {
                         $builder_data = array();
                     }
                     ThemifyBuilder_Data_Manager::save_data($builder_data, $rev_id, $action);
+                    if ( ! empty( $custom_css ) ) {
+                        update_metadata( 'post', $rev_id, 'tbp_custom_css', $custom_css);
+                    }
                     return $rev_id;
                 }
             }

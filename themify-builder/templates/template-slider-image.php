@@ -52,7 +52,7 @@ if (!empty($settings['img_content_slider'])):
                 <?php if (($isAlt===false && $image_title !== '') || isset($content['img_caption_slider'])): ?>
                     <div class="slide-content tb_text_wrap">
                         <?php if ($isAlt===false && $image_title !== ''): ?>
-                            <?php $title_tag = !empty($content['img_title_tag']) ? esc_attr( $content['img_title_tag'] ) : 'h3'; ?>
+                            <?php $title_tag = !empty($content['img_title_tag']) ? tag_escape( $content['img_title_tag'] ) : 'h3'; ?>
                             <<?php echo $title_tag;?> class="slide-title">
                                 <?php if (!empty($content['img_link_slider'])): ?>
                                     <a href="<?php echo esc_url($content['img_link_slider']); ?>"<?php echo $attr; ?>><?php echo wp_kses_post($image_title); ?></a>

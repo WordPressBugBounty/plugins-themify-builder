@@ -1184,6 +1184,9 @@ final class Themify_Builder_Model {
             if ( $meta_query['compare'] !== 'NOT EXISTS' && $meta_query['compare'] !== 'EXISTS' && ! empty( $module_settings['query_cf_value'] ) ) {
                 $meta_query['value'] = $module_settings['query_cf_value'];
             }
+            if ( isset( $module_settings['query_cf_type'] ) ) {
+                $meta_query['type'] = $module_settings['query_cf_type'];
+            }
 
             if ( ! isset( $query_args['meta_query'] ) ) {
                 $query_args['meta_query'] = [];
@@ -1354,11 +1357,12 @@ final class Themify_Builder_Model {
                 break;
         }
 
-        $url = add_query_arg( [
-            'secret' => $keys['private'],
-            'response' => $response
-        ], $url );
-        $result = wp_remote_get( $url );
+        $result = wp_remote_post( $url, [
+            'body' => [
+                'secret' => $keys['private'],
+                'response' => $response
+            ]
+        ] );
         if ( is_wp_error( $result ) ) {
             return $result;
         } else if ( ! isset( $result['body'] ) ) {

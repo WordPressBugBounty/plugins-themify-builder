@@ -441,8 +441,12 @@
             if(!settings.no_posts){
                 delete settings.no_posts_msg;
             }
+            if ( settings.query_cf_type === 'CHAR' ) {
+                delete settings.query_cf_type;
+            }
             if(!settings.query_cf_key || !settings.query_cf_value){
                 delete settings.query_cf_c;
+                delete settings.query_cf_type;
             }
             if(tbpdq!=='sameauthor'){
                 delete settings.tbpdq_sameauthor_match_post_type;

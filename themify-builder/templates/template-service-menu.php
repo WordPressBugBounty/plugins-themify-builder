@@ -115,7 +115,7 @@ if (Themify_Builder::$frontedit_active === false) {
     $container_props['data-lazy'] = 1;
 }
 self::sticky_element_props($container_props, $fields_args);
-$fields_args['title_tag'] = esc_attr( $fields_args['title_tag'] );
+$fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
 ?>
 <!-- module service menu -->
 <div <?php echo themify_get_element_attributes($container_props); ?>>

@@ -198,7 +198,7 @@ function themify_admin_nav() {
      * @since 2.0.2
      */
 
-    $themify_page = add_menu_page( 'themify',$name , 'edit_posts', 'themify', $can_manage_option?'themify_page':'',"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%23ffcc08' viewBox='0 0 32 32'%3E%3Cpath d='M11.5 3.5c15.8-5 21.8 9 20.3 17.3-.9 4.5-10 5.7-18 6.5-6.9.7-12.1 2.3-12.1 2.3s6.2-4.7 2.1-6.8C1.4 21.6-6.6 9.1 11.5 3.5zm7.3 6c-1 0-1.9.8-1.9 1.8a2 2 0 0 0 2 1.9c1 0 1.8-.9 1.8-1.9 0-1-.8-1.9-1.9-1.9zm-9.4.9a1.9 1.9 0 0 0-1.9 1.9 2 2 0 0 0 2 1.8 2 2 0 0 0 1.8-1.8c0-1.1-.9-2-1.9-2zM7 17.8s7.7 9.8 18.2-1.8c0 0-12.1 7.2-18.2 1.8z'%3E%3C/path%3E%3C/svg%3E", '49.3' );
+    $themify_page = add_menu_page( 'themify',$name , 'edit_posts', 'themify', $can_manage_option?'themify_page':'', THEMIFY_URI . '/img/favicon.svg', '49.3' );
 
     /**
      * Add Themify settings page
@@ -2791,7 +2791,7 @@ function themify_turnstile_setting($data=array()) : string {
     $output = '<p><span class="label">' . __( 'Secret Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_secret" value="' . esc_attr( $secret_key ) . '" />' . $validate . '</p>';
 
     $validate = !empty($site_key) && strip_tags( $site_key ) !== $site_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
-    $output .= '<p><span class="label">' . __( 'Site Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_site" value="' . esc_attr( $site_key ) . '" /><br/><span class="pushlabel"><small>' . sprintf( __( '<a href="%s">Get sitekey and secret key</a>', 'themify' ), 'https://developers.cloudflare.com/turnstile/get-started/#get-a-sitekey-and-secret-key' ) . '</small></span> ' . $validate . '</p>';
+    $output .= '<p><span class="label">' . __( 'Site Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_site" value="' . esc_attr( $site_key ) . '" /><br/><span class="pushlabel"><small>' . sprintf( __( '<a href="%s" target="_blank">Get sitekey and secret key</a>', 'themify' ), 'https://developers.cloudflare.com/turnstile/get-started/#get-a-sitekey-and-secret-key' ) . '</small></span> ' . $validate . '</p>';
     return $output;
 }
 

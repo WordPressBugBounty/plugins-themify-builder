@@ -86,6 +86,7 @@ class Themify_Builder_Active{
             $editorUrl = THEMIFY_BUILDER_URI . '/js/editor/';
             Themify_Icon_Font::enqueue();
 
+            wp_enqueue_script( 'jquery' );
             themify_enque_script('themify-colorpicker', THEMIFY_METABOX_URI . 'js/themify.minicolors.js');
             themify_enque_script('themify-combobox', $editorUrl . 'themify-combobox.min.js');
 
@@ -996,7 +997,7 @@ class Themify_Builder_Active{
             wp_deregister_script('wp-embed');
             $editorUrl = THEMIFY_BUILDER_URI . '/css/editor/';
             themify_enque_style('themify-builder-loader', $editorUrl . 'themify-builder-loader.css', array(), THEMIFY_VERSION, 'all', true);
-            themify_enque_script('themify-builder-loader', THEMIFY_BUILDER_URI . '/js/editor/frontend/themify-builder-loader.js', THEMIFY_VERSION, array('jquery'));
+            themify_enque_script( 'themify-builder-loader', THEMIFY_BUILDER_URI . '/js/editor/frontend/themify-builder-loader.js', THEMIFY_VERSION, [] );
 
             $st = array(
                 THEMIFY_URI . '/css/base.min.css',

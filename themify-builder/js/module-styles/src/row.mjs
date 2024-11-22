@@ -185,6 +185,8 @@ export class Row extends BaseStyles {
                                         'repeat-x': 'r_h',
                                         'repeat-y': 'r_v',
                                         'repeat-none': 'r_no',
+                                        'space': 'r_sp',
+                                        'round': 'r_rn',
                                         fullcover: 'fcover',
                                         'best-fit-image': 'bfit',
                                         'builder-parallax-scrolling': 'prlaxscrl',
@@ -307,6 +309,8 @@ export class Row extends BaseStyles {
                                         'repeat-x': 'r_h',
                                         'repeat-y': 'r_v',
                                         'repeat-none': 'r_no',
+                                        'space': 'r_sp',
+                                        'round': 'r_rn',
                                         fullcover: 'fcover',
                                         'best-fit-image': 'bfit'
                                     }
@@ -362,7 +366,8 @@ export class Row extends BaseStyles {
                                 {value: 'cover_gradient', name: 'gradient'}
                             ],
                             option_js: true,
-                            is_overlay: true
+                            is_overlay: true,
+                            selector: '>.builder_row_cover::before'
                         },
                         {
                             id: 'cover_color',
@@ -381,6 +386,15 @@ export class Row extends BaseStyles {
                             is_overlay: true,
                             prop: 'background-image',
                             selector: '>.builder_row_cover::before'
+                        },
+                        {
+                            id: 'cover_backdrop',
+                            type: 'range',
+                            label: 'bckdr',
+                            is_overlay: true,
+                            prop: 'backdrop-filter',
+                            selector: '>.builder_row_cover',
+                            after : 'px'
                         }
                     ],
                     h: [
@@ -393,7 +407,8 @@ export class Row extends BaseStyles {
                                 {value: 'hover_gradient', name: 'gradient'}
                             ],
                             option_js: true,
-                            is_overlay: true
+                            is_overlay: true,
+                            selector: ':hover>.builder_row_cover::after'
                         },
                         {
                             id: 'cover_color_hover',
@@ -402,7 +417,7 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_hover_color',
                             is_overlay: true,
                             prop: 'background-color',
-                            selector: ':hover>.builder_row_cover::before'
+                            selector: ':hover>.builder_row_cover::after'
                         },
                         {
                             id: 'cover_gradient_hover',
@@ -412,6 +427,15 @@ export class Row extends BaseStyles {
                             is_overlay: true,
                             prop: 'background-image',
                             selector: '>.builder_row_cover::after'
+                        },
+                        {
+                            id: 'cover_backdrop_h',
+                            type: 'range',
+                            label: 'bckdr',
+                            is_overlay: true,
+                            prop: 'backdrop-filter',
+                            selector: '>.builder_row_cover',
+                            after : 'px'
                         }
                     ]
                 })

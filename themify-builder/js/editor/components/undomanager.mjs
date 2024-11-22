@@ -496,6 +496,13 @@
                                         }
                                     }
                                 }
+                                /* Toggle module */
+                                if ( mod_settings.toggle1 ) {
+                                    loop(mod_settings.toggle1);
+                                }
+                                if ( mod_settings.toggle2 ) {
+                                    loop(mod_settings.toggle2);
+                                }
                             }
                         }
                 };

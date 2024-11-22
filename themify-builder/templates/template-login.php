@@ -137,7 +137,7 @@ self::sticky_element_props($container_props, $fields_args);
 
         </form>
 
-        <form class="tb_lostpassword_form tf_clearfix tf_box tf_clear" name="lostpasswordform" action="<?php echo esc_url( network_site_url( 'wp-login.php?action=lostpassword', 'login_post' ) ); ?>" method="post" style="display:none">
+        <form class="tb_lostpassword_form tf_clearfix tf_box tf_clear" name="lostpasswordform" action="<?php echo esc_url( network_site_url( 'wp-login.php?action=lostpassword', 'login_post' ) ); ?>" method="post" style="display:none; transform: translateY(-100%)">
             <p class="tb_lostpassword_username">
                 <label>
                     <?php if ( $fields_args['lostpasswordform_icon_username'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['lostpasswordform_icon_username'] ); ?></em><?php endif; ?>

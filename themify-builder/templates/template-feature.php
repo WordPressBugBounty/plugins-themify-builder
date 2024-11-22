@@ -198,7 +198,7 @@ self::sticky_element_props($container_props, $fields_args);
     <div class="module-feature-content tf_textc">
         <?php
         if ('' !== $fields_args['title_feature']) {
-            $fields_args['title_tag'] = esc_attr( $fields_args['title_tag'] );
+            $fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
             ?>
             <<?php echo $fields_args['title_tag']; ?> class="module-feature-title">
             <?php if ('' !== $fields_args['link_feature']): ?>

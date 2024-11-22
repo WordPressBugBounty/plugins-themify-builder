@@ -127,7 +127,7 @@ class Themify_Builder_Builder_Page {
                 )
             ];
 
-            themify_enque_script( 'themify-builder-page-loader', THEMIFY_BUILDER_URI . '/js/editor/themify-builder-page-loader.js');
+            themify_enque_script( 'themify-builder-page-loader', THEMIFY_BUILDER_URI . '/js/editor/themify-builder-page-loader.js', THEMIFY_VERSION, ['themify-main-script']);
             wp_localize_script( 'themify-builder-page-loader', 'tbBuilderPage', $data );
         }
     }

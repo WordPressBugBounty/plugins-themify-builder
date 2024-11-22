@@ -102,8 +102,15 @@ self::sticky_element_props($container_props, $fields_args);
     echo Themify_Builder_Component_Module::get_module_title($fields_args,'mod_title_tab');
     ?>
     <div class="tab-nav-current-active tf_hide">
-        <span class="tab_burger_icon tf_rel"></span>
-        <span class="tb_tab_title"><?php echo isset( $fields_args['tab_content_tab'][0]['title_tab'] ) ? $fields_args['tab_content_tab'][0]['title_tab'] : ''; ?></span>
+		<span class="tab_burger_icon_wrap">
+	        <span class="tab_burger_icon tf_rel"></span>
+		</span>
+        <span class="tb_activetab_title">
+            <span class="tb_tab_title"><?php echo isset( $fields_args['tab_content_tab'][0]['title_tab'] ) ? $fields_args['tab_content_tab'][0]['title_tab'] : ''; ?></span>
+            <?php if ( ! empty( $fields_args['tab_content_tab'][0]['desc'] ) ) : ?>
+                <span class="tb_tab_desc"><?php echo esc_html( $fields_args['tab_content_tab'][0]['desc'] ); ?></span>
+            <?php endif; ?>
+        </span>
     </div>
     <ul class="tab-nav tf_clearfix tf_scrollbar">
         <?php foreach ($fields_args['tab_content_tab'] as $k => $tab): ?>
@@ -112,11 +119,11 @@ self::sticky_element_props($container_props, $fields_args);
                 <?php if (isset($tab['icon_tab'])) : ?><em><?php echo themify_get_icon($tab['icon_tab']); ?></em><?php endif; ?>
                 <?php
                 if(isset($tab['title_tab']) && $fields_args['style_tab']!=='icon-only'){
-                    echo '<span>', $tab['title_tab'], '</span>';
+                    echo '<span class="tb_tab_title">', $tab['title_tab'], '</span>';
                 }
                 ?>
                 <?php if ( ! empty( $tab['desc'] ) ) : ?>
-                    <small class="tb_tab_desc"><?php echo esc_html( $tab['desc'] ); ?></small>
+                    <span class="tb_tab_desc"><?php echo esc_html( $tab['desc'] ); ?></span>
                 <?php endif; ?>
                 <?php if ( $timer_bar ) : ?><span class="tb_tab_timerbar tf_abs"></span><?php endif; ?>
             </a>

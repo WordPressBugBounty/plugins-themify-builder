@@ -198,6 +198,8 @@ window.ThemifyConstructor = {
                         'repeat-x': 'r_h',
                         'repeat-y': 'r_v',
                         'no-repeat': 'r_no',
+                        space: 'r_sp',
+                        round: 'r_rn',
                         fullcover: 'fcover'
                     },
                     border: {
@@ -646,13 +648,11 @@ window.ThemifyConstructor = {
                             binding: {
                                 off: {
                                     hide: [
-                                        'pause_on_hover_slider',
                                         'play_pause_control'
                                     ]
                                 },
                                 select: {
                                     show: [
-                                        'pause_on_hover_slider',
                                         'play_pause_control'
                                     ]
                                 }
@@ -1500,17 +1500,7 @@ window.ThemifyConstructor = {
                 logic = binding.empty;
             } else {
                 const provider = Themify.parseVideo(val);
-                if (provider.type === 'youtube' || provider.type === 'vimeo') {
-                    logic = binding.external;
-                } else {
-                    let url;
-                    try {
-                        url = new URL(val);
-                    } catch (_) {
-                        url = false;
-                    }
-                    logic = false !== url && topWindow.location.hostname === url.hostname ? binding.local : binding.empty;
-                }
+                logic = provider.type === 'youtube' || provider.type === 'vimeo' ? binding.external : binding.local;
             }
         } else if (!val && binding.empty !== undefined) {
             logic = binding.empty;
@@ -7608,6 +7598,12 @@ window.ThemifyConstructor = {
                                     id: 'query_cf_value',
                                     label: 'val',
                                     type: 'text'
+                                },
+                                {
+                                    id: 'query_cf_type',
+                                    type: 'select',
+                                    label: 'type',
+                                    meta_order : true
                                 },
                                 {
                                     id: 'query_cf_c',

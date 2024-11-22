@@ -17,8 +17,8 @@ export class Module extends BaseStyles {
             this.get_expand('f', [
                 this.get_tab({
                     n: [
-                        this.get_font_family(' .module-buttons-item a'),
-                        this.get_color([' em',' .ui', ' span'],'font_color'),
+                        this.get_font_family([' .module-buttons-item',' .module-buttons-item a']),
+                        this.get_color([' .module-buttons-item',' em',' .ui', ' span'],'font_color'),
                         this.get_font_size(' .module-buttons-item a'),
                         this.get_line_height(' .module-buttons-item a'),
                         this.get_letter_spacing(' .module-buttons-item a'),
@@ -29,8 +29,8 @@ export class Module extends BaseStyles {
                         this.get_text_shadow(' .module-buttons-item a')
                     ],
                     h: [
-                        this.get_font_family(' .module-buttons-item a', 'f_f', 'h'),
-                        this.get_color([' .module-buttons-item:hover em', ' .module-buttons-item:hover a', ' .module-buttons-item:hover span'], 'f_c_h'),
+                        this.get_font_family([' .module-buttons-item:hover',' .module-buttons-item a'], 'f_f', 'h'),
+                        this.get_color([' .module-buttons-item:hover', ' .module-buttons-item:hover em', ' .module-buttons-item:hover a', ' .module-buttons-item:hover span'], 'f_c_h'),
                         this.get_font_size(' .module-buttons-item a', 'f_s', '', 'h'),
                         this.get_font_style(' .module-buttons-item a', 'f_st', 'f_w', 'h'),
                         this.get_text_decoration([' em',' .ui', ' span'], 't_d_r', 'h'),

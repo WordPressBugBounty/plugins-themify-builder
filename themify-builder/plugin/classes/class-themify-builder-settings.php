@@ -27,7 +27,7 @@ if (!class_exists('Themify_Builder_Options',false)) :
                 $can_manage_option = current_user_can('manage_options');
                 // This page will be under "Settings"
                 $name = __('Themify Builder', 'themify');
-                add_menu_page($name, $name, 'edit_posts', self::SLUG, $can_manage_option ? array(__CLASS__, 'create_admin_page') : '', "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%23ffcc08' viewBox='0 0 32 32'%3E%3Cpath d='M11.5 3.5c15.8-5 21.8 9 20.3 17.3-.9 4.5-10 5.7-18 6.5-6.9.7-12.1 2.3-12.1 2.3s6.2-4.7 2.1-6.8C1.4 21.6-6.6 9.1 11.5 3.5zm7.3 6c-1 0-1.9.8-1.9 1.8a2 2 0 0 0 2 1.9c1 0 1.8-.9 1.8-1.9 0-1-.8-1.9-1.9-1.9zm-9.4.9a1.9 1.9 0 0 0-1.9 1.9 2 2 0 0 0 2 1.8 2 2 0 0 0 1.8-1.8c0-1.1-.9-2-1.9-2zM7 17.8s7.7 9.8 18.2-1.8c0 0-12.1 7.2-18.2 1.8z'%3E%3C/path%3E%3C/svg%3E", 50);
+                add_menu_page($name, $name, 'edit_posts', self::SLUG, $can_manage_option ? array(__CLASS__, 'create_admin_page') : '', THEMIFY_URI . '/img/favicon.svg', 50);
                 if ($can_manage_option) {
                     add_submenu_page(self::SLUG, __('Settings', 'themify'), __('Settings', 'themify'), 'manage_options', self::SLUG);
                 }
@@ -568,14 +568,14 @@ if (!class_exists('Themify_Builder_Options',false)) :
                     'type' => 'group',
                     'options' => array(
                         array(
-                            'type' =>'text',
-                            'id' => 'turnstile_secret',
-                            'label' => __('Secret Key','themify'),
-                        ),
-                        array(
                             'type' => 'text',
                             'id' => 'turnstile_site',
                             'label' => __('Site Key','themify'),
+                        ),
+                        array(
+                            'type' =>'text',
+                            'id' => 'turnstile_secret',
+                            'label' => __('Secret Key','themify'),
                         )
                     )
                 ),

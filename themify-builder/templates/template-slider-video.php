@@ -21,7 +21,7 @@ if (!empty($settings['video_content_slider'])):?>
         <?php if ( $index % $settings['items_per_slide'] === 0 ) : ?><div class="tf_swiper-slide"<?php if($index>=$limit):?> style="content-visibility:hidden"<?php endif;?>><?php endif; ?>
             <div class="slide-inner-wrap"<?php if ($settings['margin'] !== ''): ?> style="<?php echo $settings['margin']; ?>"<?php endif; ?>>
                 <?php 
-            $title_tag = isset($video['video_title_tag']) ? esc_attr( $video['video_title_tag'] ) : 'h3';
+            $title_tag = isset($video['video_title_tag']) ? tag_escape( $video['video_title_tag'] ) : 'h3';
             if (!empty($video['video_url_slider'])): 
                 $video_args['src']=$video['video_url_slider'];
                 $iframe = themify_get_embed($video['video_url_slider'], $video_args);

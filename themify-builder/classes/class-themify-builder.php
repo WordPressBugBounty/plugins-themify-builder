@@ -275,7 +275,7 @@ if (!class_exists('Themify_Builder',false)) :
          *
          * @return array
          */
-        private static function _get_modules_recursive( $row ) : array {
+        public static function _get_modules_recursive( $row ) : array {
             $modules = [];
             if ( ! empty( $row['cols'] ) ) {
                 foreach ( $row['cols'] as $col ) {
@@ -283,6 +283,12 @@ if (!class_exists('Themify_Builder',false)) :
                         foreach ( $col['modules'] as $module ) {
                             if ( isset( $module['mod_name'] ) ) {
                                 $modules[] = $module;
+
+                                /* nested builder */
+                                $classname = Themify_Builder_Component_Module::get_module_class( $module['mod_name'] );
+                                if ( method_exists( $classname, 'get_nested_modules' ) ) {
+                                    $modules = array_merge( $modules, $classname::get_nested_modules( $module ) );
+                                }
                             }
                             $modules = array_merge( $modules, self::_get_modules_recursive( $module ) );
                         }
