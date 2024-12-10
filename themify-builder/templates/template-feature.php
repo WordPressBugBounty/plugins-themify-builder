@@ -119,7 +119,7 @@ $iconType=$fields_args['icon_type_feature'];
 $circleColor = !empty($fields_args['circle_color_feature']) ? esc_attr(Themify_Builder_Stylesheet::get_rgba_color($fields_args['circle_color_feature'])) : '';
 $icon=$iconType!=='image_icon'?($fields_args['stype']!=='l'?($fields_args['icon_feature']!==''? themify_get_icon($fields_args['icon_feature']):'') : themify_get_lottie($fields_args, 'parent')):'';
 
-$insetColor =$iconType!=='image_icon' && $fields_args['icon_bg_feature'] !== ''?esc_attr(Themify_Builder_Stylesheet::get_rgba_color($fields_args['icon_bg_feature'])):'';
+$insetColor = $iconType !== 'image_icon' && $fields_args['icon_bg_feature'] !== '' ? esc_attr(Themify_Builder_Stylesheet::get_rgba_color( $fields_args['icon_bg_feature'] ) ) : '';
 if ($iconType!=='icon' && $fields_args['image_feature'] !== '') {
     $alt = Themify_Builder_Model::get_alt_by_url($fields_args['image_feature']);
     if (!$alt) {
@@ -161,7 +161,7 @@ self::sticky_element_props($container_props, $fields_args);
                     <circle class="tb_feature_fill" r="calc(50% - <?php echo number_format($w / 2, 2); ?>px)" cx="50%" cy="50%" stroke-width="<?php echo $w ?>"/>
                     <circle class="tb_feature_stroke" r="calc(50% - <?php echo number_format($w / 2, 2); ?>px)" cx="50%" cy="50%" stroke="<?php echo $circleColor ?>" stroke-width="<?php echo $w ?>" data-progress="<?php echo (int) $fields_args['circle_percentage_feature'] ?>" stroke-dasharray="0,10000"/>
                     <?php if ($insetColor !== '' && $iconType!=='image_icon'): ?>
-                        <circle class="tb_feature_bg" r="calc(50% - <?php echo ($w > 1 ? ($w - 1) : 0) ?>px)" cx="50%" cy="50%" stroke-width="<?php echo $w ?>" fill="<?php echo $insetColor ?>" />
+                        <circle class="tb_feature_bg" r="calc(50% - <?php echo ($w > 1 ? ($w - 1) : 0) ?>px)" cx="50%" cy="50%" stroke-width="<?php echo $w ?>" fill="<?php echo $iconType === 'both' ? 'transparent' : $insetColor ?>" />
                     <?php endif; ?>
                     </svg>
                 <?php endif; ?>
@@ -198,7 +198,7 @@ self::sticky_element_props($container_props, $fields_args);
     <div class="module-feature-content tf_textc">
         <?php
         if ('' !== $fields_args['title_feature']) {
-            $fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
+            $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
             ?>
             <<?php echo $fields_args['title_tag']; ?> class="module-feature-title">
             <?php if ('' !== $fields_args['link_feature']): ?>

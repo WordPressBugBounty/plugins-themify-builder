@@ -128,7 +128,7 @@ if (Themify_Builder::$frontedit_active===false) {
     $container_props['data-lazy']=1;
 }
 if ($is_alert_visible===true):
-    $fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
+    $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
     self::sticky_element_props($container_props,$fields_args);
     ?>
     <!-- module alert -->

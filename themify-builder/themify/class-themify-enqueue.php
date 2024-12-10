@@ -1231,9 +1231,9 @@ class Themify_Enqueue_Assets {
         //Enqueue main js that will load others needed js
         global $wp_scripts, $wp_version;
         if (!isset($wp_scripts->registered['themify-main-script']) && empty($_GET['legacy-widget-preview'])) { /* disable in Block widget preview */
-            $dependencies = [ 'jquery' ];
-            // if ( themify_is_woocommerce_active() ) {
-                // $dependencies[] = 'jquery';
+            $dependencies = [];
+            // if ( themify_is_woocommerce_active() || ! defined( 'THEMIFY_NOJQUERY' ) ) {
+                $dependencies[] = 'jquery';
             // }
             wp_enqueue_script('themify-main-script', THEMIFY_URI . '/js/main.js', $dependencies, THEMIFY_VERSION, true);
             $args = array(

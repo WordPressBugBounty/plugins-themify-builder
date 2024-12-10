@@ -2008,3 +2008,11 @@ function themify_enque(string $url, bool $check = false, bool $cdn = true) {//ba
 function themify_is_minify_enabled():bool{//backward
     return false;
 }
+
+function themify_whitelist_tag( string $input, string $default = 'div' ) : string {
+    if ( ! in_array( $input, [ 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'nav' ], true ) ) {
+        return $default;
+    } else {
+        return $input;
+    }
+}

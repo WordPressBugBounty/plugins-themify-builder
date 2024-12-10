@@ -63,7 +63,7 @@ if (Themify_Builder::$frontedit_active === false) {
 
 $icon=$fields_args['icon_type']!=='image_icon' ? ($fields_args['icon_type']!=='l'?($fields_args['icon']!=='' ? themify_get_icon($fields_args['icon']):'') : themify_get_lottie($fields_args, 'parent')) : $fields_args['image'];
 self::sticky_element_props($container_props, $fields_args);
-$fields_args['heading_tag'] = tag_escape( $fields_args['heading_tag'] );
+$fields_args['heading_tag'] = themify_whitelist_tag( $fields_args['heading_tag'], 'h1' );
 ?>
 <!-- module fancy heading -->
 <div <?php echo themify_get_element_attributes($container_props); ?>>

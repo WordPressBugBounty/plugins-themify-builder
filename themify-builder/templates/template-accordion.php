@@ -68,7 +68,7 @@ $tab_id = str_replace('tb_','',$element_id);
 
 $schema = $fields_args['schema'] === 'yes';
 self::sticky_element_props($container_props,$fields_args);
-$fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
+$fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'] );
 ?>
 <!-- module accordion -->
 <div <?php echo themify_get_element_attributes($container_props); ?>>
@@ -92,7 +92,7 @@ $fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
                     <?php echo isset($content['title_accordion'])?$content['title_accordion']:''; ?>
                 </a>
             </<?php echo $fields_args['title_tag']; ?>><!-- .accordion-title -->
-            <div id="acc-<?php echo $tab_id . '-' . $i; ?>-content" data-id="acc-<?php echo $tab_id . '-' . $i; ?>" aria-hidden="<?php echo $isOpen===true? 'false' : 'true' ; ?>" class="accordion-content<?php if ($isOpen===false): ?> tf_hide<?php endif; ?> tf_clearfix"<?php if ( $schema ) : ?> itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"<?php endif; ?>>
+            <div id="acc-<?php echo $tab_id . '-' . $i; ?>-content" data-id="acc-<?php echo $tab_id . '-' . $i; ?>" aria-hidden="<?php echo $isOpen===true? 'false' : 'true' ; ?>" class="accordion-content<?php if ($isOpen===false): ?> tf_hide<?php endif; ?> tf_clearfix"<?php if ( $schema === true ) : ?> itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"<?php endif; ?>>
                 <?php if(isset($content['text_accordion'])){?>
                     <div<?php if ( $schema===true ) : ?> itemprop="text"<?php endif; ?> class="tb_text_wrap">
                         <?php echo apply_filters('themify_builder_module_content', $content['text_accordion']);?>
@@ -100,7 +100,9 @@ $fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
                 <?php 
                 }
                 elseif(isset($content['builder_content'])){
-                    add_filter( 'themify_builder_subrow_attributes', [ 'TB_Accordion_Module', 'subrow_attributes' ] );
+                    if ( $schema === true ) {
+                        add_filter( 'themify_builder_subrow_attributes', [ 'TB_Accordion_Module', 'subrow_attributes' ] );
+                    }
                     foreach($content['builder_content'] as $subrow){
                         Themify_Builder_Component_Subrow::template($subrow,$builder_id);
                     }

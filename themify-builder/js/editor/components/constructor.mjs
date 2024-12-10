@@ -1522,7 +1522,11 @@ window.ThemifyConstructor = {
         if (logic) {
 
             if (context === undefined || context === null || context.length === 0) {
-                context = _this.closest('.tb_tab,.tb_expanded_opttions') || this.getEl('tb_lightbox_container');
+                if ( data.bindingContext ) {
+                    context = _this.closest( data.bindingContext );
+                } else {
+                    context = _this.closest('.tb_tab,.tb_expanded_opttions') || this.getEl('tb_lightbox_container');
+                }
             }
             const hasHide = logic.hide !== undefined,
                     hasShow = logic.show !== undefined,
@@ -3544,8 +3548,7 @@ window.ThemifyConstructor = {
                     },
                     {
                         id: 'sep',
-                        type: 'text',
-                        default:',',
+                        type: 'termSeparator',
                         control: {event: 'change'},
                         label: 'sep'
                     },
@@ -4230,6 +4233,20 @@ window.ThemifyConstructor = {
                 f.appendChild(self.hint(data.tooltip));
             }
             return f;
+        }
+    },
+    termSeparator: {
+        render(data, self) {
+            data.type = 'text';
+            let value = self.getStyleVal(data.id),
+                field = self.text.render(data, self);
+            if ( value === '__e__' ) {
+                value = '';
+            } else if ( ! value ) {
+                value = ',';
+            }
+            field.querySelector('input').value = value;
+            return field;
         }
     },
     number: {

@@ -521,10 +521,32 @@
                 const  r = 'calc(50% - ' + w / 2 + 'px)',
                     svg = createElementNS('', 'tf_abs tf_w tf_h');
                     
-                svg.append(createElementNS('circle',{class:'tb_feature_fill',r:r,cx:'50%',cy:'50%','stroke-width':w}), createElementNS('circle',{class:'tb_feature_stroke',r:r,cx:'50%',cy:'50%','stroke-width':w,'stroke-dasharray':'0,10000',stroke:api.Helper.toRGBA(args.circle_color_feature),'data-progress':percent}));
+                svg.append(createElementNS( 'circle', {
+                    class : 'tb_feature_fill',
+                    r : r,
+                    cx : '50%',
+                    cy : '50%',
+                    'stroke-width' : w
+                } ), createElementNS( 'circle',{
+                    class : 'tb_feature_stroke',
+                    r : r,
+                    cx : '50%',
+                    cy : '50%',
+                    'stroke-width' : w,
+                    'stroke-dasharray' : '0,10000',
+                    stroke : api.Helper.toRGBA(args.circle_color_feature),
+                    'data-progress':percent
+                } ) );
                 if (insetColor !== '' && type !== 'image_icon') {
                     const r2 = w > 1 ? (w - 1) : 0;
-                    svg.appendChild(createElementNS('circle',{class:'tb_feature_bg','stroke-width':w,cx:'50%',cy:'50%',fill:insetColor,r: 'calc(50% - ' + r2 + 'px)'}));
+                    svg.appendChild( createElementNS( 'circle',{
+                        class : 'tb_feature_bg',
+                        'stroke-width': w,
+                        cx : '50%',
+                        cy : '50%',
+                        fill : type === 'both' ? 'transparent' : insetColor,
+                        r : 'calc(50% - ' + r2 + 'px)'
+                    } ) );
                 }
                 chart.appendChild(svg);
             }

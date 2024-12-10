@@ -171,6 +171,13 @@ class Themify_System_Status {
                 </td>
             </tr>
             <tr>
+                <th scope="row"><?php esc_html_e( 'PHP Zip', 'themify' ); ?>:</th>
+                <td><?php
+                    echo extension_loaded('zip') ? '<span class="dashicons dashicons-yes"></span>' : '<mark class="error"><span class="dashicons dashicons-warning"></span> ' . sprintf( __( '<a href="%s">PHP Zip extension</a> is recommended, this enables export/import of various data (settings, Builder content, etc.).', 'themify' ), 'https://www.php.net/manual/en/zip.setup.php' ) . '</mark>';
+                ?>
+                </td>
+            </tr>
+            <tr>
                 <th scope="row"><?php esc_html_e( 'Multibyte string', 'themify' ); ?>:</th>
                 <td>
                     <?php

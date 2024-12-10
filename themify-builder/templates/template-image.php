@@ -129,7 +129,7 @@ self::sticky_element_props($container_props, $fields_args);
     <?php if ($image_title !== '' || $fields_args['caption_image'] !== ''): ?>
     <div class="image-content<?php echo $fields_args['style_image']==='image-full-overlay'?' tf_overflow':'';?>">
         <?php if ($image_title !== '') :
-            $fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
+            $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
             ?>
             <<?php echo $fields_args['title_tag'];?> class="image-title">
                 <?php if ($fields_args['link_image'] !== ''): ?>

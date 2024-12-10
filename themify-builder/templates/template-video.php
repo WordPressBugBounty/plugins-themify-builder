@@ -182,7 +182,7 @@ self::sticky_element_props($container_props, $fields_args);
         <?php if ('' !== $fields_args['title_video'] || '' !== $fields_args['caption_video']): ?>
             <div class="video-content">
                 <?php if ('' !== $fields_args['title_video']):
-                    $fields_args['title_tag'] = tag_escape( $fields_args['title_tag'] );
+                    $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
                     ?>
                     <<?php echo $fields_args['title_tag']; ?> class="video-title">
                     <?php if ($fields_args['title_link_video']) : ?>
