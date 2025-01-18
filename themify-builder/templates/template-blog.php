@@ -209,7 +209,7 @@ if (isset($themify) && !empty($posts)) {
     $themify->unlink_title = $fields_args['unlink_post_title_' . $mod_name];
     $themify->display_content = $fields_args['display_' . $mod_name];
     if ($fields_args['display_' . $mod_name] === 'excerpt' && !empty($fields_args['excerpt_length_' . $mod_name])) {
-        if ( Themify_Builder::$frontedit_active === true || Themify_Builder_Model::is_front_builder_activate() ) {
+        if ( Themify_Builder::$frontedit_active === true || Themify_Builder_Model::is_front_builder_activate() || $is_ajax_filter ) {
             /* combat WP's post-excerpt block filtering excerpt_length on REST_REQUEST */
             remove_all_filters( 'excerpt_length' );
             add_filter( 'excerpt_length', 'themify_custom_except_length', 999 );
@@ -496,5 +496,8 @@ $container_props['class'] = implode(' ', $container_props['class']);
 <!-- /module post -->
     <?php
     Themify_Builder_Model::hook_content_end($fields_args);
+    if ('post' === $mod_name) {
+        $themify->post_module_hook = '';
+    }
     $fields_args = $the_query = $args=null;
     

@@ -480,7 +480,7 @@ function themify_page() {
         .tf_litespeed #wpbody-content > * { display: none; }
         .tf_litespeed #tf_gz_message { margin: 2em; display: block !important; }
     </style>
-    <div id="tf_gz_message" style="display: none"><?php printf( __( 'It appears your server doesn\'t load .gz file correctly. Please contact your host provide to fix the issue. As a temporary solution, you may <a href="%s">install this plugin</a> or delete all gz files packed in the theme (which it would load the original scripts).', 'themify' ), 'https://themify.me/files/themify-gzip-cleaner.zip' ); ?> <a class="button button-primary" href="<?php echo add_query_arg( 'tf_clean_gz', 1 ); ?>"><?php _e( 'Remove all GZIP files', 'themify' ); ?></a></div>
+    <div id="tf_gz_message" style="display: none"><?php printf( __( 'It appears your server doesn\'t load .gz file correctly. Please contact your host provide to fix the issue. As a temporary solution, you may <a href="%s">install this plugin</a> or delete all gz files packed in the theme (which it would load the original scripts).', 'themify' ), 'https://themify.me/files/themify-gzip-cleaner.zip' ); ?> <a class="button button-primary" href="<?php echo esc_url( add_query_arg( 'tf_clean_gz', 1 ) ); ?>"><?php _e( 'Remove all GZIP files', 'themify' ); ?></a></div>
     <script async src="<?php echo THEMIFY_URI . '/js/admin/litespeed-gzip.min.js'; ?>"></script>
 
     <!-- html -->

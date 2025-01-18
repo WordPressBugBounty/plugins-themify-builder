@@ -287,6 +287,7 @@
                 {
                     type: 'hook_content',
                     options:{
+                        themify_post_before_module: 'post_before',
                         themify_post_start_module: 'post_start',
                         themify_before_post_image_module: 'before_post_image',
                         themify_after_post_image_module: 'after_post_image',
@@ -294,7 +295,8 @@
                         themify_after_post_title_module: 'after_post_title',
                         themify_before_post_content_module: 'before_post_content',
                         themify_after_post_content_module: 'after_post_content',
-                        themify_post_end_module: 'post_end'
+                        themify_post_end_module: 'post_end',
+                        themify_post_after_module: 'post_after',
                     }
                 },
                 {

@@ -62,7 +62,7 @@ if( $query->have_posts()):
         <?php $search_link = get_search_link($_POST['s']);?>
         <?php foreach ($found_types as $type): ?>
             <?php $type_obj = get_post_type_object( $type ); ?>
-            <a id="tf_result_link_<?php echo $type; ?>" href="<?php echo add_query_arg(array('type'=>$type),$search_link)?>" class="tf_view_button tf_hide"><?php echo __('View All','themify').' '.$type_obj->label; ?></a>
+            <a id="tf_result_link_<?php echo $type; ?>" href="<?php echo esc_url( add_query_arg(array('type'=>$type),$search_link) ); ?>" class="tf_view_button tf_hide"><?php echo __('View All','themify').' '.$type_obj->label; ?></a>
         <?php endforeach; ?>
         <a id="tf_result_link_item" href="<?php echo $search_link ?>" class="tf_view_button tf_hide"><?php _e('View All','themify')?></a>
     </div>

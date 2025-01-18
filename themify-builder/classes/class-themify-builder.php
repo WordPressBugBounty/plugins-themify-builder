@@ -1054,7 +1054,7 @@ if (!class_exists('Themify_Builder',false)) :
          */
         public static function display_tooltip($builder_id, $options, $type) {
             if (isset($options['element_id']) && !empty($options['styling']['_tooltip'])) {
-                $tooltip = [ 't' => esc_html( $options['styling']['_tooltip'] ) ];
+                $tooltip = [ 't' => wp_kses_post( $options['styling']['_tooltip'] ) ];
                 if (!empty($options['styling']['_tooltip_bg'])) {
                     $tooltip['bg'] = Themify_Builder_Stylesheet::get_rgba_color($options['styling']['_tooltip_bg']);
                 }

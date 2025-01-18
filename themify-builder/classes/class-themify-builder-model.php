@@ -1207,7 +1207,12 @@ final class Themify_Builder_Model {
                     if(!isset(self::$hook_contents[ $hook['h'] ])){
                         self::$hook_contents[ $hook['h'] ]=array();
                     }
-                    self::$hook_contents[ $hook['h'] ][] = $hook['c'];
+                    self::$hook_contents[ $hook['h'] ][] = [
+                        $hook['c'], /* content of the hook */
+                        isset( $hook['r'] ) ? (int) $hook['r'] : 0, /* show after every [n] */
+                        0, /* counter */
+                        isset( $hook['m'] ) ? (int) $hook['m'] : 0, /* max repeat times */
+                    ];
                     add_action( $hook['h'], array( __CLASS__, 'hook_content_output' ) );
                 }
             }
@@ -1238,8 +1243,17 @@ final class Themify_Builder_Model {
     public static function hook_content_output() {
         $current_filter = \current_filter();
         if ( isset( self::$hook_contents[ $current_filter ] ) ) {
-            foreach ( self::$hook_contents[ $current_filter ] as $content ) {
-                echo '<!-- post hook:' , $current_filter , ' -->' , do_shortcode( $content ) , '<!-- /post hook:' , $current_filter , ' -->';
+            foreach ( self::$hook_contents[ $current_filter ] as $index => &$hook ) {
+
+                /* check for hook repeat condition */
+                if ( $hook[1] !== 0 ) {
+                    $hook[2]++;
+                    if ( $hook[2] % $hook[1] !== 0 || ( $hook[3] !== 0 && $hook[2] / $hook[1] > $hook[3] ) ) {
+                        continue;
+                    }
+                }
+
+                echo '<!-- post hook:' , $current_filter , ' -->' , do_shortcode( $hook[0] ) , '<!-- /post hook:' , $current_filter , ' -->';
             }
         }
     }

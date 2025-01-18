@@ -120,7 +120,18 @@ class TB_Widget_Module extends Themify_Builder_Component_Module {
                 $src[] = array('src' => self::resolve_script_path($script->src), 'extra' => !empty($script->extra) ? $script->extra : '');
             }
         }
-        $widget->form($instance);
+
+        /* prevent errors */
+        set_error_handler(function($errno, $errstr, $errfile, $errline) {
+            return false;
+        });
+        try{
+            @$widget->form($instance);
+        }  
+        catch(Throwable  $e){
+        }
+        restore_error_handler();
+
         do_action('in_widget_form', $widget, null, $instance);
         $form = ob_get_clean();
         $base_name = 'widget-' . $widget->id_base . '\[' . $widget->number . '\]';
@@ -295,19 +306,16 @@ class TB_Widget_Module extends Themify_Builder_Component_Module {
                     return false;
                 });
                 try{
-                    $instance = $wp_widget_factory->widgets[$widget_class]->update($module['mod_settings']['instance_widget'], array());
-                }  
-                catch(Throwable  $e){
+                    @$instance = $wp_widget_factory->widgets[$widget_class]->update($module['mod_settings']['instance_widget'], array());
+                    /** documented in wp-includes/class-wp-widget.php */
+                    @$instance = apply_filters( 'widget_update_callback', $instance, $module['mod_settings']['instance_widget'], $module['mod_settings']['instance_widget'], $wp_widget_factory->widgets[$widget_class] );
+                }
+                catch(Throwable $e){
                 }
                 restore_error_handler();
 
                 if (!isset($instance['widget-id']) && isset($module['mod_settings']['instance_widget']['widget-id'])) {
                     $instance['widget-id'] = $module['mod_settings']['instance_widget']['widget-id'];
-                }
-                // Search Widget
-                $key = 'tf_search_ajax';
-                if (isset($module['mod_settings']['instance_widget'][$key])) {
-                    $instance[$key] = $module['mod_settings']['instance_widget'][$key];
                 }
                 $module['mod_settings']['instance_widget'] = $instance;
             }

@@ -1176,6 +1176,9 @@ $options = array(
         'r_sp' => __( 'Space', 'themify' ),
         'r_rn' => __( 'Round', 'themify' ),
         'bckdr' => __( 'Backdrop Blur', 'themify' ),
+        'hook_rpt' => __( 'Output this hook on every ', 'themify' ),
+        'hook_rpta' => __( 'nth post.', 'themify' ),
+        'hook_mr' => __( 'Repeat max times', 'themify' ),
     ),
     'options' => array(
         'frame' => Themify_Builder_Model::get_frame_layout(),

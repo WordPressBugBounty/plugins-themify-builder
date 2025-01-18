@@ -1150,7 +1150,7 @@
             for (let i = items.length - 1; i > -1; --i) {
                 let {type,value,id,tagName:tag} = items[i],
                     name = items[i].name || id;
-                if (name && type !== 'button' && type !== 'submit' && value !== '') {
+                if (name && type !== 'button' && type !== 'submit') {
                     if (items[i].classList.contains('wp-editor-area') && typeof tinyMCE !== 'undefined') {
                         let tiny = tinyMCE.get(id);
                         if (tiny) {
@@ -1171,13 +1171,8 @@
                             continue;
                         }
                     }
-                    if (value !== '') {
-                        if (type === 'checkbox') {
-                            o[name]??= [];
-                            o[name].push(value);
-                        } else {
-                            o[name] = value;
-                        }
+                    if ( type !== 'checkbox' || value !== '' ) {
+                        o[name] = value;
                     }
                 }
             }

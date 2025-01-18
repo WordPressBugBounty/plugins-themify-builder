@@ -152,11 +152,11 @@ abstract class Builder_Optin_Service {
             } else {
                 wp_send_json_success(array(
                     /* send name and email in GET, these may come useful when building the page that the visitor will be redirected to */
-                    'redirect' => add_query_arg(array(
+                    'redirect' => esc_url( add_query_arg(array(
                         'fname' => $data['fname'],
                         'lname' => $data['lname'],
                         'email' => $data['email'],
-                        ), $data['redirect'])
+                        ), $data['redirect']) )
                 ));
             }
         } else {

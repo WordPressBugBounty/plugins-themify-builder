@@ -121,10 +121,7 @@
                             name: 'grid'
                         }
                     ],
-                    option_js: true,
-                    binding : {
-                        slider : { hide : 'items_per_slide' }
-                    }
+                    option_js: true
                 },
                 {
                     id: 'grid_layout_testimonial',
@@ -246,7 +243,6 @@
                     delete settings[key];
                 }
             }
-            delete settings.items_per_slide;
             if(!settings.grid_layout_testimonial){
                 delete settings.masonry;
             }

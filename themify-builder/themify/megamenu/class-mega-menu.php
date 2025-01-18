@@ -27,10 +27,11 @@ if( ! class_exists( 'Themify_Mega_Menu_Walker', false ) ) {
          * @return string
          */
 
-        function render_widget_menu( $item, int $depth, string $class_names = '' ):string {
+        function render_widget_menu( $item, int $depth, $args, string $class_names = '' ):string {
             $output = '';
-            if( $depth === 0 ) {
+            if ( $depth === 0 ) {
                 $title = apply_filters( 'the_title', $item->title, $item->ID );
+                $title = apply_filters( 'nav_menu_item_title', $title, $item, $args, $depth );
                 $output = "<li class='{$class_names}'><a role='button' tabindex='0'>" . $title . '<span class="child-arrow"></span></a><ul class="sub-menu tf_box">';
             }
 
@@ -52,10 +53,11 @@ if( ! class_exists( 'Themify_Mega_Menu_Walker', false ) ) {
          * $class_names additional CSS classes to add to the menu wrapper
          * @return string
          */
-        function render_layout_part( $item,int $depth,string $class_names = '' ):string {
+        function render_layout_part( $item,int $depth, $args, string $class_names = ''):string {
             $output = '';
             if( $depth === 0 ) {
                 $title = apply_filters( 'the_title', $item->title, $item->ID );
+                $title = apply_filters( 'nav_menu_item_title', $title, $item, $args, $depth );
                 $output = "<li class='{$class_names}'><a role='button' tabindex='0'>" . $title . '<span class="child-arrow"></span></a><ul class="sub-menu tf_box">';
             }
 
@@ -86,9 +88,9 @@ if( ! class_exists( 'Themify_Mega_Menu_Walker', false ) ) {
 
             /* handle the display of widget menu items */
             if( Themify_Widgets_Menu::get_instance()->is_menu_widget( $item ) ) {
-                $item_output= $this->render_widget_menu( $item, $depth, $classes );
+                $item_output= $this->render_widget_menu( $item, $depth, $args, $classes, $args );
             } else if ( $item->type === 'post_type' && $item->object === 'tbuilder_layout_part' ) {
-                $item_output = $this->render_layout_part( $item, $depth, $classes );
+                $item_output = $this->render_layout_part( $item, $depth, $args, $classes );
             } else {
                 $li_attributes = [
                     'id' => ! empty( $id ) ? $id : '',

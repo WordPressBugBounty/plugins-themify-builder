@@ -7708,6 +7708,19 @@ window.ThemifyConstructor = {
                                     id: 'c',
                                     wrap_class: 'tb_disable_dc',
                                     class: 'fullwidth'
+                                },
+                                {
+                                    type : 'range',
+                                    label: 'hook_rpt',
+                                    after: 'hook_rpta',
+                                    id : 'r',
+                                    wrap_class: 'tb_disable_dc',
+                                },
+                                {
+                                    type : 'range',
+                                    label: 'hook_mr',
+                                    id : 'm',
+                                    wrap_class: 'tb_disable_dc',
                                 }
                             ]
                         }
@@ -7726,7 +7739,7 @@ window.ThemifyConstructor = {
                         label = wrap.tfClass('tb_position_box_label')[0],
                         positions = this._getPreDefinedPositions();
                 if (!v) {
-                    v = '50,50';
+                    v = '0,0';
                 } else if (positions[v] !== undefined) {
                     v = positions[v];
                 }

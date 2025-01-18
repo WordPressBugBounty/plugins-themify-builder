@@ -226,7 +226,7 @@ function themify_search_fields() { do_action( 'themify_search_fields' ); }
  * Add support for various WC-related hooks added by the framework
  */
 if ( themify_is_woocommerce_active() ) {
-    add_filter( 'woocommerce_product_get_image', 'themify_product_image_hooks' );
+    add_filter( 'woocommerce_product_get_image', 'themify_product_image_hooks', 1000 );
     add_action( 'woocommerce_before_single_product_summary', 'themify_product_single_image_start_hook', 1 );
     add_action( 'woocommerce_before_single_product_summary', 'themify_product_single_image_end_hook', 99 );
     add_filter( 'woocommerce_get_price_html', 'themify_product_price_hooks' );

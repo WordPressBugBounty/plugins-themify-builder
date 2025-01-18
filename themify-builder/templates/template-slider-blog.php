@@ -202,4 +202,6 @@ if (!empty($posts)):
 
     <?php Themify_Builder_Model::hook_content_end( $fields_args ); ?>
 
-<?php endif; ?>
+<?php
+$themify->post_module_hook = '';
+endif; ?>

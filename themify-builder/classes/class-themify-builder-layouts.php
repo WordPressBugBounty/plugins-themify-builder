@@ -72,8 +72,8 @@ if (!class_exists('Themify_Builder_Layouts',false)) {
                 add_action('wp_ajax_tb_get_save_custom_layout', array(__CLASS__, 'get_custom_layout_ajaxify'), 10);
 
                 // Quick Edit Links
-                add_filter('post_row_actions', array(__CLASS__, 'row_actions'));
-                add_filter('page_row_actions', array(__CLASS__, 'row_actions'));
+                add_filter('post_row_actions', array(__CLASS__, 'row_actions'), 10, 2);
+                add_filter('page_row_actions', array(__CLASS__, 'row_actions'), 10, 2);
                 add_filter('bulk_actions-edit-tbuilder_layout_part', array(__CLASS__, 'row_bulk_actions'));
                 add_filter('bulk_actions-edit-tbuilder_layout', array(__CLASS__, 'row_bulk_actions'));
                 add_filter('handle_bulk_actions-edit-tbuilder_layout_part', array(__CLASS__, 'export_row_bulk'), 10, 3);
@@ -500,8 +500,7 @@ if (!class_exists('Themify_Builder_Layouts',false)) {
          * @param array $actions
          * @return array
          */
-        public static function row_actions(array $actions):array {
-            global $post;
+        public static function row_actions(array $actions, $post):array {
             if (Themify_Access_Role::check_access_frontend($post->ID)) {
                 $post_type = get_post_type();
                 $actions['themify-builder-duplicate'] = sprintf('<a href="%s">%s</a>', wp_nonce_url(admin_url('post.php?post=' . $post->ID . '&action=duplicate_tbuilder'), 'duplicate_themify_builder'), __('Duplicate', 'themify'));

@@ -21,9 +21,10 @@ if (!empty($settings['tab_content_testimonial'])):
         $param_image_src['is_slider'] = true;
     }
     $limit= isset( $settings['visible_opt_slider'] ) ? (int) $settings['visible_opt_slider'] : 1;
+    $total_slides = count( $settings['tab_content_testimonial'] );
     foreach ($settings['tab_content_testimonial'] as $i => $content):
         ?>
-        <div class="post<?php echo $isSlider === true ? ' tf_swiper-slide' : '' ?>"<?php if( $isSlider && $i >= $limit ) : ?> style="content-visibility:hidden"<?php endif;?>>
+        <?php if ( ! $isSlider || $i % $settings['items_per_slide'] === 0 ) : ?><div class="post<?php echo $isSlider === true ? ' tf_swiper-slide' : '' ?>"<?php if( $isSlider && $i >= $limit ) : ?> style="content-visibility:hidden"<?php endif;?>><?php endif;?>
             <div class="testimonial-item"<?php if ($settings['margin'] !== ''): ?> style="<?php echo $settings['margin']; ?>"<?php endif; ?>>
                 <?php
                 $image = '';
@@ -107,7 +108,7 @@ if (!empty($settings['tab_content_testimonial'])):
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
+        <?php if ( ! $isSlider || ( ( $i + 1 ) % $settings['items_per_slide'] === 0 || ( $i + 1 ) === $total_slides ) ) : ?></div><!-- .post --><?php endif; ?>
     <?php endforeach; ?>
     <?php
  endif;

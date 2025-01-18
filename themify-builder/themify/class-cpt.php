@@ -623,7 +623,7 @@ class CPT {
     function populate_admin_columns($column, $post_id) {
 
         // get wordpress $post object
-        global $post;
+        $post = get_post( $post_id );
 
         // determine the column
         switch($column) {

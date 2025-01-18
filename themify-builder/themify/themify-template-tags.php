@@ -619,7 +619,7 @@ if (!function_exists('themify_post_media')) {
      */
     function themify_post_media(array $args = array()) {
         global $themify;
-        if ($themify->hide_image !== 'yes') {
+        if ( $themify->hide_image !== 'yes' && ! post_password_required() ) {
             $isImage = 'yes' !== $themify->unlink_image || isset($_GET['post_in_lightbox']) || (isset($args['unlink']) && false === $args['unlink']);
             if (isset($args['image'])) {
                 $post_image = $args['image'];
@@ -1736,6 +1736,9 @@ if (!function_exists('themify_comment_list')) {
         function themify_comments_template() {
             $post_type = get_post_type();
             if (($post_type === 'post' && themify_check('setting-comments_posts', true)) || ($post_type === 'portfolio' && !themify_check('setting-portfolio_comments', true))) {
+                return;
+            }
+            if ( post_password_required() ) {
                 return;
             }
             comments_template();
