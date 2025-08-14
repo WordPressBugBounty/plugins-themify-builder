@@ -120,13 +120,18 @@ final class Themify_Builder_Stylesheet {
                     echo '<style id="', $handlerId, '-cffonts">', $custom_fonts, '</style>', PHP_EOL;
                 }
                 unset($custom_fonts, $fonts);
-                if ($isActive === true && Themify_Builder::$is_loop === true && $post_id != Themify_Builder::$builder_active_id) {
+                if ( ( $isActive === true && Themify_Builder::$is_loop === true && $post_id != Themify_Builder::$builder_active_id ) || self::is_infinite_scroll($post_id) ) {
                     echo '<link class="themify-builder-generated-css" id="', $handlerId, '" rel="stylesheet" href="', $url, '?ver=', $version, '" type="text/css">';
                 }
             }
             return true;
         }
         return false;
+    }
+
+    /* single post infinite scroll */
+    private static function is_infinite_scroll( int $post_id ) : bool {
+        return isset( $_GET['tf-scroll'] ) && $post_id === get_queried_object_id();
     }
 
     public static function load_styles() {
@@ -394,11 +399,11 @@ final class Themify_Builder_Stylesheet {
                             } else {
                                 $entry_fonts = array($style_id => $fonts[$ftype]) + $builder_fonts;
                             }
-                            update_option($option_key, $entry_fonts);
+                            update_option($option_key, $entry_fonts, false);
                         } 
                         elseif (isset($builder_fonts[$style_id])) {
                             unset($builder_fonts[$style_id]);
-                            update_option($option_key, $builder_fonts);
+                            update_option($option_key, $builder_fonts, false);
                         }
                     }
                 }

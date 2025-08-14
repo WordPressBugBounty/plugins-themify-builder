@@ -17,7 +17,9 @@ $cat_args=[
     'show_count'=>false,
     'title_li'=>'',
     'include'=>$args['query_category']==='0'?[]:(is_array( $args['query_category'] ) ? $args['query_category']:explode( ',',$args['query_category'] )),
-    'taxonomy'=>$taxonomy
+    'taxonomy'=>$taxonomy,
+    'orderby' => isset( $args['tax_orderby'] ) ? $args['tax_orderby'] : 'name',
+    'order' => isset( $args['tax_order'] ) ? $args['tax_order'] : 'descend'
 ];
 $cat_filter = !empty($args['ajax_filter_include']) ? 'include' : 'exclude';
 if(!empty( $args['ajax_filter_'.$cat_filter] ) ){
@@ -63,7 +65,7 @@ if(!empty( $list_categories )){
         $attrs.=' data-taxonomy="'.$taxonomy.'"';
     }
     ?>
-    <ul class="post-filter tf_textc tf_opacity"<?php echo $attrs ?>>
+    <ul class="post-filter tf_textc tf_opacity"<?php echo $attrs ?> data-post_type="<?php echo esc_attr( isset( $args['post_type'] ) ? $args['post_type'] : 'post' ); ?>">
         <?php echo $list_categories ?>
         <?php if(isset( $args['ajax_sort'] )): ?>
             <li data-init="1" data-p="2" class="cat-item cat-item-all active"><?php _e( 'All','themify' ) ?></li>

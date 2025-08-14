@@ -236,6 +236,20 @@ class Themify_System_Status {
                 </td>
             </tr>
             <tr>
+                <th scope="row"><?php esc_html_e( 'Database Encoding', 'themify' ); ?>:</th>
+                <td>
+                    <?php
+                    $dbcharset = $wpdb->get_var("SELECT @@character_set_database");
+                    ?>
+                    <strong><?php _e( 'Charset', 'themify' ); ?></strong>: <?php echo esc_html( $dbcharset ); ?>
+                    <?php if ( strtolower( $dbcharset ) !== 'utf8mb4' ) : ?>
+                        <mark class="error"><span class="dashicons dashicons-warning"></span><?php _e( 'Your database does not support 4-byte characters like emojis.', 'themify' ); ?></mark>
+                    <?php endif; ?>
+                    <br>
+                    <strong><?php _e( 'Collation', 'themify' ); ?></strong>: <?php echo esc_html( $wpdb->get_var("SELECT @@collation_database") ); ?>
+                </td>
+            </tr>
+            <tr>
                 <th scope="row"><?php esc_html_e( 'Storage engine', 'themify' ); ?>:</th>
                 <td>
                     <table>

@@ -402,6 +402,9 @@
                 }
             ]];
         }
+        static getAnimation() {
+            return false;
+        }
         static default() {
             return {
                 posts_per_page_slider: 4,

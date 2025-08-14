@@ -81,7 +81,6 @@ $fields_args['margin'] = $margins;
 if(Themify_Builder::$frontedit_active===false){
         $container_props['data-lazy']=1;
 }
-self::sticky_element_props($container_props, $fields_args);
 ?>
 <div <?php echo themify_get_element_attributes($container_props); ?>>
     <?php $container_props=$container_class=$args=null;

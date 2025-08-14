@@ -221,7 +221,6 @@ export class Row extends BaseStyles {
                                     label: '',
                                     type: 'select',
                                     origId: 'background_image',
-                                    after: 'b_a',
                                     options: {
                                         scroll: 'scroll',
                                         fixed: 'fi'
@@ -321,7 +320,6 @@ export class Row extends BaseStyles {
                                     label: '',
                                     origId: 'bg_i_h',
                                     type: 'select',
-                                    after: 'b_a',
                                     options: {
                                         scroll: 'scroll',
                                         fixed: 'fi'
@@ -362,12 +360,12 @@ export class Row extends BaseStyles {
                             label: 'overlay',
                             type: 'radio',
                             options: [
-                                {value: 'color', name: 'c'},
+                                {value: 'color', name: 'image'},
                                 {value: 'cover_gradient', name: 'gradient'}
                             ],
                             option_js: true,
                             is_overlay: true,
-                            selector: '>.builder_row_cover::before'
+                            selector: [ '>.builder_row_cover::before', '>:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ]
                         },
                         {
                             id: 'cover_color',
@@ -376,7 +374,48 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_color',
                             is_overlay: true,
                             prop: 'background-color',
-                            selector: '>.builder_row_cover::before'
+                            selector: [ '>.builder_row_cover::before', '>:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ]
+                        },
+                        {
+                            id: 'cover_bg',
+                            origId : 'cover_bg',
+                            type: 'image',
+                            label: '',
+                            wrap_class: 'tb_group_element_color',
+                            is_overlay: true,
+                            prop: 'background-image',
+                            selector: [ '>.builder_row_cover::before', '>:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ],
+                            binding: {
+                                empty: {
+                                    hide: [ 'cover_r', 'cover_p' ]
+                                },
+                                not_empty: {
+                                    show: [ 'cover_r', 'cover_p' ]
+                                }
+                            }
+                        },
+                        {
+                            id: 'cover_r',
+                            origId : 'cover_r',
+                            label: '',
+                            type: 'select',
+                            after: 'b_r',
+                            prop: 'background-mode',
+                            selector: [ '>.builder_row_cover::before', '>:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ],
+                            wrap_class: 'tb_group_element_color',
+                            repeat : true
+                        },
+                        {
+                            id: 'cover_p',
+                            origId : 'cover_p',
+                            label: '',
+                            type: 'position_box',
+                            after: 'b_p',
+                            prop: 'background-position',
+                            selector: [ '>.builder_row_cover::before', '>:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ],
+                            is_overlay: true,
+                            wrap_class: 'tb_group_element_color',
+                            position : true
                         },
                         {
                             id: 'cover_gradient',
@@ -385,16 +424,26 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_cover_gradient',
                             is_overlay: true,
                             prop: 'background-image',
-                            selector: '>.builder_row_cover::before'
+                            selector: [ '>.builder_row_cover::before', '>:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ]
                         },
                         {
                             id: 'cover_backdrop',
                             type: 'range',
                             label: 'bckdr',
+                            help: 'bckdrh',
                             is_overlay: true,
                             prop: 'backdrop-filter',
-                            selector: '>.builder_row_cover',
+                            selector: [ '>.builder_row_cover', '>:is(.tf_lax, .tf_lax_done)' ],
                             after : 'px'
+                        },
+                        {
+                            type : 'mask_image',
+                            prefix : 'cover_',
+                            selector: [ '>.builder_row_cover', '>:is(.tf_lax, .tf_lax_done) > .builder_row_cover' ],
+                        },
+                        {
+                            type : 'reveal_effect',
+                            id : 'cover_reveal'
                         }
                     ],
                     h: [
@@ -408,7 +457,7 @@ export class Row extends BaseStyles {
                             ],
                             option_js: true,
                             is_overlay: true,
-                            selector: ':hover>.builder_row_cover::after'
+                            selector: [ ':hover>.builder_row_cover::after', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::after' ]
                         },
                         {
                             id: 'cover_color_hover',
@@ -417,7 +466,7 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_hover_color',
                             is_overlay: true,
                             prop: 'background-color',
-                            selector: ':hover>.builder_row_cover::after'
+                            selector: [ ':hover>.builder_row_cover::after', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::after' ]
                         },
                         {
                             id: 'cover_gradient_hover',
@@ -426,19 +475,32 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_hover_gradient',
                             is_overlay: true,
                             prop: 'background-image',
-                            selector: '>.builder_row_cover::after'
+                            selector: [ ':hover>.builder_row_cover::after', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::after' ]
                         },
                         {
                             id: 'cover_backdrop_h',
                             type: 'range',
                             label: 'bckdr',
+                            help: 'bckdrh',
                             is_overlay: true,
                             prop: 'backdrop-filter',
-                            selector: '>.builder_row_cover',
+                            selector: [ ':hover >.builder_row_cover', ':hover > :is(.tf_lax, .tf_lax_done)' ],
                             after : 'px'
                         }
                     ]
                 })
+            ]),
+            this.get_expand( type + 'mask', [
+                {
+                    type : 'mask_image',
+                    prefix : 'com_',
+                    selector: '',
+                    motion_effects: false
+                },
+                {
+                    type : 'reveal_effect',
+                    id : 'row_reveal'
+                }
             ])
         ];
         if (inner_selector) {
@@ -487,7 +549,6 @@ export class Row extends BaseStyles {
                             label: '',
                             type: 'select',
                             origId: 'background_image_inner',
-                            after: 'b_a',
                             options: {
                                 scroll: 'scroll',
                                 fixed: 'fi'
@@ -561,7 +622,6 @@ export class Row extends BaseStyles {
                             label: '',
                             origId: 'b_i_i_h',
                             type: 'select',
-                            after: 'b_a',
                             options: {
                                 scroll: 'scroll',
                                 fixed: 'fi'

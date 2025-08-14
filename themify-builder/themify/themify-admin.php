@@ -241,14 +241,10 @@ function themify_admin_nav() {
          */
         add_submenu_page ( 'themify', __( 'Themify License', 'themify' ), __( 'Themify License', 'themify' ), 'manage_options', 'index.php?page=themify-license' );
     }
-    /**
-     * Add submenu entry that redirects to Themify documentation site
-     * @since 2.0.2
-     */
-    $submenu['themify'][] = array( __( 'Documentation', 'themify' ), 'manage_options', 'https://themify.me/docs/' . str_replace( 'themify-', '', $theme->get_template() ) );
-    $submenu['themify'][] = array( __( 'Contact Support', 'themify' ), 'manage_options', 'https://themify.me/new-topic/' );
-
-    if(!$can_manage_option){
+    if ( $can_manage_option ) {
+        $submenu['themify'][] = array( __( 'Documentation', 'themify' ), 'manage_options', 'https://themify.me/docs/' . str_replace( 'themify-', '', $theme->get_template() ) );
+        $submenu['themify'][] = array( __( 'Contact Support', 'themify' ), 'manage_options', 'https://themify.me/new-topic/' );
+    } else {
         remove_submenu_page('themify','themify');
     }
 }
@@ -2279,9 +2275,17 @@ if(!function_exists('themify_performance_settings')) {
                 'setting-lazy-blur',
                 themify_get('setting-lazy-blur',25,true )
             );
-                
-        $output.='</div>';
-        
+            $output.='</div>';
+
+            $output.='<div data-show-if-element="[name$='.$key.']" data-show-if-value="false" class="tf_clearfix">';
+            $output .= sprintf( '<div class="label">%s %s</div><div class="label width10"><input type="number" name="%s" value="%s" min="0" max="2000" class="width4"> px</div>',
+                esc_html__( 'LazyLoad Threshold', 'themify' ),
+                themify_help(__('Distance from viewport before content are loaded in. Recommendation: 300px to 500px.','themify')),
+                'setting-lazy-threshold',
+                themify_get('setting-lazy-threshold', 300, true )
+            );
+            $output.='</div>';
+
         $key = 'setting-dev-mode';
         $disabled = defined( 'THEMIFY_DEV' ) && THEMIFY_DEV ? ' disabled' : '';
         $output.='<hr><p><span class="label">' . __( 'Development Mode', 'themify' ) .themify_help(__('Warning: the following will be disabled: Themify cache, menu cache, concate CSS caching, Gzip scripts. Only enable this for development purposes (eg. preview child theme CSS/script changes).','themify')) . '</span>';
@@ -3455,9 +3459,6 @@ function themify_gutenberg_admin_css() {
     if (!empty($screen) && $screen->is_block_editor() ) {
         echo '
 <style>
-    .editor-styles-wrapper {
-        font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif;
-    }
     .wp-block-post-content{
         padding:0 3%
     }

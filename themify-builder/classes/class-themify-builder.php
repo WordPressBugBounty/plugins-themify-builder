@@ -718,6 +718,11 @@ if (!class_exists('Themify_Builder',false)) :
                         return $content;
                     }
                     
+                    global $ThemifyBuilder;
+                    $isLoop=self::$is_loop===true || $ThemifyBuilder->in_the_loop === true;
+                    if ($isLoop === false) {
+                        Themify_Builder_Stylesheet::enqueue_stylesheet(false, $post_id);
+                    }
                     $builder_data = ThemifyBuilder_Data_Manager::get_data($post_id);
                     if(empty($builder_data) && !Themify_Builder_Model::is_frontend_editor_page()){
                         return $content;
@@ -734,17 +739,12 @@ if (!class_exists('Themify_Builder',false)) :
                     }
                     $template_args['builder_output'] = $builder_data;
                     $template_args['builder_id'] = $post_id;
-                    global $ThemifyBuilder;
-                    $isLoop=self::$is_loop===true || $ThemifyBuilder->in_the_loop === true;
                     $template = $isLoop ? 'builder-layout-part-output.php' : 'builder-output.php';
                     self::$is_rendering = true;
                     $builder_output = Themify_Builder_Component_Module::retrieve_template($template, $template_args, THEMIFY_BUILDER_TEMPLATES_DIR, '', false);
                     self::$is_rendering = false;
                     if (strpos($builder_output, 'module_row') !== false) {
                         do_action('themify_builder_before_template_content_render');
-                    }
-                    if ($isLoop === false) {
-                        Themify_Builder_Stylesheet::enqueue_stylesheet(false, $post_id);
                     }
                     Themify_Builder::get_builder_stylesheet($builder_output);
 

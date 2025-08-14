@@ -47,7 +47,7 @@ class Themify_Builder_Component_Row{
      *
      * @return bool Returns false if $styling doesn't have a color overlay. Otherwise outputs the HTML;
      */
-    private static function do_color_overlay(array $styling):bool {
+    private static function do_color_overlay(array $styling, $selector = ''):bool {
 
         $type = !isset($styling['cover_color-type']) || $styling['cover_color-type'] === 'color' ? 'color' : 'gradient';
         $is_empty = $type === 'color' ? ( empty($styling['cover_color']) && empty( $styling['cover_bg'] ) ) : empty($styling['cover_gradient-gradient']);
@@ -63,13 +63,49 @@ class Themify_Builder_Component_Row{
             }
         }
         if ($is_empty === false || $is_empty_hover === false) {
-            echo '<span class="builder_row_cover tf_abs"></span>';
+            $attr = [
+                'class' => 'builder_row_cover tf_abs',
+                'data-lazy' => 1
+            ];
+            $attr = self::get_reveal_effect( $styling, $attr, 'cover_reveal' );
+
+            Themify_Builder_Component_Module::sticky_element_props( $attr, $styling, 'cover_' );
+            echo '<span ', themify_get_element_attributes($attr), '></span>';
             return true;
         }
         return false;
     }
 
-    
+    private static function get_reveal_effect( array $styling, array $attr, string $option_prefix ) : array {
+        if ( ! empty( $styling[$option_prefix] ) ) {
+            $effect = $styling[$option_prefix];
+            $reveal_viewport = empty( $styling[$option_prefix . '_vp'] ) ? '0,100' : $styling[$option_prefix . '_vp'];
+            $minMaxSize = empty( $styling[$option_prefix . '_minmax'] ) ? '0,100' : $styling[$option_prefix . '_minmax'];
+            $attr['data-tb_clip'] = $effect . ',' . $reveal_viewport . ',' . $minMaxSize;
+            if ( $effect === 'sp' || $effect === 'r' || $effect === 'sw' ) {
+                $corner_radius_unit = empty( $styling[$option_prefix . '_br_unit'] ) ? 'px' : $styling[$option_prefix . '_br_unit'];
+                $attr['data-tb_clip_br'] = empty( $styling[$option_prefix . '_br'] ) ? '0' : $styling[$option_prefix . '_br'] . $corner_radius_unit;
+            }
+            if ( $effect === 'sp' ) {
+                if ( ! empty( $styling[$option_prefix . '_sp_dir'] ) && $styling[$option_prefix . '_sp_dir'] !== 'ho' ) {
+                    $attr['data-tb_dir'] = $styling[$option_prefix . '_sp_dir'];
+                }
+            } else if ( $effect === 'c' || $effect === 'r' ) {
+                if ( ! empty( $styling[$option_prefix . '_zoomdir'] ) && $styling[$option_prefix . '_zoomdir'] !== 'i' ) {
+                    $attr['data-tb_dir'] = $styling[$option_prefix . '_zoomdir'];
+                }
+                if ( ! empty( $styling[$option_prefix . '_pos'] ) ) {
+                    $attr['data-tb_clip_pos'] = $styling[$option_prefix . '_pos'];
+                }
+            } else if ( $effect === 'sw' ) {
+                if ( ! empty( $styling[$option_prefix . '_sw_dir'] ) && $styling[$option_prefix . '_sw_dir'] !== 'l' ) {
+                    $attr['data-tb_dir'] = $styling[$option_prefix . '_sw_dir'];
+                }
+            }
+        }
+
+        return $attr;
+    }
 
     /**
      * Get the frame type
@@ -113,7 +149,8 @@ class Themify_Builder_Component_Row{
         // Background cover color
         if (!empty($row['styling'])) {
             $hasOverlay = false;
-            if (!self::do_color_overlay($row['styling'])) {
+            $selector = '.themify_builder_content-' . $builder_id . ' .tb_' . $row['element_id'] . ' > .builder_row_cover::before';
+            if ( ! self::do_color_overlay( $row['styling'], $selector ) ) {
                 $breakpoints = themify_get_breakpoints();
                 foreach ($breakpoints as $bp => $v) {
                     if (!empty($row['styling']['breakpoint_' . $bp]) && self::do_color_overlay($row['styling']['breakpoint_' . $bp])) {
@@ -445,6 +482,7 @@ class Themify_Builder_Component_Row{
         $row_attributes['class'] = implode(' ', apply_filters('themify_builder_row_classes', $row_classes, $row, $builder_id));
         $row_classes = null;
         self::clickable_component($row_attributes, $row['styling']);
+        $row_attributes = self::get_reveal_effect( $row['styling'], $row_attributes, 'row_reveal' );
         $row_attributes = apply_filters('themify_builder_row_attributes', Themify_Builder_Component_Module::parse_animation_effect($row['styling'], $row_attributes), $row['styling'], $builder_id);
         ?>
         <?php if (strpos($row_attributes['class'], 'tb-page-break') !== false): ?>

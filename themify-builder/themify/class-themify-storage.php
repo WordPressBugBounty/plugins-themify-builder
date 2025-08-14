@@ -55,7 +55,7 @@ class Themify_Storage
         $k = self::getHash($key, $prefix);
         if (self::init() !== false) {
             global $wpdb;
-            $res = $wpdb->get_row('SELECT `value`,`expire` FROM ' . self::$table . ' WHERE `key`="' . esc_sql($k) . '" LIMIT 1');
+            $res = $wpdb->get_row('SELECT `value`,`expire` FROM ' . self::$table . ' WHERE `key`=\'' . esc_sql($k) . '\' LIMIT 1');
             unset($k);
             if (!empty($res)) {
                 if (!empty($res->expire) && time() > $res->expire) {
@@ -79,8 +79,8 @@ class Themify_Storage
         }
         if (self::init() !== false) {
             global $wpdb;
-        $exp = $exp === null?'DEFAULT':((int)$exp + time());
-            $q = 'INSERT INTO ' . self::$table . ' (`key`,`value`,`expire`) VALUES ("' . esc_sql($k) . '","' . esc_sql($v) . '",' . $exp . ') ON DUPLICATE KEY UPDATE `value`=VALUES(value),`expire`=VALUES(expire)';
+            $exp = $exp === null?'DEFAULT':((int)$exp + time());
+            $q = 'INSERT INTO ' . self::$table . ' (`key`,`value`,`expire`) VALUES (\'' . esc_sql($k) . '\',\'' . esc_sql($v) . '\',' . $exp . ') ON DUPLICATE KEY UPDATE `value`=VALUES(value),`expire`=VALUES(expire)';
             return $wpdb->query($q);
         }
         return set_transient($k, $v, $exp);
@@ -90,7 +90,7 @@ class Themify_Storage
         $k = self::getHash($k, $prefix);
         if (self::init() !== false) {
             global $wpdb;
-            $q = 'DELETE FROM ' . self::$table . ' WHERE `key`="' . esc_sql($k) . '" LIMIT 1';
+            $q = 'DELETE FROM ' . self::$table . ' WHERE `key`=\'' . esc_sql($k) . '\' LIMIT 1';
             return $wpdb->query($q);
         }
         return delete_transient($k);

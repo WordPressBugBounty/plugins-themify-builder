@@ -307,6 +307,17 @@ export class Module extends BaseStyles {
                     ]
                 })
             ]),
+            // Margin
+            this.get_expand('m', [
+                this.get_tab({
+                    n: [
+                        this.get_margin(' .testimonial-item', 'm_container')
+                    ],
+                    h: [
+                        this.get_margin(' .testimonial-item', 'm_c', 'h')
+                    ]
+                })
+            ]),
             // Border
             this.get_expand('b', [
                 this.get_tab({

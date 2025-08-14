@@ -39,8 +39,12 @@
                             ],
                             wrap_class: 'tb_compact_radios',
                             option_js: true,
+                            bindingContext : '#tb_lightbox_parent',
 							binding : {
-								slider : { hide : 'items_per_slide' }
+								slider : { hide : ['items_per_slide', 'animation_effect_tab'] },
+								grid : { show : ['animation_effect_tab'] },
+								showcase : { show : ['animation_effect_tab'] },
+								lightboxed : { show : ['animation_effect_tab'] }
 							}
                         },
                         {
@@ -359,6 +363,9 @@
                 delete settings.m_columns;
                 if (layout !== 'slider') {
                     delete settings.link_opt;
+                } else {
+                    /* no Motion Effects with Slider layout */
+                    delete settings.motion_effects;
                 }
             }
             else{

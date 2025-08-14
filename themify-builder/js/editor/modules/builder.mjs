@@ -96,7 +96,7 @@
             for (let i = 0; i < rows.length; ++i) {
                 if (rows[i].classList.contains('module_row')) {
                     let data = api.Utils.getRowSettings(rows[i], 'row', saving);
-                    if (!saving || (data.styling && Object.keys(data.styling).length>0) || (data.cols && checkNotEmpty(data.cols))) {
+                    if (!saving || (data.styling && Object.keys(data.styling).length>0) || (data.cols && data.cols.length && checkNotEmpty(data.cols))) {
                         option_data.push(data);
                     }
                 }

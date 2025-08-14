@@ -272,7 +272,9 @@ if( ! function_exists( 'themify_get_attachment_id_from_url' ) ) :
         $url = preg_replace( '/-\d+x\d+(?=\.(jpg|jpeg|png|gif|webp|bmp)$)/i', '', $url );
         if ( ! empty( $url ) ) {
             if ( ! isset( $cache[ $url ] ) ) {
-                $cache[ $url ] = themify_get_attachment_id_cache( $url );
+                $attachment_id = themify_get_attachment_id_cache( $url );
+                $attachment_id = themify_maybe_translate_object_id( $attachment_id, 'post' );
+                $cache[ $url ] = $attachment_id;
             }
             return $cache[ $url ];
         }
@@ -397,7 +399,7 @@ function themify_create_webp(string $url):string{//@todo move to class
         if(is_file ($resUrl)){
             return str_replace($upload_dir['basedir'],$upload_dir['baseurl'],$resUrl);
         }
-        if(!is_file ($res)){
+        if ( ! is_file( $res ) || ! is_readable( $res ) || ! getimagesize( $res ) ){
             return $url;
         }
         $webp_quality = (int) themify_builder_get( 'setting-webp-quality', 'performance-webp_quality' );

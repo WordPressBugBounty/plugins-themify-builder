@@ -481,6 +481,41 @@ function themify_search_autocomplete(){
             }
             $query->rewind_posts();
 
+            // SKU Search Addition.
+            if (function_exists('wc_get_products') && in_array('product', $post_types)) {
+                $sku_products = wc_get_products([
+                    'limit' => 22,
+                    'status' => 'publish',
+                    'sku' => $s,
+                ]);
+                if (!empty($sku_products)) {
+                    $sku_ids = array();
+                    foreach ($sku_products as $sku_product) {
+                        $sku_ids[] = $sku_product->get_id();
+                    }
+                    // Merge with existing query results
+                    $existing_ids = $query->posts ? wp_list_pluck($query->posts, 'ID') : array();
+                    $all_ids = array_unique(array_merge($existing_ids, $sku_ids));
+                    // Re-query to get all posts in correct order
+                    if (!empty($all_ids)) {
+                        $query = new WP_Query(array(
+                            'post_type' => $post_types,
+                            'post_status' => 'publish',
+                            'post__in' => $all_ids,
+                            'orderby' => 'post__in',
+                            'posts_per_page' => 22
+                        ));
+                        // Update found_types for all post types present in the results
+                        foreach ($query->posts as $post) {
+                            $type = get_post_type($post);
+                            if (!in_array($type, $found_types)) {
+                                $found_types[] = $type;
+                            }
+                        }
+                    }
+                }
+            }
+
             ob_start();
             include( THEMIFY_DIR.'/includes/search-box-result.php' );
             ob_end_flush();
@@ -505,6 +540,9 @@ if(!function_exists('themify_ajax_load_more')){
                 }
             }
             if(!empty($mod_setting)){
+                if ( class_exists( 'Themify_Hooks', false ) ) {
+                    Themify_Hooks::hooks_setup();
+                }
                 global $paged;
                 $paged=(int)$_POST['page'];
                 $paged=$paged<1?1:$paged;

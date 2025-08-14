@@ -43,9 +43,6 @@
                     options: layout
                 },
                 {
-                    type:'post_filter'
-                },
-                {
                     id: 'post_per_page_post',
                     type: 'number',
                     label: 'npost',
@@ -285,6 +282,9 @@
                     type: 'group'
                 },
                 {
+                    type:'post_filter'
+                },
+                {
                     type: 'hook_content',
                     options:{
                         themify_post_before_module: 'post_before',
@@ -324,6 +324,8 @@
                 masonry_align:'no',
                 lbpost:'no',
                 ajax_filter_categories:'exclude',
+                post_filter_orderby : 'name',
+                post_filter_order : 'desc',
                 ['layout_'+slug]:'grid4',
                 ['post_type_'+slug]:slug,
                 ['type_query_'+slug]:'category',
@@ -390,6 +392,9 @@
             if(!settings.post_filter){
                 delete settings.filter_hashtag;
                 delete settings.ajax_filter;
+                delete settings.post_filter_tax;
+                delete settings.post_filter_orderby;
+                delete settings.post_filter_order;
             }
             if(!settings.ajax_filter){
                 delete settings.ajax_filter_categories;

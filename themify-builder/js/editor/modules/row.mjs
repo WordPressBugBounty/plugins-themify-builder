@@ -591,8 +591,8 @@
                     const fr = createDocumentFragment();
                     if (count < oldCount) {
                         for (let i = oldCount - 1; i >= count; --i) {
-                            let childs = cols[i].tfClass('tb_holder')[0].children;
-                            for (let j = 0; j < childs.length; ++j) {
+                            let childs = Array.from( cols[i].tfClass('tb_holder')[0].children );
+                            for (let j = 0; j < childs.length; j++) {
                                 fr.appendChild(childs[j]);
                             }
                             cols[i].remove(); // finally remove it

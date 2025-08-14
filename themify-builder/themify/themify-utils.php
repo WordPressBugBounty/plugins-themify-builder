@@ -1249,7 +1249,7 @@ function themify_get_embed(string $url, array $args):string {
             $lazy = !empty($args['disable_lazy']) ? ' data-no-script' : '';
             $src .= '?' . http_build_query($query_args);
             $class=isset($args['class'])?$args['class']:'tf_abs tf_w tf_h';
-            return '<iframe' . $lazy . ' src="' . $src . '" allow="' . $allow . '" class="'.$class.'"></iframe>';
+            return '<iframe' . $lazy . ' src="' . esc_url( $src ) . '" allow="' . $allow . '" class="'.$class.'"></iframe>';
         }
     }
     return '';

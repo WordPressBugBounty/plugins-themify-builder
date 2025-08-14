@@ -363,7 +363,8 @@
             const isOpen = item.default_accordion === 'open',
                 tabId = 'acc-' +this.id+'-'+index,
                 li = createElement('li','tb_is_repeat'+(isOpen?' builder-accordion-active':'')),
-                link = createElement('a',{class:'tb_title_accordion',href:'#' + tabId,'aria-controls': tabId + '-content','aria-expanded': isOpen}),
+                link = createElement('a', { class: 'tb_title_accordion', href: '#' + tabId, 'aria-controls': tabId + '-content', 'aria-expanded': isOpen }),
+                titleWrap = createElement( 'span','accordion-title-wrap' ),
                 title = createElement( data.title_tag || 'div','accordion-title tf_rel' ),
                 content = createElement('',{id:tabId + '-content',class:'accordion-content tf_clearfix'+(!isOpen?' tf_hide':''),'data-id':tabId,'aria-hidden':isOpen}),
                 builder_content=item.builder_content || getDefaultContent(item),
@@ -391,7 +392,8 @@
             }
 
 
-            this.constructor._setEditableContent(link,'title_accordion',item.title_accordion,'','content_accordion');
+            link.prepend(titleWrap);
+            this.constructor._setEditableContent(titleWrap, 'title_accordion', item.title_accordion, '', 'content_accordion');
             if (data.icon_active_accordion) {
                 let activeIcon = createElement('i','accordion-active-icon' + (!isOpen ? ' tf_hide' : ''));
                 activeIcon.appendChild(api.Helper.getIcon(data.icon_active_accordion));

@@ -59,7 +59,9 @@ class Themify_Builder_WPML_Integration {
 					$builder_data[ $index ] = self::recursive_translate_fields( $row );
 				}
 			}
-			ThemifyBuilder_Data_Manager::save_data( $builder_data, $translated_post_id );
+			if (!empty(self::$translations)) {
+				ThemifyBuilder_Data_Manager::save_data( $builder_data, $translated_post_id );
+			}
 		}
 	}
 

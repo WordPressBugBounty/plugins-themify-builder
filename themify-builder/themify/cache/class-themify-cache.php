@@ -971,6 +971,7 @@ if (!class_exists('TFCache',false)) {
                     $items['AO'] = true;
                 }
                 //Cloudflare
+                // https://wordpress.org/plugins/cloudflare/
                 if (defined('CLOUDFLARE_PLUGIN_DIR')) {
                     $items['CLFL'] = true;
                 }

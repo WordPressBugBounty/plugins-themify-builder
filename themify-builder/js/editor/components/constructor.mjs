@@ -1150,285 +1150,7 @@ window.ThemifyConstructor = {
                     id: 'animation_effect_tab',
                     options: {
                         s_e_m: [
-                            {
-                                id: 'motion_effects',
-                                type: 'accordion',
-                                options: {
-                                    v: {
-                                        label: 'vscrl',
-                                        options: [
-                                            {
-                                                id: 'v_dir',
-                                                type: 'select',
-                                                label: 'dir',
-                                                options: {
-                                                    '': '',
-                                                    up: '_up',
-                                                    down: 'dwn'
-                                                },
-                                                binding: {
-                                                    empty: {
-                                                        hide: [
-                                                            'v_speed',
-                                                            'v_vp'
-                                                        ]
-                                                    },
-                                                    not_empty: {
-                                                        show: [
-                                                            'v_speed',
-                                                            'v_vp'
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                id: 'v_speed',
-                                                type: 'slider_range',
-                                                label: 'speed',
-                                                options: {
-                                                    min: 1,
-                                                    max: 10,
-                                                    unit: '',
-                                                    range: false,
-                                                    default: 1
-                                                }
-                                            },
-                                            {
-                                                id: 'v_vp',
-                                                type: 'slider_range',
-                                                label: 'viewp'
-                                            }
-                                        ]
-                                    },
-                                    h: {
-                                        label: 'hrztalscl',
-                                        options: [
-                                            {
-                                                id: 'h_dir',
-                                                type: 'select',
-                                                label: 'dir',
-                                                options: {
-                                                    '': '',
-                                                    toleft: 'tolft',
-                                                    toright: 'torgt'
-                                                },
-                                                binding: {
-                                                    empty: {
-                                                        hide: [
-                                                            'h_speed',
-                                                            'h_vp'
-                                                        ]
-                                                    },
-                                                    not_empty: {
-                                                        show: [
-                                                            'h_speed',
-                                                            'h_vp'
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                id: 'h_speed',
-                                                type: 'slider_range',
-                                                label: 'speed',
-                                                options: {
-                                                    min: 1,
-                                                    max: 10,
-                                                    unit: '',
-                                                    range: false,
-                                                    default: 1
-                                                }
-                                            },
-                                            {
-                                                id: 'h_vp',
-                                                type: 'slider_range',
-                                                label: 'viewp'
-                                            }
-                                        ]
-                                    },
-                                    t: {
-                                        label: 'trnspncy',
-                                        options: [
-                                            {
-                                                id: 't_dir',
-                                                type: 'select',
-                                                label: 'dir',
-                                                options: {
-                                                    '': '',
-                                                    fadein: 'fadein',
-                                                    fadeout: 'fadout',
-                                                    fadeoutin: 'fadoutin',
-                                                    fadeinout: 'fadinout'
-                                                },
-                                                binding: {
-                                                    empty: {
-                                                        hide: 't_vp'
-                                                    },
-                                                    not_empty: {
-                                                        show: 't_vp'
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                id: 't_vp',
-                                                type: 'slider_range',
-                                                label: 'viewp'
-                                            }
-                                        ]
-                                    },
-                                    b: {
-                                        label: 'bl',
-                                        options: [
-                                            {
-                                                id: 'b_dir',
-                                                type: 'select',
-                                                label: 'dir',
-                                                options: {
-                                                    '': '',
-                                                    fadein: 'fadein',
-                                                    fadeout: 'fadout'
-                                                },
-                                                binding: {
-                                                    empty: {
-                                                        hide: [
-                                                            'b_level',
-                                                            'b_vp'
-                                                        ]
-                                                    },
-                                                    not_empty: {
-                                                        show: [
-                                                            'b_level',
-                                                            'b_vp'
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                id: 'b_level',
-                                                type: 'slider_range',
-                                                label: 'lvl',
-                                                options: {
-                                                    min: 1,
-                                                    max: 10,
-                                                    unit: '',
-                                                    range: false,
-                                                    default: 1
-                                                }
-                                            },
-                                            {
-                                                id: 'b_vp',
-                                                type: 'slider_range',
-                                                label: 'viewp'
-                                            }
-                                        ]
-                                    },
-                                    r: {
-                                        label: 'ro',
-                                        options: [
-                                            {
-                                                id: 'r_dir',
-                                                type: 'select',
-                                                label: 'dir',
-                                                options: {
-                                                    '': '',
-                                                    toleft: 'tolft',
-                                                    toright: 'torgt'
-                                                },
-                                                binding: {
-                                                    empty: {
-                                                        hide: [
-                                                            'r_num',
-                                                            'r_origin',
-                                                            'r_vp'
-                                                        ]
-                                                    },
-                                                    not_empty: {
-                                                        show: [
-                                                            'r_num',
-                                                            'r_origin',
-                                                            'r_vp'
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                id: 'r_num',
-                                                type: 'range',
-                                                label: 'nspins',
-                                                units: {
-                                                    '': {
-                                                        min: .05,
-                                                        increment: .1
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                id: 'r_origin',
-                                                type: 'position_box',
-                                                label: 'trorig'
-                                            },
-                                            {
-                                                id: 'r_vp',
-                                                type: 'slider_range',
-                                                label: 'viewp'
-                                            }
-                                        ]
-                                    },
-                                    s: {
-                                        label: 'sc',
-                                        options: [
-                                            {
-                                                id: 's_dir',
-                                                type: 'select',
-                                                label: 'dir',
-                                                options: {
-                                                    '': '',
-                                                    up: 'scup',
-                                                    down: 'scdwn'
-                                                },
-                                                binding: {
-                                                    empty: {
-                                                        hide: [
-                                                            's_ratio',
-                                                            's_origin',
-                                                            's_vp'
-                                                        ]
-                                                    },
-                                                    not_empty: {
-                                                        show: [
-                                                            's_ratio',
-                                                            's_origin',
-                                                            's_vp'
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                id: 's_ratio',
-                                                type: 'range',
-                                                label: 'scrat',
-                                                units: {
-                                                    '': {
-                                                        min: 1,
-                                                        max: 30,
-                                                        increment: .1
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                id: 's_origin',
-                                                type: 'position_box',
-                                                label: 'trorig'
-                                            },
-                                            {
-                                                id: 's_vp',
-                                                type: 'slider_range',
-                                                label: 'viewp'
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
+                            this._getMotionEffectOptions()
                         ],
                         s_e_s: [
                             {
@@ -1460,6 +1182,304 @@ window.ThemifyConstructor = {
             }
         }
         return false;
+    },
+    _getMotionEffectOptions( id = '', scale = true, scroll = true, transparency = true, blur = true, rotate = true ) {
+        const options = {
+            id: id + 'motion_effects',
+            type: 'accordion',
+            options: {}
+        };
+        if ( scale === true ) {
+            options.options['s'] = {
+                label: 'sc',
+                options: [
+                    {
+                        id: 's_dir',
+                        type: 'select',
+                        label: 'dir',
+                        options: {
+                            '': '',
+                            up: 'scup',
+                            down: 'scdwn'
+                        },
+                        bindingContext : '.tb_accordion_fields_options',
+                        binding: {
+                            empty: {
+                                hide: [
+                                    's_ratio',
+                                    's_origin',
+                                    's_vp'
+                                ]
+                            },
+                            not_empty: {
+                                show: [
+                                    's_ratio',
+                                    's_origin',
+                                    's_vp'
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        id: 's_ratio',
+                        type: 'range',
+                        label: 'scrat',
+                        units: {
+                            '': {
+                                min: 1,
+                                max: 30,
+                                increment: .1
+                            }
+                        }
+                    },
+                    {
+                        id: 's_origin',
+                        type: 'position_box',
+                        label: 'trorig'
+                    },
+                    {
+                        id: 's_vp',
+                        type: 'slider_range',
+                        label: 'viewp'
+                    }
+                ]
+            };
+        }
+        if ( scroll === true ) {
+            options.options['h'] = {
+                label: 'hrztalscl',
+                options: [
+                    {
+                        id: 'h_dir',
+                        type: 'select',
+                        label: 'dir',
+                        options: {
+                            '': '',
+                            toleft: 'tolft',
+                            toright: 'torgt'
+                        },
+                        bindingContext : '.tb_accordion_fields_options',
+                        binding: {
+                            empty: {
+                                hide: [
+                                    'h_speed',
+                                    'h_vp'
+                                ]
+                            },
+                            not_empty: {
+                                show: [
+                                    'h_speed',
+                                    'h_vp'
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        id: 'h_speed',
+                        type: 'slider_range',
+                        label: 'speed',
+                        options: {
+                            min: 1,
+                            max: 10,
+                            unit: '',
+                            range: false,
+                            default: 1
+                        }
+                    },
+                    {
+                        id: 'h_vp',
+                        type: 'slider_range',
+                        label: 'viewp'
+                    }
+                ]
+            };
+            options.options['v'] = {
+                label: 'vscrl',
+                options: [
+                    {
+                        id: 'v_dir',
+                        type: 'select',
+                        label: 'dir',
+                        options: {
+                            '': '',
+                            up: '_up',
+                            down: 'dwn'
+                        },
+                        bindingContext : '.tb_accordion_fields_options',
+                        binding: {
+                            empty: {
+                                hide: [
+                                    'v_speed',
+                                    'v_vp'
+                                ]
+                            },
+                            not_empty: {
+                                show: [
+                                    'v_speed',
+                                    'v_vp'
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        id: 'v_speed',
+                        type: 'slider_range',
+                        label: 'speed',
+                        options: {
+                            min: 1,
+                            max: 10,
+                            unit: '',
+                            range: false,
+                            default: 1
+                        }
+                    },
+                    {
+                        id: 'v_vp',
+                        type: 'slider_range',
+                        label: 'viewp'
+                    }
+                ]
+            };
+        }
+        if ( transparency === true ) {
+            options.options['t'] = {
+                label: 'trnspncy',
+                options: [
+                    {
+                        id: 't_dir',
+                        type: 'select',
+                        label: 'dir',
+                        options: {
+                            '': '',
+                            fadein: 'fadein',
+                            fadeout: 'fadout',
+                            fadeoutin: 'fadoutin',
+                            fadeinout: 'fadinout'
+                        },
+                        bindingContext : '.tb_accordion_fields_options',
+                        binding: {
+                            empty: {
+                                hide: 't_vp'
+                            },
+                            not_empty: {
+                                show: 't_vp'
+                            }
+                        }
+                    },
+                    {
+                        id: 't_vp',
+                        type: 'slider_range',
+                        label: 'viewp'
+                    }
+                ]
+            };
+        }
+        if ( blur === true ) {
+            options.options['b'] = {
+                label: 'bl',
+                options: [
+                    {
+                        id: 'b_dir',
+                        type: 'select',
+                        label: 'dir',
+                        options: {
+                            '': '',
+                            fadein: 'fadein',
+                            fadeout: 'fadout'
+                        },
+                        bindingContext : '.tb_accordion_fields_options',
+                        binding: {
+                            empty: {
+                                hide: [
+                                    'b_level',
+                                    'b_vp'
+                                ]
+                            },
+                            not_empty: {
+                                show: [
+                                    'b_level',
+                                    'b_vp'
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        id: 'b_level',
+                        type: 'slider_range',
+                        label: 'lvl',
+                        options: {
+                            min: 1,
+                            max: 10,
+                            unit: '',
+                            range: false,
+                            default: 1
+                        }
+                    },
+                    {
+                        id: 'b_vp',
+                        type: 'slider_range',
+                        label: 'viewp'
+                    }
+                ]
+            };
+        }
+        if ( rotate === true ) {
+            options.options['r'] = {
+                label: 'ro',
+                options: [
+                    {
+                        id: 'r_dir',
+                        type: 'select',
+                        label: 'dir',
+                        options: {
+                            '': '',
+                            toleft: 'tolft',
+                            toright: 'torgt'
+                        },
+                        bindingContext : '.tb_accordion_fields_options',
+                        binding: {
+                            empty: {
+                                hide: [
+                                    'r_num',
+                                    'r_origin',
+                                    'r_vp'
+                                ]
+                            },
+                            not_empty: {
+                                show: [
+                                    'r_num',
+                                    'r_origin',
+                                    'r_vp'
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        id: 'r_num',
+                        type: 'range',
+                        label: 'nspins',
+                        units: {
+                            '': {
+                                min: .05,
+                                increment: .1
+                            }
+                        }
+                    },
+                    {
+                        id: 'r_origin',
+                        type: 'position_box',
+                        label: 'trorig'
+                    },
+                    {
+                        id: 'r_vp',
+                        type: 'slider_range',
+                        label: 'viewp'
+                    }
+                ]
+            };
+        }
+
+        return options;
     },
     _getTitle(data) {
         if (data.type === 'custom_css') {
@@ -2455,7 +2475,7 @@ window.ThemifyConstructor = {
                             }
                         }
                     }
-                    if (type !== 'hook_content' && type !== 'slider' && type !== 'builder' && type !== 'tooltip' && type !== 'custom_css_id') {
+                    if (type !== 'hook_content' && type !== 'post_filter' && type !== 'slider' && type !== 'builder' && type !== 'tooltip' && type !== 'custom_css_id') {
                         let fieldCl='tb_field',
                             fieldData={'data-type':type};
                         if (item.dc !== undefined && !item.dc) {
@@ -4264,6 +4284,14 @@ window.ThemifyConstructor = {
             return self.text.render(data, self);
         }
     },
+    motion_effect : {
+        render(data, self) {
+            const el = doc.createDocumentFragment(),
+                options = self._getMotionEffectOptions( data.prefix, data.scale !== false, data.scroll !== false, data.transparency !== false, data.blur !== false, data.rotate !== false );
+            el.appendChild( self.create( [ options ] ) );
+            return el;
+        }
+    },
     angle: {
         update(id, v, self) {
             self.range.update(id, v, self);
@@ -4538,6 +4566,177 @@ window.ThemifyConstructor = {
     video: {
         render(data, self) {
             return self.mediaFile.render('video', data, self);
+        }
+    },
+    mask_image: {
+        render(data, self) {
+            const options = [
+                {
+                    id: data.prefix + 'mask',
+                    type: 'image',
+                    label: 'msk',
+                    wrap_class: '',
+                    prop: 'mask-image',
+                    selector: data.selector,
+                    binding: {
+                        empty: {
+                            hide: [ data.prefix + 'mask-options' ]
+                        },
+                        not_empty: {
+                            show: [ data.prefix + 'mask-options' ]
+                        }
+                    }
+                },
+                {
+                    type : 'group',
+                    id : data.prefix + 'mask-options',
+                    label : ' ',
+                    options : [
+                        {
+                            id: data.prefix + 'mask_r',
+                            label: 'mskr',
+                            type: 'select',
+                            prop: 'mask-repeat',
+                            selector: data.selector,
+                            options : {
+                                repeat: 'r_all',
+                                'repeat-x': 'r_h',
+                                'repeat-y': 'r_v',
+                                'no-repeat': 'r_no',
+                                space: 'r_sp',
+                                round: 'r_rn'
+                            },
+                            is_overlay : true
+                        },
+                        {
+                            id: data.prefix + 'mask_p',
+                            label: 'mskp',
+                            type: 'position_box',
+                            prop: 'mask-position',
+                            selector: data.selector,
+                            position : true
+                        },
+                        {
+                            id: data.prefix + 'mask_size',
+                            selector: data.selector,
+                            type: 'range',
+                            class: 'xsmall',
+                            label: 'size',
+                            prop: 'mask-size',
+                            units: {
+                                '%': {
+                                    max: 600
+                                },
+                                px: {
+                                    max: 10000
+                                },
+                                em: {
+                                    max: 100
+                                }
+                            },
+                            // for live preview
+                            is_overlay : true,
+                            group_id : data.prefix + 'mask_size'
+                        },
+                        ( data.motion_effects === undefined || data.motion_effects === true ? {
+                            type : 'motion_effect',
+                            prefix : data.prefix,
+                            transparency : false,
+                            blur : false,
+                            rotate : false
+                        } : {} )
+                    ]
+                }
+            ];
+            return self.create( options );
+        }
+    },
+    reveal_effect : {
+        render(data, self) {
+            return self.create( [
+                {
+                    type : 'select',
+                    id : data.id,
+                    options : {
+                        "" : "",
+                        sw : 'swp',
+                        sp : 'split',
+                        c : 'circle',
+                        r : 'rect'
+                    },
+                    label : 'screveal',
+                    binding : {
+                        empty : { hide : [ data.id + '_vp', data.id + '_pos', data.id + '_br', data.id + '_minmax', data.id + '_sp_dir', data.id + '_sw_dir', data.id + '_zoomdir' ] },
+                        sw : { hide : [ data.id + '_pos', data.id + '_sp_dir', data.id + '_zoomdir' ], show : [ data.id + '_vp', data.id + '_br', data.id + '_minmax', data.id + '_sw_dir' ] },
+                        sp : { hide : [ data.id + '_pos', data.id + '_sw_dir', data.id + '_zoomdir' ], show : [ data.id + '_sp_dir', data.id + '_vp', data.id + '_br', data.id + '_minmax' ] },
+                        c : { hide : [ data.id + '_br', data.id + '_sp_dir', data.id + '_sw_dir' ], show : [ data.id + '_pos', data.id + '_vp', data.id + '_minmax', data.id + '_zoomdir' ] },
+                        r : { show : [ data.id + '_pos', data.id + '_vp', data.id + '_br', data.id + '_minmax', data.id + '_zoomdir' ], hide : [ data.id + '_sp_dir', data.id + '_sw_dir' ] },
+                    }
+                },
+                {
+                    type : 'select',
+                    id : data.id + '_sp_dir',
+                    label : 'dir',
+                    options : {
+                        'ho' : 'horop',
+                        'hc' : 'horcl',
+                        'vo' : 'verop',
+                        'vc' : 'vercl'
+                    }
+                },
+                {
+                    type : 'select',
+                    id : data.id + '_sw_dir',
+                    label : 'dir',
+                    options : {
+                        'l' : 'ltr',
+                        'r' : 'rtl',
+                        't' : 'ttb',
+                        'b' : 'btt'
+                    }
+                },
+                {
+                    type : 'select',
+                    id : data.id + '_zoomdir',
+                    label : 'dir',
+                    options : {
+                        'i' : 'zIn',
+                        'o' : 'zOut'
+                    }
+                },
+                {
+                    id: data.id + '_vp',
+                    type: 'slider_range',
+                    label: 'viewp'
+                },
+                {
+                    id: data.id + '_pos',
+                    type: 'position_box',
+                    label: 'trorig'
+                },
+                {
+                    id: data.id + '_br',
+                    type: 'range',
+                    label: 'cr', // Corner Radius
+                    class: 'xsmall',
+                    units: {
+                        '%': {
+                            max: 100
+                        },
+                        px: {
+                            max: 10000
+                        },
+                        em: {
+                            max: 100
+                        }
+                    }
+                },
+                {
+                    id: data.id + '_minmax',
+                    type: 'slider_range',
+                    label: 'minvis'
+                }
+            ], self );
         }
     },
     audio: {
@@ -5794,7 +5993,6 @@ window.ThemifyConstructor = {
                 //repeat
                 extend.prop = 'background-mode';
                 extend.wrap_class = 'tb_image_options';
-                extend.label = 'b_r';
                 extend.repeat = true;
                 extend.type = 'select';
                 extend.id = extend.repeatId;
@@ -5803,7 +6001,6 @@ window.ThemifyConstructor = {
                 //position
                 extend.prop = 'background-position';
                 extend.wrap_class = 'tb_image_options';
-                extend.label = 'b_p';
                 extend.position = true;
                 extend.type = 'position_box';
                 extend.id = extend.posId;
@@ -7708,19 +7905,6 @@ window.ThemifyConstructor = {
                                     id: 'c',
                                     wrap_class: 'tb_disable_dc',
                                     class: 'fullwidth'
-                                },
-                                {
-                                    type : 'range',
-                                    label: 'hook_rpt',
-                                    after: 'hook_rpta',
-                                    id : 'r',
-                                    wrap_class: 'tb_disable_dc',
-                                },
-                                {
-                                    type : 'range',
-                                    label: 'hook_mr',
-                                    id : 'm',
-                                    wrap_class: 'tb_disable_dc',
                                 }
                             ]
                         }
@@ -7923,7 +8107,6 @@ window.ThemifyConstructor = {
                     _this.update(data.id, v, self);
                 }, 700);
             });
-            data.label??= 'b_p';
             if (data.prop === 'background-position') {
                 data.wrap_class??= 'tb_group_element_image tb_image_options';
             }
@@ -9899,7 +10082,7 @@ window.ThemifyConstructor = {
                         max: 4000
                     },
                     vw: {
-                        min: 1,
+                        min: .1,
                         max: 100
                     },
                     rem: {
@@ -9945,7 +10128,7 @@ window.ThemifyConstructor = {
                     max: 4000
                 },
                 vw: {
-                    min: 1,
+                    min: .1,
                     max: 100
                 },
                 rem: {
@@ -9973,7 +10156,7 @@ window.ThemifyConstructor = {
                     max: 50
                 },
                 vw: {
-                    min: 1,
+                    min: .1,
                     max: 100
                 },
                 rem: {
@@ -10679,129 +10862,159 @@ window.ThemifyConstructor = {
     },
     post_filter: {
         render(data, self) {
-            return self.create([
-                {
-                    id: 'post_filter',
-                    type: 'toggle_switch',
-                    label: self.type.includes('product') ? 'productf' : 'postf',
-                    options: 'simple',
-                    wrap_class: 'tb_group_element_all tb_group_element_category',
-                    default:'off',
-                    binding: {
-                        not_checked: {
-                            show: [
-                                'disable_masonry',
-                                'masonry',
-                                'sort' /* WooCommerce Catalog Ordering */
-                            ],
-                            hide: [
-                                'filter_hashtag',
-                                'ajax_filter_wrap'
-                            ]
-                        },
-                        checked: {
-                            hide: [
-                                'disable_masonry',
-                                'masonry',
-                                'sort'
-                            ],
-                            show: [
-                                'filter_hashtag',
-                                'ajax_filter_wrap'
-                            ]
-                        }
-                    }
-                },
-                {
-                    id: 'filter_hashtag',
-                    type: 'toggle_switch',
-                    label: 'uhtag',
-                    options: 'simple',
-                    default:'off'
-                },
-                {
-                    type: 'group',
-                    wrap_class: 'ajax_filter_wrap tf_w',
-                    options: [
-                        {
-                            id: 'ajax_filter',
-                            type: 'toggle_switch',
-                            label: 'ajaxf',
-                            options: 'simple',
-                            default:'off',
-                            binding: {
-                                not_checked: {
-                                    hide: 'ajax_filter_cat_wrap'
-                                },
-                                checked: {
-                                    show: 'ajax_filter_cat_wrap'
-                                }
+            return self.create([{
+                type: 'group',
+                label: 'postf',
+                display: 'accordion',
+                options: [
+                    {
+                        id: 'post_filter',
+                        type: 'toggle_switch',
+                        label: self.type.includes('product') ? 'productf' : 'postf',
+                        options: 'simple',
+                        wrap_class: 'tb_group_element_all tb_group_element_category',
+                        default:'off',
+                        binding: {
+                            not_checked: {
+                                show: [
+                                    'disable_masonry',
+                                    'masonry',
+                                    'sort' /* WooCommerce Catalog Ordering */
+                                ],
+                                hide: [
+                                    'filter_hashtag',
+                                    'ajax_filter_wrap'
+                                ]
+                            },
+                            checked: {
+                                hide: [
+                                    'disable_masonry',
+                                    'masonry',
+                                    'sort'
+                                ],
+                                show: [
+                                    'filter_hashtag',
+                                    'ajax_filter_wrap'
+                                ]
                             }
-                        },
-                        {
-                            type: 'group',
-                            wrap_class: 'ajax_filter_cat_wrap tf_w',
-                            options: [
-                                {
-                                    id: 'ajax_filter_categories',
-                                    type: 'radio',
-                                    label: '',
-                                    default: 'exclude',
-                                    options: [
-                                        {
-                                            value: 'include',
-                                            name: 'include'
-                                        },
-                                        {
-                                            value: 'exclude',
-                                            name: 'exclude'
-                                        }
-                                    ],
-                                    binding: {
-                                        include: {
-                                            hide: 'ajax_filter_exclude',
-                                            show: 'ajax_filter_include'
-                                        },
-                                        exclude: {
-                                            hide: 'ajax_filter_include',
-                                            show: 'ajax_filter_exclude'
-                                        }
-                                    }
-                                },
-                                {
-                                    id: 'ajax_filter_exclude',
-                                    type: 'text',
-                                    class: 'large',
-                                    label: 'exclcatf',
-                                    help: 'exclcatfh'
-                                },
-                                {
-                                    id: 'ajax_filter_include',
-                                    type: 'text',
-                                    class: 'large',
-                                    label: 'inclcatf',
-                                    help: 'inclcatfh'
-                                },
-                                {
-                                    id: 'ajax_sort',
-                                    type: 'toggle_switch',
-                                    label: 'sortf',
-                                    options: 'simple',
-                                    default:'off'
-                                }
-                            ]
                         }
-                    ]
-                },
-                {
-                    id: 'masonry_align',
-                    type: 'toggle_switch',
-                    label: 'alignp',
-                    options: 'simple',
-                    help: 'alignph',
-                    default:'off'
-                }
-            ], self);
+                    },
+                    {
+                        id: 'filter_hashtag',
+                        type: 'toggle_switch',
+                        label: 'uhtag',
+                        options: 'simple',
+                        default:'off'
+                    },
+                    {
+                        type: 'group',
+                        wrap_class: 'ajax_filter_wrap tf_w',
+                        options: [
+                            {
+                                type : 'select',
+                                label : 'query_tax_id',
+                                dataset : 'taxonomy',
+                                id : 'post_filter_tax'
+                            },
+                            {
+                                type : 'select',
+                                label : 'orderby',
+                                id : 'post_filter_orderby',
+                                options : {
+                                    'name' : 'name',
+                                    'count' : 'count',
+                                    'slug' : 'slug',
+                                    'term_order' : 'cus'
+                                }
+                            },
+                            {
+                                type : 'select',
+                                label : 'order',
+                                id : 'post_filter_order',
+                                order : true
+                            },
+                            {
+                                id: 'ajax_filter',
+                                type: 'toggle_switch',
+                                label: 'ajaxf',
+                                options: 'simple',
+                                default:'off',
+                                binding: {
+                                    not_checked: {
+                                        hide: 'ajax_filter_cat_wrap'
+                                    },
+                                    checked: {
+                                        show: 'ajax_filter_cat_wrap'
+                                    }
+                                }
+                            },
+                            {
+                                type: 'group',
+                                wrap_class: 'ajax_filter_cat_wrap tf_w',
+                                options: [
+                                    {
+                                        id: 'ajax_filter_categories',
+                                        type: 'radio',
+                                        label: '',
+                                        default: 'exclude',
+                                        options: [
+                                            {
+                                                value: 'include',
+                                                name: 'include'
+                                            },
+                                            {
+                                                value: 'exclude',
+                                                name: 'exclude'
+                                            }
+                                        ],
+                                        binding: {
+                                            include: {
+                                                hide: 'ajax_filter_exclude',
+                                                show: 'ajax_filter_include'
+                                            },
+                                            exclude: {
+                                                hide: 'ajax_filter_include',
+                                                show: 'ajax_filter_exclude'
+                                            }
+                                        }
+                                    },
+                                    {
+                                        id: 'ajax_filter_exclude',
+                                        type: 'text',
+                                        class: 'large',
+                                        label: 'exclcatf',
+                                        help: 'exclcatfh'
+                                    },
+                                    {
+                                        id: 'ajax_filter_include',
+                                        type: 'text',
+                                        class: 'large',
+                                        label: 'inclcatf',
+                                        help: 'inclcatfh',
+                                        wrap_class : 'tb_disable_dc'
+                                    },
+                                    {
+                                        id: 'ajax_sort',
+                                        type: 'toggle_switch',
+                                        label: 'sortf',
+                                        options: 'simple',
+                                        default:'off',
+                                        help : 'sortfh',
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 'masonry_align',
+                        type: 'toggle_switch',
+                        label: 'alignp',
+                        options: 'simple',
+                        help: 'alignph',
+                        default:'off'
+                    }
+                ]
+            } ], self );
         }
     },
     grid_flow:{

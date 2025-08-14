@@ -941,6 +941,15 @@ final class Themify_Builder_Model {
         foreach ($temp_terms as $t) {
             $t = trim($t);
             $isNumeric = is_numeric($t);
+
+            if ( $isNumeric ) {
+                /* look for term slugs that are pure numeric (so look like term_id) */
+                $term_id = term_exists( $t );
+                if ( $term_id ) {
+                    $t = $term_id;
+                }
+            }
+
             $exclude = $t[0] === '-';
             if ($isNumeric === false) {
                 if ($exclude===true) {

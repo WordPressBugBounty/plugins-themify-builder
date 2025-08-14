@@ -565,7 +565,7 @@ class Themify_Metabox {
                 $currentSwatches = unserialize( get_option( $option_key, serialize( array() ) ), [ 'allowed_classes' => false ] );
                 $new_data = $currentSwatches + $new_data;
                 delete_option( $option_key );
-                add_option( $option_key, serialize( $new_data ), '', 'no' );
+                add_option( $option_key, serialize( $new_data ), '', false );
                 wp_send_json_success( $new_data );
             }
         }
@@ -587,7 +587,7 @@ class Themify_Metabox {
         $colors = !empty( $_POST['colors'] ) && is_array($_POST['colors']) ? serialize( $_POST['colors'] ) : serialize( array() );
         $_key='themify_saved_' . $type;
         delete_option($_key);
-        add_option( $_key,$colors, '', 'no' );
+        add_option( $_key,$colors, '', false );
         $response['status'] = 'success';
         wp_send_json( $response );
         wp_die();
@@ -652,6 +652,9 @@ class Themify_Metabox {
      * Initialize Page Options feature on frontend
      */
     function page_options_init() {
+        if ( ! is_singular() ) {
+            return;
+        }
         $id = get_the_ID();
 
         /* the first parameter passed to 'frontend-page-options', can limit what post types this feature is enabled on */

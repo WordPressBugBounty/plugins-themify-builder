@@ -29,7 +29,9 @@ function themify_defer_js($tag, $handle, $src) {
     if (!empty($tag)) {
         static $isJq = null;
         if ($isJq === null) {
-            $isJq = themify_check('setting-jquery', true) && (!is_admin() || themify_is_ajax() ) && !is_customize_preview() && !themify_is_login_page();
+            $isJq = themify_check('setting-jquery', true) && (!is_admin() || themify_is_ajax() ) && !is_customize_preview() && !themify_is_login_page()
+                /* exclude Checkout & Cart pages */
+                && ( ! themify_is_woocommerce_active() || ( ! is_checkout() && ! is_cart() ) );
         }
         if ($isJq === true || $handle === 'admin-bar' || Themify_Enqueue_Assets::is_themify_file($src, $handle) || in_array($handle, Themify_Enqueue_Assets::getKnownJs(), true)) {
             static $ex = null;

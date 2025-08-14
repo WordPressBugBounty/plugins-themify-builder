@@ -44,7 +44,7 @@ class Themify_Builder_Duplicate_Page {
         if ( ! empty( $_POST['bid'] ) && Themify_Access_Role::check_access_frontend( $post_id ) ) {
             $post = get_post($post_id);
             if( is_object($post) ) {
-                $new_post_id=self::duplicate($post);
+                $new_post_id=self::duplicate($post, 'draft');
                 if($new_post_id>0 && !is_string($new_post_id)){
                 unset($post);
                 $new_url = !empty($_POST['tb_is_admin']) &&  intval($_POST['tb_is_admin'])===1?get_edit_post_link( $new_post_id,'json' ):get_permalink( $new_post_id );
@@ -135,6 +135,8 @@ class Themify_Builder_Duplicate_Page {
      * @param object $post
      */
     private static function duplicate_postmeta( $new_id, $post ) {
+        global $wpdb;
+
         $meta_keys = get_post_custom_keys( $post->ID );
         if ( empty( $meta_keys ) ){
             return;
@@ -148,11 +150,26 @@ class Themify_Builder_Duplicate_Page {
             elseif (!self::exclude_postmeta( $meta_key ) ) {
                 $meta_values = get_post_custom_values( $meta_key, $post->ID );
                 foreach ( $meta_values as $meta_value ) {
-                $meta_value = maybe_unserialize( $meta_value );
-                update_post_meta( $new_id, $meta_key, $meta_value );
+                    try {
+                        $wpdb->query('START TRANSACTION');
+                        $meta_value = self::maybe_unserialize_safe( $meta_value );
+                        update_post_meta( $new_id, $meta_key, $meta_value );
+                        $wpdb->query('COMMIT');
+                    }
+                    catch (Throwable $e) {
+                        $wpdb->query('ROLLBACK');
+                    }
                 }
             }
         }
+    }
+
+    private static function maybe_unserialize_safe( $data ) {
+        if ( is_serialized( $data ) ) { // Don't attempt to unserialize data that wasn't serialized going in.
+            return @unserialize( trim( $data ), [ 'allowed_classes' => false ] );
+        }
+
+        return $data;
     }
 
     /**

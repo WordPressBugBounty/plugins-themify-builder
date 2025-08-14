@@ -317,14 +317,14 @@ class Themify_Builder_Component_Module {
 
 
     /**
-     * Sticky Element props attributes
+     * Sticky Element props attributes, also handles Motion Effects
      * @param array $props
      * @param array $fields_args
      * @param string $mod_name
      * @param string $module_ID
      * @return array
      */
-    public static function sticky_element_props(array &$props,array $fields_args) {
+    public static function sticky_element_props( array &$props,array $fields_args, string $motion_option_prefix = '' ) {
         if (!empty($fields_args['stick_at_check']) || !empty($fields_args['stick_at_check_t']) || !empty($fields_args['stick_at_check_tl']) || !empty($fields_args['stick_at_check_m'])) {
             static $is_sticky = null;
             if ($is_sticky === null) {
@@ -398,7 +398,7 @@ class Themify_Builder_Component_Module {
                 }
             }
         }//Add custom attributes html5 data to module container div to show parallax options.
-        elseif (Themify_Builder::$frontedit_active === false && (!empty($fields_args['motion_effects']) || !empty($fields_args['custom_parallax_scroll_speed']) )) {
+        elseif (Themify_Builder::$frontedit_active === false && (!empty($fields_args[ $motion_option_prefix . 'motion_effects' ] ) || !empty($fields_args['custom_parallax_scroll_speed']) )) {
             static $is_lax = null;
             if ($is_lax === null) {
                 $is_lax = \Themify_Builder_Model::is_scroll_effect_active();
@@ -421,7 +421,7 @@ class Themify_Builder_Component_Module {
                     }
                 }
                 // Add motion effects from Motion tab
-                $effects=isset($fields_args['motion_effects'])?$fields_args['motion_effects']:array();
+                $effects = isset($fields_args[ $motion_option_prefix . 'motion_effects' ] ) ? $fields_args[ $motion_option_prefix . 'motion_effects' ] : array();
                 if (!isset($effects['t'])) {
                     $props['data-lax-optimize'] = 'true';
                 }
@@ -592,7 +592,7 @@ class Themify_Builder_Component_Module {
      * @param string $effect
      * @return string
      */
-    public static function parse_animation_effect($settings, array $attr = array()) {
+    public static function parse_animation_effect($settings, array $attr = array(), array $option_names = [] ) {
         /* backward compatibility for addons */
         if (!is_array($settings)) {
             return '';
@@ -602,8 +602,16 @@ class Themify_Builder_Component_Module {
             $has = \Themify_Builder_Model::is_animation_active();
         }
         if ($has !== false) {
-            if (!empty($settings['hover_animation_effect'])) {
-                $attr['data-tf-animation_hover'] = $settings['hover_animation_effect'];
+
+            $option_names = wp_parse_args( $option_names, [
+                'effect' => 'animation_effect',
+                'delay' => 'animation_effect_delay',
+                'repeat' => 'animation_effect_repeat',
+                'effect_hover' => 'hover_animation_effect'
+            ] );
+
+            if (!empty($settings[ $option_names['effect_hover'] ])) {
+                $attr['data-tf-animation_hover'] = $settings[ $option_names['effect_hover'] ];
                 if (isset($attr['class'])) {
                     $attr['class'] .= ' hover-wow';
                 } else {
@@ -613,20 +621,20 @@ class Themify_Builder_Component_Module {
                     $has = 'load';
                 }
             }
-            if (!empty($settings['animation_effect'])) {
-                $attr['data-tf-animation'] = $settings['animation_effect'];
-                if (!in_array($settings['animation_effect'], array('fade-in', 'fly-in', 'slide-up'), true)) {
+            if (!empty($settings[ $option_names['effect'] ])) {
+                $attr['data-tf-animation'] = $settings[ $option_names['effect'] ];
+                if (!in_array($settings[ $option_names['effect'] ], array('fade-in', 'fly-in', 'slide-up'), true)) {
                     if (isset($attr['class'])) {
                         $attr['class'] .= ' wow';
                     } else {
                         $attr['class'] = 'wow';
                     }
                 }
-                if (!empty($settings['animation_effect_delay'])) {
-                    $attr['data-tf-animation_delay'] = $settings['animation_effect_delay'];
+                if (!empty($settings[ $option_names['delay'] ])) {
+                    $attr['data-tf-animation_delay'] = $settings[ $option_names['delay'] ];
                 }
-                if (!empty($settings['animation_effect_repeat'])) {
-                    $attr['data-tf-animation_repeat'] = $settings['animation_effect_repeat'];
+                if (!empty($settings[ $option_names['repeat'] ])) {
+                    $attr['data-tf-animation_repeat'] = $settings[ $option_names['repeat'] ];
                 }
                 if ($has !== 'done') {
                     $has = 'load';
@@ -1539,7 +1547,6 @@ class Themify_Builder_Component_Module {
         }
         $res = array(
             'id' => $id,
-            'label' => 'b_r',
             'type' => 'select',
             'repeat' => true,
             'prop' => 'background-mode',

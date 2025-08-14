@@ -415,7 +415,9 @@ function themify_get_skin() {
         /* backward compatibility, "skin" used to be saved as a URL */
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             $parsed_skin = parse_url($value, PHP_URL_PATH);
-            $value = basename(dirname($parsed_skin));
+            if ( $parsed_skin !== null ) {
+                $value = basename(dirname($parsed_skin));
+            }
         }
 
         if ('default' !== $value && is_file(get_template_directory() . "/skins/{$value}/style.css")) {

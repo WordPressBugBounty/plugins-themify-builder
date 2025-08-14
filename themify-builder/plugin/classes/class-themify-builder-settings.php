@@ -65,7 +65,7 @@ if (!class_exists('Themify_Builder_Options',false)) :
                                 unset($data[$k]);
                             }
                         }
-                        $success = maybe_serialize($exist_data) === maybe_serialize($data) ? true : update_option(self::KEY, $data);
+                        $success = maybe_serialize($exist_data) === maybe_serialize($data) ? true : update_option(self::KEY, $data, false);
                     } else {
                         $success = $isExist === true ? delete_option(self::KEY) : true;
                         $data = array();
@@ -317,7 +317,7 @@ if (!class_exists('Themify_Builder_Options',false)) :
             $htaccess_file = Themify_Enqueue_Assets::getHtaccessFile();
             $htaccess_msg = Themify_Filesystem::is_file($htaccess_file) && Themify_Filesystem::is_writable($htaccess_file) ? '' : sprintf(__('The htaccess file %s isn`t writable. Please allow to write to enable this feauture', 'themify'), $htaccess_file);
             $imageLibrary = wp_image_editor_supports() !== false;
-            return array(
+            $options = array(
                 array(
                     'type' => 'group',
                     'label' => __('Lazy Load', 'themify'),
@@ -406,6 +406,18 @@ if (!class_exists('Themify_Builder_Options',false)) :
                     'network' => is_multisite() ? array('tmp_cache_concte_network' => __('Clear Concate cache in the whole network site', 'themify')) : '',
                 ),
             );
+            if(themify_is_woocommerce_active()){
+                $options[]=array(
+                    'label' => __('WooCommerce Script Defer', 'themify'),
+                    'type' => 'toggle',
+                    'id' => 'defer-wc',
+                    'opp' => 1,
+                    'help' => __('WooCommerce scripts are deferred for faster page load. If you are encountering issues with third party WooCommerce extensions, try to disable script defer.', 'themify'),
+                    'desc' => __('Disable WooCommerce script defer', 'themify'),
+                );
+            }
+            return $options;
+
         }
 
         private static function get_tab_role_access():array {

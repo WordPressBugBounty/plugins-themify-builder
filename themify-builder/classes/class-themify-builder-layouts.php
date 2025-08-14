@@ -328,6 +328,7 @@ if (!class_exists('Themify_Builder_Layouts',false)) {
             } else {
                 return '';
             }
+            $id = (int) $id;
 
             $id = themify_maybe_translate_object_id( $id );
             $post = get_post( $id );

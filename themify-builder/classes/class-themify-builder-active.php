@@ -715,8 +715,17 @@ class Themify_Builder_Active{
                             }
                         }
                     }
+
+                    /* WooCommerce, ensure Product Category is the default */
+                    if (!empty($result['product']['options']['product_cat'])) {
+                        $result['product']['options'] = array_merge(
+                            ['product_cat' => $result['product']['options']['product_cat']],
+                            array_diff_key($result['product']['options'], ['product_cat' => null])
+                        );
+                    }
+
                     unset($taxes, $exclude);
-                } 
+                }
                 elseif ($_POST['type'] === 'terms' && !empty($_POST['v'])) {
                     $tax = get_taxonomy($_POST['v']);
                     if(!empty($tax)){

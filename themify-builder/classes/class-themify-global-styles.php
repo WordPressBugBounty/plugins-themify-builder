@@ -594,7 +594,7 @@ if (!class_exists('Themify_Global_Styles',false)) :
                         'missing_file' => esc_html__('Global Styles file is missing.', 'themify'),
                         'invalid_file' => esc_html__('Global Styles file is invalid.', 'themify'),
                     ),
-                    'nonce' => wp_create_nonce('tf_nonce'),
+                    'nonce' => current_user_can('edit_theme_options') ? wp_create_nonce('tf_nonce') : '',
                     'ajaxurl' => admin_url('admin-ajax.php')
                     )
                 );

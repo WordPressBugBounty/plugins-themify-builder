@@ -826,8 +826,10 @@ class Themify_Enqueue_Assets {
         $svg = '<svg id="tf_svg" style="display:none"><defs>';
         if (!empty($fonts)) {
             $st = '';
-
             foreach ($fonts as $k => $v) {
+                if ( $v === false ) {
+                    continue;
+                }
                 $w = isset($v['vw']) ? $v['vw'] : '32';
                 $h = isset($v['vh']) ? $v['vh'] : '32';
                 $p = isset($v['is_fontello']) ? ' transform="matrix(1 0 0 -1 0 ' . $h . ')"' : '';
@@ -1155,7 +1157,9 @@ class Themify_Enqueue_Assets {
         if ($arr === null) {
             $arr = array();
             if (!is_admin()) {
-                $isDefered=themify_check('setting-jquery', true)?true:(themify_check('setting-optimize-wc', true)?false:!themify_check('setting-defer-wc', true));
+                $isDefered = self::$themeVersion !== null
+                    ? (themify_check('setting-jquery', true) ? true : (themify_check('setting-optimize-wc', true) ? false : !themify_check('setting-defer-wc', true)))
+                    : !themify_builder_check('setting-defer-wc', 'defer-wc', true);
                 if ($isDefered===true && themify_is_woocommerce_active()) {
                     $arr = array('flexslider', 'wc-single-product', 'woocommerce', 'zoom', 'js-cookie', 'jquery-blockui', 'jquery-cookie', 'jquery-payment', 'prettyPhoto', 'prettyPhoto-init', 'select2', 'selectWoo', 'wc-address-i18n', 'wc-add-payment-method', 'wc-cart', 'wc-cart-fragments', 'wc-checkout', 'wc-country-select', 'wc-credit-card-form', 'wc-add-to-cart', 'wc-add-to-cart-variation', 'wc-geolocation', 'wc-lost-password', 'wc-password-strength-meter', 'photoswipe', 'photoswipe-ui-default', 'wc-add-to-cart-composite');
                     //Authorize.Net Gateway for WooCommerce
@@ -1251,6 +1255,8 @@ class Themify_Enqueue_Assets {
 
             if (!themify_is_lazyloading()) {
                 $args['lz'] = 1;
+            } else {
+                $args['lazy_threshold'] = themify_get('setting-lazy-threshold', 300, true );
             }
             if (self::$themeVersion !== null) {
                 $themeSrc = THEME_URI . '/js/themify-script.js';

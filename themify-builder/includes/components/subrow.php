@@ -38,6 +38,10 @@ class Themify_Builder_Component_Subrow{
             $mod['styling'] = array();
         }
         if (Themify_Builder::$frontedit_active === false) {
+            $display = apply_filters('themify_builder_subrow_display', true, $mod, $builder_id);
+            if (false === $display || (isset($mod['styling']['visibility_all']) && $mod['styling']['visibility_all'] === 'hide_all' )) {
+                return '';
+            }
             $count = !empty($mod['cols']) ? count($mod['cols']) : 0;
             if($count > 0 ){
                 $print_sub_row_classes=array_merge($print_sub_row_classes,Themify_Builder_Component_Row::get_responsive_cols($mod));

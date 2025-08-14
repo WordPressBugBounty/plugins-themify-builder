@@ -48,6 +48,15 @@ $fields_args=$args['mod_settings']+array(
     'auto_fullwidth_' . $mod_name => false
 );
 
+$post_filter_enabled = isset($fields_args[$mod_name . '_filter']) ? $fields_args[$mod_name . '_filter'] : (isset($fields_args['post_filter']) ? $fields_args['post_filter'] : false);
+$post_filter_enabled = !empty($post_filter_enabled) && $post_filter_enabled !== 'no';
+$ajax_filter_enabled = false;
+if (true === $post_filter_enabled && $fields_args['layout_' . $mod_name] !== 'auto_tiles') {
+    $ajax_filter_enabled = isset($fields_args['ajax_filter']) && $fields_args['ajax_filter'] === 'yes';
+}
+if ( $fields_args['nav_type'] === 'ajax' && $post_filter_enabled ) {
+    $ajax_filter_enabled = true;
+}
 $is_ajax_filter = isset($_POST['action']) && $_POST['action'] === 'themify_ajax_load_more';
 if (true === $is_ajax_filter && isset($_POST['tax'])) {
     $cat =$fields_args['type_query_'.$mod_name];
@@ -99,7 +108,7 @@ $args = array(
     'order' => $order,
     'orderby' => $orderby,
     'paged' => $p,
-    'post_type' => $fields_args['post_type_' . $mod_name],
+    'post_type' => $is_ajax_filter ? sanitize_text_field( $_POST['post_type'] ) : $fields_args['post_type_' . $mod_name],
     'ignore_sticky_posts' => true
 );
 
@@ -111,7 +120,14 @@ if ('all' === $fields_args['term_type']) {
 } 
 elseif ('post_slug'!== $fields_args['term_type']) {
     $terms = $mod_name === 'post' && isset($fields_args["{$mod_name_query}_post"]) ? $fields_args["{$mod_name_query}_post"] : $fields_args['category_' . $mod_name];
-    $query_taxonomy = $mod_name !== 'post' ? $mod_name . '-category' : $mod_name_query;
+
+    if ( $is_ajax_filter ) {
+        $query_taxonomy = $_POST['taxonomy'];
+    } elseif ( $post_filter_enabled && isset( $fields_args['post_filter_tax'] ) ) {
+        $query_taxonomy = $fields_args['post_filter_tax'];
+    } else {
+        $query_taxonomy = $mod_name !== 'post' ? $mod_name . '-category' : $mod_name_query;
+    }
     Themify_Builder_Model::parseTermsQuery($args, $terms, $query_taxonomy);
     $mod_name_query = $query_taxonomy;
     
@@ -119,6 +135,7 @@ elseif ('post_slug'!== $fields_args['term_type']) {
  elseif (!empty($fields_args['query_slug_' . $mod_name])) {
     $args['post__in'] = Themify_Builder_Model::parse_slug_to_ids($fields_args['query_slug_' . $mod_name], $args['post_type']);
 }
+
 
 /* backward compatibility, since Sep 2022 */
 if ($orderby === 'meta_value_num') {
@@ -144,16 +161,10 @@ if ($mod_name === 'post' && !isset($args['post__in']) && false !== ($id = get_th
 }
 
 Themify_Builder_Model::parse_query_filter($fields_args, $args);
-$post_filter_enabled = isset($fields_args[$mod_name . '_filter']) ? $fields_args[$mod_name . '_filter'] : (isset($fields_args['post_filter']) ? $fields_args['post_filter'] : false);
-$post_filter_enabled = !empty($post_filter_enabled) && $post_filter_enabled !== 'no';
-$ajax_filter_enabled = false;
-if (true === $post_filter_enabled && $fields_args['layout_' . $mod_name] !== 'auto_tiles') {
-    $ajax_filter_enabled = isset($fields_args['ajax_filter']) && $fields_args['ajax_filter'] === 'yes';
-    if ($ajax_filter_enabled) {
-        /* in Ajax post filters, disable some query args */
-        unset($args['post__in']);
-        set_query_var('tf_ajax_filter', true);
-    }
+if ($ajax_filter_enabled) {
+    /* in Ajax post filters, disable some query args */
+    unset($args['post__in']);
+    set_query_var('tf_ajax_filter', true);
 }
 $args = apply_filters("themify_builder_module_{$mod_name}_query_args", $args, $fields_args);
 if (isset($query_taxonomy)) {
@@ -252,7 +263,7 @@ if (true === $post_filter_enabled && isset($query_taxonomy) && function_exists('
     }
 
     $filter_args = array(
-        'query_taxonomy' => $query_taxonomy,
+        'query_taxonomy' => ! empty( $fields_args['post_filter_tax'] ) ? $fields_args['post_filter_tax'] : $query_taxonomy,
         'query_category' => '0',
         'el_id' => $element_id
     );
@@ -274,7 +285,14 @@ if (true === $post_filter_enabled && isset($query_taxonomy) && function_exists('
             $filter_args['ajax_sort_order'] = $args['order'];
             $filter_args['ajax_sort_order_by'] = $args['orderby'];
         }
+        if ( isset( $fields_args['post_filter_orderby'] ) ) {
+            $filter_args['tax_orderby'] = $fields_args['post_filter_orderby'];
+        }
+        if ( isset( $fields_args['post_filter_order'] ) ) {
+            $filter_args['tax_order'] = $fields_args['post_filter_order'];
+        }
     }
+    $filter_args['post_type'] = $the_query->query['post_type'];
     themify_masonry_filter($filter_args);
     unset($filter_args);
     $class[] = 'masonry';

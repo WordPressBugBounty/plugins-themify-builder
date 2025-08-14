@@ -246,7 +246,6 @@ export class BaseStyles {
         }
         const res = {
             id: id,
-            label: 'b_r',
             type: 'select',
             repeat: true,
             prop: 'background-mode',
@@ -722,45 +721,6 @@ export class BaseStyles {
             js:true,
             selector: selector
         };
-    }
-
-    static get_row_mask( selector = '', id = 'r' ) {
-        return [
-        {
-            id: id + '_mask',
-            type: 'image',
-            label: 'msk',
-            wrap_class: '',
-            prop: 'mask',
-            selector: selector,
-            binding: {
-                empty: {
-                    hide: [ id + '_mask_r', id + '_mask_p' ]
-                },
-                not_empty: {
-                    show: [ id + '_mask_r', id + '_mask_p' ]
-                }
-            }
-        },
-        {
-            id: id + '_mask_r',
-            label: '',
-            type: 'select',
-            after: 'mskr',
-            prop: 'mask-repeat',
-            selector: selector,
-            repeat : true
-        },
-        {
-            id: id + '_mask_p',
-            label: '',
-            type: 'position_box',
-            after: 'mskp',
-            prop: 'mask-position',
-            selector: selector,
-            position : true
-        }
-        ];
     }
 
     static get_frame_tabs(selector = '') {
