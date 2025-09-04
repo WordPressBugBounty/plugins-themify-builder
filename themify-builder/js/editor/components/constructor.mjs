@@ -242,6 +242,7 @@ window.ThemifyConstructor = {
                     meta_order : {
                         CHAR: 'charact',
                         NUMERIC: 'num',
+                        DECIMAL: 'dec',
                         DATETIME: 'dtime',
                         DATE: 'date',
                         TIME: 'time'

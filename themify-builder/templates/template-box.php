@@ -65,13 +65,13 @@ self::sticky_element_props($container_props,$fields_args);
 $container_props = $container_class = $args = null;
 echo Themify_Builder_Component_Module::get_module_title($fields_args, 'mod_title_box');
 ?>
-    <div class="<?php echo $inner_container_classes; ?>">
+    <div class="<?php echo esc_attr($inner_container_classes); ?>">
         <?php if ($fields_args['icon'] !== '') : ?>
-            <span class="tb_box_icon tb_size_<?php echo $fields_args['icon_size']; ?>"<?php echo $icon_color; ?>>
+            <span class="tb_box_icon tb_size_<?php echo esc_attr($fields_args['icon_size']); ?>"<?php echo $icon_color; ?>>
                 <em><?php echo themify_get_icon($fields_args['icon']); ?></em>
             </span>
         <?php endif; ?>
-        <div class="tb_text_wrap"><?php echo apply_filters('themify_builder_module_content', $fields_args['content_box']); ?></div>
+        <div class="tb_text_wrap"><?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['content_box'])); ?></div>
     </div>
 </div>
 <!-- /module box -->

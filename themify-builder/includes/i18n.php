@@ -473,6 +473,7 @@ $options = array(
         'type'=>__('Type','themify'),
         'charact'=>__('Character','themify'),
         'num'=>__('Numeric', 'themify'),
+        'dec' => __('Decimal', 'themify'),
         'afullwimg'=>__('Auto fullwidth image', 'themify'),
         'ptitle'=>__('Post Title', 'themify'),
         'uptitle'=> __('Unlink Post Title', 'themify'),

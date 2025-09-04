@@ -1829,7 +1829,8 @@ if (!function_exists('themify_comment_list')) {
 
         function themify_get_sidebar() {
             global $themify;
-            if ($themify->layout !== 'sidebar-none' && !isset($_GET['post_in_lightbox']) && !post_password_required()) {
+            $page_id = themify_is_shop() ? wc_get_page_id( 'shop' ) : get_the_ID();
+            if ($themify->layout !== 'sidebar-none' && !isset($_GET['post_in_lightbox']) && !post_password_required($page_id)) {
                 if (is_file(Themify_Enqueue_Assets::$THEME_CSS_MODULES_DIR . 'sidebar.css')) {
                     Themify_Enqueue_Assets::loadThemeStyleModule('sidebar');
                 }

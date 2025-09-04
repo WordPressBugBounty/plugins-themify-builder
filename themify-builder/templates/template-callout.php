@@ -68,9 +68,9 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h
 
     <div class="callout-inner">
     <div class="callout-content tf_left">
-        <<?php echo $fields_args['title_tag'];?> class="callout-heading"><?php echo $fields_args['heading_callout'] ?></<?php echo $fields_args['title_tag'];?>>
+        <<?php echo esc_attr($fields_args['title_tag']);?> class="callout-heading"><?php echo wp_kses_post($fields_args['heading_callout']); ?></<?php echo esc_attr($fields_args['title_tag']);?>>
         <div class="tb_text_wrap">
-            <?php echo apply_filters('themify_builder_module_content', $fields_args['text_callout']);?>
+            <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['text_callout']));?>
         </div>
     </div>
     <!-- /callout-content -->
@@ -80,8 +80,8 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h
             Themify_Builder_Model::load_color_css($fields_args['action_btn_color_callout']);
         ?>
         <div class="callout-button tf_right tf_textr">
-            <a href="<?php echo esc_url($fields_args['action_btn_link_callout']); ?>" class="ui builder_button <?php echo implode(' ', $ui_class); ?>"<?php echo 'yes' === $fields_args['open_link_new_tab_callout'] ? ' rel="noopener" target="_blank"' : ''; ?>>
-                <span class="tb_callout_text"><?php echo $fields_args['action_btn_text_callout'] ?></span>
+            <a href="<?php echo esc_url($fields_args['action_btn_link_callout']); ?>" class="ui builder_button <?php echo esc_attr(implode(' ', $ui_class)); ?>"<?php echo 'yes' === $fields_args['open_link_new_tab_callout'] ? ' rel="noopener" target="_blank"' : ''; ?>>
+                <span class="tb_callout_text"><?php echo wp_kses_post($fields_args['action_btn_text_callout']); ?></span>
             </a>
         </div>
         <?php endif; ?>

@@ -54,7 +54,7 @@ self::sticky_element_props($container_props,$fields_args);
     echo Themify_Builder_Component_Module::get_module_title($fields_args,'m_t');
     ?>
     <pre class="tf_rel tf_scrollbar tf_textl"<?php if($fields_args['highlight']!==''):?> data-line="<?php esc_attr_e($fields_args['highlight'])?>"<?php endif;?>>
-    <code class="language-<?php echo $fields_args['lng']?><?php if($fields_args['numbers']==='yes'):?> line-numbers<?php endif;?>"><?php echo htmlspecialchars($fields_args['code'])?></code>   
+    <code class="language-<?php echo esc_attr($fields_args['lng']);?><?php if($fields_args['numbers']==='yes'):?> line-numbers<?php endif;?>"><?php echo esc_html($fields_args['code'])?></code>   
     <?php if($fields_args['copy']==='yes'):?>
         <em class="tb_code_copy tf_opacity">
             <?php echo themify_get_icon('clipboard','ti',true);?>

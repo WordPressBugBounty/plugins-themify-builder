@@ -110,7 +110,7 @@ self::sticky_element_props($container_props, $fields_args);
         <?php
         echo Themify_Builder_Component_Module::get_module_title($fields_args, 'mod_title_video');
         ?>
-        <div class="video-wrap-outer"<?php echo '' !== $video_maxwidth ? ' style="max-width:' . $video_maxwidth . '"' : ''; ?>>
+        <div class="video-wrap-outer"<?php echo '' !== $video_maxwidth ? ' style="max-width:' . esc_attr($video_maxwidth) . '"' : ''; ?>>
             <div class="video-wrap tf_rel tf_overflow<?php echo $isLocal === true ? ' tf_local_video' : ''; ?>">
                 <?php
                 if ($isLocal === true) {
@@ -184,18 +184,18 @@ self::sticky_element_props($container_props, $fields_args);
                 <?php if ('' !== $fields_args['title_video']):
                     $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
                     ?>
-                    <<?php echo $fields_args['title_tag']; ?> class="video-title">
+                    <<?php echo esc_attr($fields_args['title_tag']); ?> class="video-title">
                     <?php if ($fields_args['title_link_video']) : ?>
-                        <a href="<?php echo esc_url($fields_args['title_link_video']); ?>"><?php echo $fields_args['title_video']; ?></a>
+                        <a href="<?php echo esc_url($fields_args['title_link_video']); ?>"><?php echo wp_kses_post($fields_args['title_video']); ?></a>
                     <?php else: ?>
-                        <?php echo $fields_args['title_video']; ?>
+                        <?php echo wp_kses_post($fields_args['title_video']); ?>
                     <?php endif; ?>
-                    </<?php echo $fields_args['title_tag']; ?>>
+                    </<?php echo esc_attr($fields_args['title_tag']); ?>>
                 <?php endif; ?>
 
                 <?php if ('' !== $fields_args['caption_video']): ?>
                     <div class="video-caption tb_text_wrap">
-                        <?php echo apply_filters('themify_builder_module_content', $fields_args['caption_video']); ?>
+                        <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['caption_video'])); ?>
                     </div>
                     <!-- /video-caption -->
                 <?php endif; ?>

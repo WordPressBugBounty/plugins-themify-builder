@@ -138,16 +138,16 @@ if ($is_alert_visible===true):
         ?>
         <div class="alert-inner">
             <div class="alert-content">
-                <<?php echo $fields_args['title_tag'];?> class="alert-heading"><?php echo $fields_args['heading_alert'] ?></<?php echo $fields_args['title_tag'];?>>
+                <<?php echo esc_attr($fields_args['title_tag']);?> class="alert-heading"><?php echo wp_kses_post($fields_args['heading_alert']); ?></<?php echo esc_attr($fields_args['title_tag']);?>>
                 <div class="tb_text_wrap">
-                    <?php echo apply_filters('themify_builder_module_content', $fields_args['text_alert']);?>
+                    <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['text_alert']));?>
                 </div>
             </div>
             <!-- /alert-content -->
             <?php if ($fields_args['action_btn_text_alert']) : ?>
                 <div class="alert-button">
-                    <a href="<?php echo $url; ?>" class="<?php echo implode(' ', $ui_class); ?>"<?php echo $button_attr; ?>>
-                        <span class="tb_alert_text"><?php echo $fields_args['action_btn_text_alert'] ?></span>
+                    <a href="<?php echo $url; ?>" class="<?php echo esc_attr(implode(' ', $ui_class)); ?>"<?php echo esc_attr($button_attr); ?>>
+                        <span class="tb_alert_text"><?php echo wp_kses_post($fields_args['action_btn_text_alert']); ?></span>
                     </a>
                 </div>
             <?php endif; ?>

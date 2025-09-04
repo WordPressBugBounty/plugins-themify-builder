@@ -128,7 +128,7 @@ if ($iconType!=='icon' && $fields_args['image_feature'] !== '') {
 }
 $st = '';
 if ($fields_args['circle_size_feature'] === 'custom' && !empty($fields_args['custom_circle_size_feature'])) {
-    $st = 'width:' . $fields_args['custom_circle_size_feature'] . 'px;height:' . $fields_args['custom_circle_size_feature'] . 'px;';
+    $st = 'width:' . esc_attr($fields_args['custom_circle_size_feature']) . 'px;height:' . esc_attr($fields_args['custom_circle_size_feature']) . 'px;';
 }
 if ($isEmpty === true && $insetColor !== '') {
     $st .= 'background-color:' . $insetColor;
@@ -182,8 +182,8 @@ self::sticky_element_props($container_props, $fields_args);
                 </span>
 
                 <?php if ( $iconType==='both') : ?>
-                    <span class="module-feature-icon-wrap tf_abs"<?php if ($fields_args['icon_position'] !== '') : ?> style="transform:rotate(<?php echo $fields_args['icon_position'] ?>deg)"<?php endif; ?>>
-                        <span class="module-feature-icon tf_inline_b" style="<?php if ($fields_args['icon_position'] !== '') : ?>transform:translateY(-50%) rotate(-<?php echo $fields_args['icon_position'] ?>deg); <?php endif; ?>
+                    <span class="module-feature-icon-wrap tf_abs"<?php if ($fields_args['icon_position'] !== '') : ?> style="transform:rotate(<?php echo esc_attr($fields_args['icon_position']) ?>deg)"<?php endif; ?>>
+                        <span class="module-feature-icon tf_inline_b" style="<?php if ($fields_args['icon_position'] !== '') : ?>transform:translateY(-50%) rotate(-<?php echo esc_attr($fields_args['icon_position']) ?>deg); <?php endif; ?>
                               <?php if ($fields_args['icon_color_feature'] !== '' && $fields_args['stype']!=='l') : ?>color:<?php echo Themify_Builder_Stylesheet::get_rgba_color($fields_args['icon_color_feature']); ?>;<?php endif; ?>
                               <?php if ($insetColor !== '') : ?>background-color:<?php echo $insetColor; ?><?php endif; ?>
                               "><?php echo $icon; ?></span>
@@ -200,18 +200,18 @@ self::sticky_element_props($container_props, $fields_args);
         if ('' !== $fields_args['title_feature']) {
             $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
             ?>
-            <<?php echo $fields_args['title_tag']; ?> class="module-feature-title">
+            <<?php echo esc_attr($fields_args['title_tag']); ?> class="module-feature-title">
             <?php if ('' !== $fields_args['link_feature']): ?>
-                <a href="<?php echo esc_url($fields_args['link_feature']) ?>"<?php echo $link_attr ?>><?php echo $fields_args['title_feature'] ?></a>
+                <a href="<?php echo esc_url($fields_args['link_feature']) ?>"<?php echo $link_attr ?>><?php echo wp_kses_post($fields_args['title_feature']) ?></a>
             <?php else: ?>
-                <?php echo $fields_args['title_feature'] ?>
+                <?php echo wp_kses_post($fields_args['title_feature']) ?>
             <?php endif; ?>
-            </<?php echo $fields_args['title_tag']; ?>>
+            </<?php echo esc_attr($fields_args['title_tag']); ?>>
             <?php
         }
         ?>
         <div class="tb_text_wrap">
-            <?php echo $fields_args['content_feature'] !== '' ? apply_filters('themify_builder_module_content', $fields_args['content_feature']) : ''; ?>
+            <?php echo $fields_args['content_feature'] !== '' ? wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['content_feature'])) : ''; ?>
         </div>
     </div>
 </div>

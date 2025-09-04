@@ -68,12 +68,12 @@ $fields_args['heading_tag'] = themify_whitelist_tag( $fields_args['heading_tag']
 <!-- module fancy heading -->
 <div <?php echo themify_get_element_attributes($container_props); ?>>
     <?php $container_props = $container_class = $args = null; ?>
-    <<?php echo $fields_args['heading_tag']; ?> class="fancy-heading<?php echo $alignment; ?>">
+    <<?php echo esc_attr($fields_args['heading_tag']); ?> class="fancy-heading<?php echo esc_attr($alignment); ?>">
     <span class="main-head <?php echo $is_inline === true ? 'tf_inline_b' : 'tf_block'; ?>">
         <?php if ('' !== $fields_args['heading_link']): ?>
-            <a href="<?php echo $fields_args['heading_link'] ?>"><?php echo $fields_args['heading']; ?></a>
+            <a href="<?php echo esc_url($fields_args['heading_link']); ?>"><?php echo wp_kses_post($fields_args['heading']); ?></a>
         <?php else: ?>
-            <?php echo $fields_args['heading']; ?>
+            <?php echo wp_kses_post($fields_args['heading']); ?>
         <?php endif; ?>
     </span>
 
@@ -82,7 +82,7 @@ $fields_args['heading_tag'] = themify_whitelist_tag( $fields_args['heading_tag']
             <?php if ($hide_divider===false) : ?><span class="tb_fancy_heading_border tf_rel"></span><?php endif; ?>
             <span class="tb_fancy_heading_icon">
                 <?php if ($fields_args['icon_type'] !== 'image_icon') : ?>
-                    <em<?php if ('' !== $fields_args['icon_c'] && $fields_args['icon_type']==='icon'){ echo ' style="color:' . Themify_Builder_Stylesheet::get_rgba_color($fields_args['icon_c']) . '"';}?>><?php echo $icon; ?></em>
+                    <em <?php if ('' !== $fields_args['icon_c'] && $fields_args['icon_type']==='icon'){ echo ' style="color:' . Themify_Builder_Stylesheet::get_rgba_color($fields_args['icon_c']) . '"';}?>><?php echo $icon; ?></em>
                 <?php else: ?>
                     <img src="<?php echo esc_url($icon) ?>" alt="<?php echo esc_attr($fields_args['heading']); ?>">
                 <?php endif; ?>
@@ -93,11 +93,11 @@ $fields_args['heading_tag'] = themify_whitelist_tag( $fields_args['heading_tag']
 
     <span class="sub-head <?php echo $is_inline === true ? 'tf_inline_b' : 'tf_block'; ?> tf_rel">
         <?php if ('' !== $fields_args['sub_heading_link']): ?>
-            <a href="<?php echo $fields_args['sub_heading_link'] ?>"><?php echo $fields_args['sub_heading']; ?></a>
+            <a href="<?php echo esc_url($fields_args['sub_heading_link']) ?>"><?php echo wp_kses_post($fields_args['sub_heading']); ?></a>
         <?php else: ?>
-            <?php echo $fields_args['sub_heading']; ?>
+            <?php echo wp_kses_post($fields_args['sub_heading']); ?>
         <?php endif; ?>
     </span>
-    </<?php echo $fields_args['heading_tag']; ?>>
+    </<?php echo esc_attr($fields_args['heading_tag']); ?>>
 </div>
 <!-- /module fancy heading -->
