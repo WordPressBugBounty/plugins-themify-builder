@@ -89,7 +89,7 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'] );
                 <a href="#acc-<?php echo $tab_id . '-' . $i; ?>" class="tb_title_accordion" aria-controls="acc-<?php echo $tab_id . '-' . $i; ?>-content" aria-expanded="<?php echo $isOpen===true? 'true' : 'false' ; ?>">
                     <?php if ($fields_args['icon_accordion'] !== '') : ?><i class="accordion-icon<?php if ($isOpen===true):?> tf_hide<?php endif;?>"><?php echo themify_get_icon($fields_args['icon_accordion']); ?></i><?php endif; ?>
                     <?php if ($fields_args['icon_active_accordion'] !== '') : ?><i class="accordion-active-icon<?php if ($isOpen===false):?> tf_hide<?php endif;?>"><?php echo themify_get_icon($fields_args['icon_active_accordion']); ?></i><?php endif; ?>
-                    <?php echo isset($content['title_accordion'])?'<span class="accordion-title-wrap">'.$content['title_accordion'].'</span>':''; ?>
+                    <?php echo isset($content['title_accordion'])?'<span class="accordion-title-wrap">'.wp_kses_post($content['title_accordion']).'</span>':''; ?>
                 </a>
             </<?php echo $fields_args['title_tag']; ?>><!-- .accordion-title -->
             <div id="acc-<?php echo $tab_id . '-' . $i; ?>-content" data-id="acc-<?php echo $tab_id . '-' . $i; ?>" aria-hidden="<?php echo $isOpen===true? 'false' : 'true' ; ?>" class="accordion-content<?php if ($isOpen===false): ?> tf_hide<?php endif; ?> tf_clearfix"<?php if ( $schema === true ) : ?> itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"<?php endif; ?>>

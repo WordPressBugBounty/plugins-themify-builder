@@ -106,9 +106,9 @@ self::sticky_element_props($container_props, $fields_args);
 	        <span class="tab_burger_icon tf_rel"></span>
 		</span>
         <span class="tb_activetab_title">
-            <span class="tb_tab_title"><?php echo isset( $fields_args['tab_content_tab'][0]['title_tab'] ) ? $fields_args['tab_content_tab'][0]['title_tab'] : ''; ?></span>
+            <span class="tb_tab_title"><?php echo isset( $fields_args['tab_content_tab'][0]['title_tab'] ) ? wp_kses_post($fields_args['tab_content_tab'][0]['title_tab']) : ''; ?></span>
             <?php if ( ! empty( $fields_args['tab_content_tab'][0]['desc'] ) ) : ?>
-                <span class="tb_tab_desc"><?php echo esc_html( $fields_args['tab_content_tab'][0]['desc'] ); ?></span>
+                <span class="tb_tab_desc"><?php echo wp_kses_post( $fields_args['tab_content_tab'][0]['desc'] ); ?></span>
             <?php endif; ?>
         </span>
     </div>
@@ -119,11 +119,11 @@ self::sticky_element_props($container_props, $fields_args);
                 <?php if (isset($tab['icon_tab'])) : ?><em><?php echo themify_get_icon($tab['icon_tab']); ?></em><?php endif; ?>
                 <?php
                 if(isset($tab['title_tab']) && $fields_args['style_tab']!=='icon-only'){
-                    echo '<span class="tb_tab_title">', $tab['title_tab'], '</span>';
+                    echo '<span class="tb_tab_title">', wp_kses_post($tab['title_tab']), '</span>';
                 }
                 ?>
                 <?php if ( ! empty( $tab['desc'] ) ) : ?>
-                    <span class="tb_tab_desc"><?php echo esc_html( $tab['desc'] ); ?></span>
+                    <span class="tb_tab_desc"><?php echo wp_kses_post( $tab['desc'] ); ?></span>
                 <?php endif; ?>
                 <?php if ( $timer_bar ) : ?><span class="tb_tab_timerbar tf_abs"></span><?php endif; ?>
             </a>

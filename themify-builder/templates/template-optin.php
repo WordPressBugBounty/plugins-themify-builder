@@ -94,7 +94,7 @@ $builder_id = $args['builder_id'];
             <?php else : ?>
                 <div class="tb_optin_fname">
                     <label class="tb_optin_fname_text">
-                        <?php echo !empty($fields_args['label_firstname'])?esc_html( $fields_args['label_firstname']):'<span class="screen-reader-text">'.__('First name','themify').'</span>'; ?>
+                        <?php echo !empty($fields_args['label_firstname'])?wp_kses_post( $fields_args['label_firstname']):'<span class="screen-reader-text">'.__('First name','themify').'</span>'; ?>
                         <input type="text" name="tb_optin_fname" required="required" class="tb_optin_input"<?php echo !empty($fields_args['fn_placeholder'])?' placeholder="'.esc_attr($fields_args['fn_placeholder']).'"':''; ?>>
                     </label>
 
@@ -105,14 +105,14 @@ $builder_id = $args['builder_id'];
             <?php else : ?>
                 <div class="tb_optin_lname">
                     <label class="tb_optin_lname_text">
-                        <?php echo !empty($fields_args['label_lastname'])?esc_html( $fields_args['label_lastname']):'<span class="screen-reader-text">'.__('Last name','themify').'</span>'; ?>
+                        <?php echo !empty($fields_args['label_lastname'])?wp_kses_post( $fields_args['label_lastname']):'<span class="screen-reader-text">'.__('Last name','themify').'</span>'; ?>
                         <input type="text" name="tb_optin_lname" required="required" class="tb_optin_input"<?php echo !empty($fields_args['ln_placeholder'])?' placeholder="'.esc_attr($fields_args['ln_placeholder']).'"':''; ?>>
                     </label>
                 </div>
             <?php endif; ?>
             <div class="tb_optin_email">
                 <label class="tb_optin_email_text">
-                    <?php echo !empty($fields_args['label_email'])?esc_html( $fields_args['label_email']):'<span class="screen-reader-text">'.__('Email','themify').'</span>'; ?>
+                    <?php echo !empty($fields_args['label_email'])?wp_kses_post( $fields_args['label_email']):'<span class="screen-reader-text">'.__('Email','themify').'</span>'; ?>
                     <input type="email" name="tb_optin_email" required="required" class="tb_optin_input"<?php echo !empty($fields_args['email_placeholder'])?' placeholder="'.esc_attr($fields_args['email_placeholder']).'"':''; ?>>
                 </label>
             </div>
@@ -133,7 +133,7 @@ $builder_id = $args['builder_id'];
                     <?php if( $icon!==''):?>
                         <?php echo $icon?>
                     <?php endif;?>
-                     <span><?php echo esc_html( $fields_args['label_submit'] ) ?></span>
+                     <span><?php echo wp_kses_post( $fields_args['label_submit'] ) ?></span>
                 </button>
             </div>
         </form>

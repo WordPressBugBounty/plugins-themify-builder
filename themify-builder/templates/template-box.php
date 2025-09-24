@@ -71,7 +71,7 @@ echo Themify_Builder_Component_Module::get_module_title($fields_args, 'mod_title
                 <em><?php echo themify_get_icon($fields_args['icon']); ?></em>
             </span>
         <?php endif; ?>
-        <div class="tb_text_wrap"><?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['content_box'])); ?></div>
+        <div class="tb_text_wrap"><?php echo apply_filters('themify_builder_module_content', $fields_args['content_box']); ?></div>
     </div>
 </div>
 <!-- /module box -->

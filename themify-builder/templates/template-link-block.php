@@ -122,10 +122,10 @@ self::sticky_element_props($container_props, $fields_args);
 
         <div class="tf-lb-content">
             <?php if(!empty($fields_args['heading'])): ?>
-                <div class="tb_link_block_heading"><?php echo $fields_args['heading'] ?></div>
+                <div class="tb_link_block_heading"><?php echo wp_kses_post($fields_args['heading']) ?></div>
             <?php endif; ?>
             <?php if(!empty($fields_args['blurb'])): ?>
-                <div class="tb_link_block_blurb"><?php echo $fields_args['blurb'] ?></div>
+                <div class="tb_link_block_blurb"><?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['blurb'])) ?></div>
             <?php endif; ?>
         </div>
 

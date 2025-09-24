@@ -45,6 +45,7 @@ self::sticky_element_props($container_props, $fields_args);
         if ( empty( $fields_args['formatting'] ) ) {
             $fields_args['plain_text'] = apply_filters( 'themify_builder_module_content', $fields_args['plain_text'] );
         }
+        
         echo $fields_args['plain_text'];
     }
     ?>

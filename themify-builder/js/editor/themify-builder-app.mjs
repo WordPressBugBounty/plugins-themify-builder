@@ -140,312 +140,495 @@
     api.jsModuleLoaded();
     api.loadJson();
 
-    api.Helper={
-        correctBuilderData(rows){
-            if(!rows || !Array.isArray(rows)){
-                rows=rows?Object.values(rows):[];
-            }
-            for(let i=rows.length-1;i>-1;--i){
-                let r=rows[i];
-                if(r){
-                    let {styling:rowSt,cols}=r;
-                    if(rowSt!==undefined && (!rowSt || Array.isArray(rowSt))){
-                        r.styling={};
-                    }
-                    if(cols){
-                        if(!Array.isArray(cols)){
-                            cols=r.cols=Object.values(cols);
-                        }
-                        for(let j=cols.length-1;j>-1;--j){
-                            let col=cols[j];
-                            if(col){
-                                let {styling,modules}=col;
-                                if(styling!==undefined && (!styling || Array.isArray(styling))){
-                                    col.styling={};
-                                }
-                                if(modules){
-                                    modules=this.correctBuilderData(modules);
-                                }
-                            }
-                            else{
-                                cols.splice(j, 1);
-                            }
-                        }
-                    }
-                }
-                else{
-                    rows.splice(i, 1);
-                }
-            }
-            return rows;
-        },
-        cloneDom(el,remove) {
-            if (el === null) {
-                return el;
-            }
-            if (el[0] !== undefined) {
-                el = el[0];
-            }
-            if(el.nodeType===Node.TEXT_NODE){
-                return el.cloneNode(true);
-            }
-            const node = remove===true?el:el.cloneNode(true);
-            if (api.isVisual) {
-                //after cloning dom the video is playing in bg
-                const v = node.tfTag('video');
-                if (v.length > 0) {
-                    for (let i = v.length - 1; i > -1; --i) {
-                        v[i].pause();
-                    }
-                }
-                for (let items = node.tfClass('tb_dragger'), i = items.length - 1; i > -1; --i) {
-                    items[i].remove();
-                }
-                for (let items = Themify.selectWithParent('[contenteditable]', node), i = items.length - 1; i > -1; --i) {
-                    items[i].contentEditable=false;
-                    items[i].closest('.tb_editor_on')?.classList.remove('tb_editor_on', 'tb_editor_clicked');
-                }
-                for (let items = Themify.selectWithParent('[draggable]', node), i = items.length - 1; i > -1; --i) {
-                    items[i].setAttribute('draggable', 'true');
-                }
-            }
-            for (let items = node.tfClass('tb_action_wrap'), i = items.length - 1; i > -1; --i) {
-                let item=items[i];
-                item.replaceChildren();
-                item.removeAttribute('id');
-                item.removeAttribute('style');
-            }
-            for (let items = node.querySelectorAll('.tb_del_btn,.tb_add_btn'), i = items.length - 1; i > -1; --i) {
-                items[i].replaceChildren();
-            }
-            const uiItems=node.querySelectorAll('.tb_editor_on,.tb_element_clicked,.tb_selected_img,.tb_editor_clicked,.tb_hide_drag_col_right,.tb_hide_drag_left,.tb_hide_drag_right,.tb_drag_one_column,.tb_drag_side_column,.tb_draggable_item,.tb_column_drag_inner,.tb_active_action_bar,.compact-mode,.tf_dragger_negative');
-            for (let i = uiItems.length - 1; i > -1; --i) {
-                uiItems[i].classList.remove( 'tb_element_clicked','tb_editor_on','tb_selected_img','tb_editor_clicked', 'tb_hide_drag_col_right','tb_hide_drag_left','tb_hide_drag_right', 'tb_drag_one_column', 'tb_drag_side_column', 'tb_draggable_item', 'tb_column_drag_inner','tb_active_action_bar','compact-mode','tf_dragger_negative');
-            }
-            for (let items = node.querySelectorAll('[data-drag-w],[data-pos]'), i = items.length - 1; i > -1; --i) {
-                items[i].removeAttribute('data-drag-w');
-                items[i].removeAttribute('data-pos');
-            }
-            node.classList.remove('tb_selected_img', 'tb_element_clicked','tb_editor_on','tb_editor_clicked', 'tb_hide_drag_col_right','tb_hide_drag_left','tb_hide_drag_right', 'tb_drag_one_column', 'tb_drag_side_column', 'tb_draggable_item', 'tb_column_drag_inner','tb_active_action_bar','compact-mode','tf_dragger_negative');
-            node.removeAttribute('data-drag-w');
-            node.removeAttribute('data-pos');
-            return node;
-        },
-        cloneObject(obj){
-            return obj?JSON.parse(JSON.stringify(obj)):{};
-        },
-        compareObject(oldSettings,newSetting){
-            if(oldSettings && newSetting){
-                const size1=oldSettings.hasOwnProperty('length')?oldSettings.length:Object.keys(oldSettings).length,
-                    size2=newSetting.hasOwnProperty('length')?newSetting.length:Object.keys(newSetting).length;
-                    if(size1===size2){
-                        if(size1>0){
-                            for(let i in oldSettings){
-                                if(newSetting[i]===undefined){
-                                    return true;
-                                }
-                                if(oldSettings[i]!==null && typeof oldSettings[i] === 'object'){
-                                    if(typeof newSetting[i]!=='object' || this.compareObject(oldSettings[i],newSetting[i])){
-                                        return true;
-                                    }
-                                }
-                                else if(newSetting[i]!=oldSettings[i] || (typeof newSetting[i]==='object' && typeof oldSettings[i]!=='object')){
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                    else{
-                        return true;
-                    }
-            }
-            else{
-                return true;
-            }
-            return false;
-        },
-        isImageUrl(link) {
-            if (!link) {
-                return false;
-            }
-            const parts = link.split('?')[0].split('.');
-            return ['jpg', 'jpeg', 'tiff', 'png', 'gif', 'bmp', 'svg', 'svgz','webp','apng'].includes(parts[parts.length - 1]);
-        },
-        limitString(str, limit=120) {
-            let new_str = '';
-            if (str !== '' && str !== undefined) {
-                const tmp = createElement();
-                tmp.innerHTML = str;
-                str = tmp.textContent; // strip html tags
-                new_str = str.length > limit ? (str.substr(0, limit)+'...') : str;
-            }
-            return new_str;
-        },
-        loadJsZip(){
-          return Themify.loadJs('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',!!window.JSZip,false);
-        },
-        toRGBA(v){
-            return ThemifyStyles.toRGBA(v);
-        },
-        getIcon(icon, cl) {
-            const fontello_prefix=themifyBuilder.fontello_prefix;
-            if (typeof fontello_prefix!== 'undefined') {
-                const fontello_regex = new RegExp(themifyBuilder.fontello_use_suffix ? fontello_prefix + '$' : '^' + fontello_prefix);
-                if (fontello_regex.test(icon)) {
-                    return createElement('i',icon);
-                }
-            }
-            icon = 'tf-' + icon.trim().replace(' ', '-');
-            let classes = 'tf_fa ' + icon;
-            if (cl) {
-                classes += ' ' + cl;
-            }
-            const svg = createElementNS('',classes);
-            svg.appendChild(createElementNS('use',{href:'#' + icon}));
-            return svg;
-        },
-        getLottie(arr,sel){
-            if(arr.path && arr.seg){
-                let json={
-                    path:arr.path,
-                    seg:arr.seg
-                },
-                lottie=createElement('tf-lottie'),
-                tmpl=createElement('template');
-                if(arr.st){
-                    json.st=arr.st;
-                }
-                if(arr.sp && arr.sp!=1){
-                    json.sp=arr.sp;
-                }
-                if(arr.dir){
-                    json.dir=arr.dir;
-                }
-                if(arr.fid){
-                    json.fid=arr.fid;
-                }
-                if(arr.r && arr.r!=='svg'){
-                    json.r=arr.r;
-                }
-                if(arr.count>1){
-                    json.count=arr.count;
-                }
-                if(sel){
-                    json.sel=sel;
-                }
-                if(!arr.lp){
-                    json={actions:json,loop:1};
-                }
-                tmpl.innerHTML=JSON.stringify(json);
-                lottie.appendChild(tmpl);
-                return lottie;
-            }
-            return tb_createDocumentFragment();
-        },
-        getColor(el) {
-            let v = el.value;
-            if (v !== '') {
-                if (el.getAttribute('data-tfminicolors-initialized') !== null) {
-                    v = jQuery(el).tfminicolors('rgbaString');
-                } else {
-                    const opacity = el.dataset.opacity;
-                    if (opacity !== '' && opacity !== null) {
-                        v = ThemifyStyles.toRGBA(v + '_' + opacity);
-                    }
-                }
-            }
-            return v;
-        },
-        getBreakpointName(bp){
-            return api.ToolBar.el.querySelector('.breakpoint-'+bp+' span').textContent;
-        },
-        generateUniqueID() {
-            const uid=(Math.random().toString(36).substr(2, 4) + (new Date().getUTCMilliseconds()).toString()).substr(0, 7);
-            return Registry.get(uid)?this.generateUniqueID():uid;
-        },
-        clearElementId(data, _new) {
-            for (let i=data.length-1;i>-1;--i) {
-                let item=data[i],
-                    opt = item.styling || item.mod_settings;
-                if (_new === true) {
-                    item.element_id = this.generateUniqueID();
-                } else {
-                    delete item.element_id;
-                }
-                if (opt !== undefined) {
-                    const customCss=opt.custom_css_id;
-                    if (customCss !== undefined && customCss !== '') {
-                        let j = 1;
-                        while (true) {
-                            let id = j!==1?(customCss+'-'+j):customCss;
-                            if (!doc.tfId(id)?.closest('.module_row')) {
-                                opt.custom_css_id = id;
-                                break;
-                            }
-                            ++j;
-                        }
-                    }
-
-                    let nested=opt.content_accordion || opt.tab_content_tab,
-                        bulder=opt.builder_content;
-                    if (bulder !== undefined) {
-                        if(typeof bulder === 'string'){
-                            bulder=JSON.parse(bulder);
-                        }
-                        this.clearElementId(bulder, true);
-                        opt.builder_content = bulder;
-                    }
-                    if(nested){
-                        for (let j=nested.length-1;j>-1;--j) {
-                            let bulder=nested[j].builder_content;
-                            if(bulder){
-                                if(typeof bulder === 'string'){
-                                    bulder=JSON.parse(bulder);
-                                }
-                                this.clearElementId(bulder, true);
-                                nested[j].builder_content = bulder;
-                            }
-                        }
-                    }
-                    /* Toggle module */
-                    if ( opt.toggle1 ) {
-                        this.clearElementId(opt.toggle1, true);
-                    }
-                    if ( opt.toggle2 ) {
-                        this.clearElementId(opt.toggle1, true);
-                    }
-                }
-                if (item.cols !== undefined) {
-                    this.clearElementId(item.cols, _new);
-                } else if (item.modules !== undefined) {
-                    this.clearElementId(item.modules, _new);
-                }
-            }
-        },
-        async codeMirror(el,mode,conf={}){
-            try{
-                conf.isDarkMode=api.isDarked;
-                await topWindow.Themify.loadJs(Themify.url+'js/admin/modules/codemirror/codemirror',!!topWindow.ThemifyCodeMiror);
-                const obj=new topWindow.ThemifyCodeMiror(el,mode,conf);
-                await obj.run();
-                return obj;
-            }
-            catch(e){
-               return null;
-            }
-        },
-        async gzip(data){
-            if(!window.CompressionStream || themifyBuilder.gzip_disabled){
-                throw 'err';
-            }
-            const byteArray = new TextEncoder().encode(data),
-                cs = new CompressionStream('gzip'),
-                writer = cs.writable.getWriter();
-                writer.write(byteArray);
-                writer.close();
-            const res=await (new Response(cs.readable)).arrayBuffer();
-            return btoa(String.fromCharCode(...new Uint8Array(res)));
+    api.Helper = {
+      correctBuilderData(rows) {
+        if (!rows || !Array.isArray(rows)) {
+          rows = rows ? Object.values(rows) : [];
         }
+        for (let i = rows.length - 1; i > -1; --i) {
+          let r = rows[i];
+          if (r) {
+            let { styling: rowSt, cols } = r;
+            if (rowSt !== undefined && (!rowSt || Array.isArray(rowSt))) {
+              r.styling = {};
+            }
+            if (cols) {
+              if (!Array.isArray(cols)) {
+                cols = r.cols = Object.values(cols);
+              }
+              for (let j = cols.length - 1; j > -1; --j) {
+                let col = cols[j];
+                if (col) {
+                  let { styling, modules } = col;
+                  if (
+                    styling !== undefined &&
+                    (!styling || Array.isArray(styling))
+                  ) {
+                    col.styling = {};
+                  }
+                  if (modules) {
+                    modules = this.correctBuilderData(modules);
+                  }
+                } else {
+                  cols.splice(j, 1);
+                }
+              }
+            }
+          } else {
+            rows.splice(i, 1);
+          }
+        }
+        return rows;
+      },
+      cloneDom(el, remove) {
+        if (el === null) {
+          return el;
+        }
+        if (el[0] !== undefined) {
+          el = el[0];
+        }
+        if (el.nodeType === Node.TEXT_NODE) {
+          return el.cloneNode(true);
+        }
+        const node = remove === true ? el : el.cloneNode(true);
+        if (api.isVisual) {
+          //after cloning dom the video is playing in bg
+          const v = node.tfTag("video");
+          if (v.length > 0) {
+            for (let i = v.length - 1; i > -1; --i) {
+              v[i].pause();
+            }
+          }
+          for (
+            let items = node.tfClass("tb_dragger"), i = items.length - 1;
+            i > -1;
+            --i
+          ) {
+            items[i].remove();
+          }
+          for (
+            let items = Themify.selectWithParent("[contenteditable]", node),
+              i = items.length - 1;
+            i > -1;
+            --i
+          ) {
+            items[i].contentEditable = false;
+            items[i]
+              .closest(".tb_editor_on")
+              ?.classList.remove("tb_editor_on", "tb_editor_clicked");
+          }
+          for (
+            let items = Themify.selectWithParent("[draggable]", node),
+              i = items.length - 1;
+            i > -1;
+            --i
+          ) {
+            items[i].setAttribute("draggable", "true");
+          }
+        }
+        for (
+          let items = node.tfClass("tb_action_wrap"), i = items.length - 1;
+          i > -1;
+          --i
+        ) {
+          let item = items[i];
+          item.replaceChildren();
+          item.removeAttribute("id");
+          item.removeAttribute("style");
+        }
+        for (
+          let items = node.querySelectorAll(".tb_del_btn,.tb_add_btn"),
+            i = items.length - 1;
+          i > -1;
+          --i
+        ) {
+          items[i].replaceChildren();
+        }
+        const uiItems = node.querySelectorAll(
+          ".tb_editor_on,.tb_element_clicked,.tb_selected_img,.tb_editor_clicked,.tb_hide_drag_col_right,.tb_hide_drag_left,.tb_hide_drag_right,.tb_drag_one_column,.tb_drag_side_column,.tb_draggable_item,.tb_column_drag_inner,.tb_active_action_bar,.compact-mode,.tf_dragger_negative"
+        );
+        for (let i = uiItems.length - 1; i > -1; --i) {
+          uiItems[i].classList.remove(
+            "tb_element_clicked",
+            "tb_editor_on",
+            "tb_selected_img",
+            "tb_editor_clicked",
+            "tb_hide_drag_col_right",
+            "tb_hide_drag_left",
+            "tb_hide_drag_right",
+            "tb_drag_one_column",
+            "tb_drag_side_column",
+            "tb_draggable_item",
+            "tb_column_drag_inner",
+            "tb_active_action_bar",
+            "compact-mode",
+            "tf_dragger_negative"
+          );
+        }
+        for (
+          let items = node.querySelectorAll("[data-drag-w],[data-pos]"),
+            i = items.length - 1;
+          i > -1;
+          --i
+        ) {
+          items[i].removeAttribute("data-drag-w");
+          items[i].removeAttribute("data-pos");
+        }
+        node.classList.remove(
+          "tb_selected_img",
+          "tb_element_clicked",
+          "tb_editor_on",
+          "tb_editor_clicked",
+          "tb_hide_drag_col_right",
+          "tb_hide_drag_left",
+          "tb_hide_drag_right",
+          "tb_drag_one_column",
+          "tb_drag_side_column",
+          "tb_draggable_item",
+          "tb_column_drag_inner",
+          "tb_active_action_bar",
+          "compact-mode",
+          "tf_dragger_negative"
+        );
+        node.removeAttribute("data-drag-w");
+        node.removeAttribute("data-pos");
+        return node;
+      },
+      cloneObject(obj) {
+        return obj ? JSON.parse(JSON.stringify(obj)) : {};
+      },
+      compareObject(oldSettings, newSetting) {
+        if (oldSettings && newSetting) {
+          const size1 = oldSettings.hasOwnProperty("length")
+              ? oldSettings.length
+              : Object.keys(oldSettings).length,
+            size2 = newSetting.hasOwnProperty("length")
+              ? newSetting.length
+              : Object.keys(newSetting).length;
+          if (size1 === size2) {
+            if (size1 > 0) {
+              for (let i in oldSettings) {
+                if (newSetting[i] === undefined) {
+                  return true;
+                }
+                if (
+                  oldSettings[i] !== null &&
+                  typeof oldSettings[i] === "object"
+                ) {
+                  if (
+                    typeof newSetting[i] !== "object" ||
+                    this.compareObject(oldSettings[i], newSetting[i])
+                  ) {
+                    return true;
+                  }
+                } else if (
+                  newSetting[i] != oldSettings[i] ||
+                  (typeof newSetting[i] === "object" &&
+                    typeof oldSettings[i] !== "object")
+                ) {
+                  return true;
+                }
+              }
+            }
+          } else {
+            return true;
+          }
+        } else {
+          return true;
+        }
+        return false;
+      },
+      isImageUrl(link) {
+        if (!link) {
+          return false;
+        }
+        const parts = link.split("?")[0].split(".");
+        return [
+          "jpg",
+          "jpeg",
+          "tiff",
+          "png",
+          "gif",
+          "bmp",
+          "svg",
+          "svgz",
+          "webp",
+          "apng",
+        ].includes(parts[parts.length - 1]);
+      },
+      limitString(str, limit = 120) {
+        let new_str = "";
+        if (str !== "" && str !== undefined) {
+          str = this.sanitizeHTML(str);
+          new_str = str.length > limit ? str.substr(0, limit) + "..." : str;
+        }
+        return new_str;
+      },
+      /**
+       * Sanitizes an HTML string for safe insertion via innerHTML.
+       * Keeps only allowed tags and attributes, removes scripts, event handlers, and javascript: links.
+       * Optimized for performance using iterative DOM traversal.
+       * @param {string} input - The HTML string to sanitize.
+       * @returns {string} - Safe sanitized HTML.
+       */
+      sanitizeHTML(input) {
+        if (typeof input !== "string") {
+          return input; // return as-is if not a string
+        }
+        const allowedTags = {
+          b: [],
+          i: [],
+          em: [],
+          strong: [],
+          u: [],
+          sub: [],
+          sup: [],
+          p: [],
+          br: [],
+          hr: [],
+          span: [],
+          a: ["href", "title", "target", "rel"],
+          img: ["src", "alt", "title", "width", "height"],
+          iframe: [
+            "src",
+            "width",
+            "height",
+            "frameborder",
+            "allow",
+            "allowfullscreen",
+            "referrerpolicy",
+            "title",
+          ],
+          style: [
+            "media",
+            "type",
+            "scoped",
+            "title",
+          ],
+        };
+
+        // Parse str HTML
+        const template = document.createElement("template");
+        template.innerHTML = input;
+
+        const stack = [...template.content.childNodes];
+
+        while (stack.length) {
+          const node = stack.shift();
+
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const tagName = node.nodeName.toLowerCase();
+
+            if (!allowedTags[tagName]) {
+              // Not allowed: replace node with children
+              const parent = node.parentNode;
+              while (node.firstChild) {
+                parent.insertBefore(node.firstChild, node);
+              }
+              parent.removeChild(node);
+              continue;
+            }
+
+            // Allowed: remove disallowed attributes
+            const allowedAttrs = allowedTags[tagName];
+            for (let i = node.attributes.length - 1; i >= 0; i--) {
+              const attrName = node.attributes[i].name;
+              if (!allowedAttrs.includes(attrName)) {
+                node.removeAttribute(attrName);
+              } else if (
+                attrName === "href" &&
+                /^\s*javascript:/i.test(node.getAttribute("href"))
+              ) {
+                node.removeAttribute("href");
+              }
+            }
+
+            // Add children to stack for further processing
+            stack.unshift(...node.childNodes);
+          }
+        }
+
+        return template.innerHTML;
+      },
+      loadJsZip() {
+        return Themify.loadJs(
+          "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js",
+          !!window.JSZip,
+          false
+        );
+      },
+      toRGBA(v) {
+        return ThemifyStyles.toRGBA(v);
+      },
+      getIcon(icon, cl) {
+        const fontello_prefix = themifyBuilder.fontello_prefix;
+        if (typeof fontello_prefix !== "undefined") {
+          const fontello_regex = new RegExp(
+            themifyBuilder.fontello_use_suffix
+              ? fontello_prefix + "$"
+              : "^" + fontello_prefix
+          );
+          if (fontello_regex.test(icon)) {
+            return createElement("i", icon);
+          }
+        }
+        icon = "tf-" + icon.trim().replace(" ", "-");
+        let classes = "tf_fa " + icon;
+        if (cl) {
+          classes += " " + cl;
+        }
+        const svg = createElementNS("", classes);
+        svg.appendChild(createElementNS("use", { href: "#" + icon }));
+        return svg;
+      },
+      getLottie(arr, sel) {
+        if (arr.path && arr.seg) {
+          let json = {
+              path: arr.path,
+              seg: arr.seg,
+            },
+            lottie = createElement("tf-lottie"),
+            tmpl = createElement("template");
+          if (arr.st) {
+            json.st = arr.st;
+          }
+          if (arr.sp && arr.sp != 1) {
+            json.sp = arr.sp;
+          }
+          if (arr.dir) {
+            json.dir = arr.dir;
+          }
+          if (arr.fid) {
+            json.fid = arr.fid;
+          }
+          if (arr.r && arr.r !== "svg") {
+            json.r = arr.r;
+          }
+          if (arr.count > 1) {
+            json.count = arr.count;
+          }
+          if (sel) {
+            json.sel = sel;
+          }
+          if (!arr.lp) {
+            json = { actions: json, loop: 1 };
+          }
+          tmpl.innerHTML = JSON.stringify(json);
+          lottie.appendChild(tmpl);
+          return lottie;
+        }
+        return tb_createDocumentFragment();
+      },
+      getColor(el) {
+        let v = el.value;
+        if (v !== "") {
+          if (el.getAttribute("data-tfminicolors-initialized") !== null) {
+            v = jQuery(el).tfminicolors("rgbaString");
+          } else {
+            const opacity = el.dataset.opacity;
+            if (opacity !== "" && opacity !== null) {
+              v = ThemifyStyles.toRGBA(v + "_" + opacity);
+            }
+          }
+        }
+        return v;
+      },
+      getBreakpointName(bp) {
+        return api.ToolBar.el.querySelector(".breakpoint-" + bp + " span")
+          .textContent;
+      },
+      generateUniqueID() {
+        const uid = (
+          Math.random().toString(36).substr(2, 4) +
+          new Date().getUTCMilliseconds().toString()
+        ).substr(0, 7);
+        return Registry.get(uid) ? this.generateUniqueID() : uid;
+      },
+      clearElementId(data, _new) {
+        for (let i = data.length - 1; i > -1; --i) {
+          let item = data[i],
+            opt = item.styling || item.mod_settings;
+          if (_new === true) {
+            item.element_id = this.generateUniqueID();
+          } else {
+            delete item.element_id;
+          }
+          if (opt !== undefined) {
+            const customCss = opt.custom_css_id;
+            if (customCss !== undefined && customCss !== "") {
+              let j = 1;
+              while (true) {
+                let id = j !== 1 ? customCss + "-" + j : customCss;
+                if (!doc.tfId(id)?.closest(".module_row")) {
+                  opt.custom_css_id = id;
+                  break;
+                }
+                ++j;
+              }
+            }
+
+            let nested = opt.content_accordion || opt.tab_content_tab,
+              bulder = opt.builder_content;
+            if (bulder !== undefined) {
+              if (typeof bulder === "string") {
+                bulder = JSON.parse(bulder);
+              }
+              this.clearElementId(bulder, true);
+              opt.builder_content = bulder;
+            }
+            if (nested) {
+              for (let j = nested.length - 1; j > -1; --j) {
+                let bulder = nested[j].builder_content;
+                if (bulder) {
+                  if (typeof bulder === "string") {
+                    bulder = JSON.parse(bulder);
+                  }
+                  this.clearElementId(bulder, true);
+                  nested[j].builder_content = bulder;
+                }
+              }
+            }
+            /* Toggle module */
+            if (opt.toggle1) {
+              this.clearElementId(opt.toggle1, true);
+            }
+            if (opt.toggle2) {
+              this.clearElementId(opt.toggle1, true);
+            }
+          }
+          if (item.cols !== undefined) {
+            this.clearElementId(item.cols, _new);
+          } else if (item.modules !== undefined) {
+            this.clearElementId(item.modules, _new);
+          }
+        }
+      },
+      async codeMirror(el, mode, conf = {}) {
+        try {
+          conf.isDarkMode = api.isDarked;
+          await topWindow.Themify.loadJs(
+            Themify.url + "js/admin/modules/codemirror/codemirror",
+            !!topWindow.ThemifyCodeMiror
+          );
+          const obj = new topWindow.ThemifyCodeMiror(el, mode, conf);
+          await obj.run();
+          return obj;
+        } catch (e) {
+          return null;
+        }
+      },
+      async gzip(data) {
+        if (!window.CompressionStream || themifyBuilder.gzip_disabled) {
+          throw "err";
+        }
+        const byteArray = new TextEncoder().encode(data),
+          cs = new CompressionStream("gzip"),
+          writer = cs.writable.getWriter();
+        writer.write(byteArray);
+        writer.close();
+        const res = await new Response(cs.readable).arrayBuffer();
+        return btoa(String.fromCharCode(...new Uint8Array(res)));
+      },
     };
 
 

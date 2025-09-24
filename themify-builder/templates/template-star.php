@@ -54,7 +54,7 @@ self::sticky_element_props($container_props, $fields_args);
                 $fillIcon = themify_get_icon($icon, false, false, false, array('class' => 'tb_star_fill'));
                 ?>
                 <?php if (isset($r['text_b'])): ?>
-                    <span class="tb_star_text_b"><?php echo $r['text_b'] ?></span>
+                    <span class="tb_star_text_b"><?php echo wp_kses_post($r['text_b']) ?></span>
                 <?php endif; ?>
                 <div class="tb_star_container">
                     <?php
@@ -82,7 +82,7 @@ self::sticky_element_props($container_props, $fields_args);
                     ?>
                 </div>
                 <?php if (isset($r['text_a'])): ?>
-                    <span class="tb_star_text_a"><?php echo $r['text_a'] ?></span>
+                    <span class="tb_star_text_a"><?php echo wp_kses_post($r['text_a']) ?></span>
             <?php endif; ?>
             </div>
 <?php endforeach; ?>

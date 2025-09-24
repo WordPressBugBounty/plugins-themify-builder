@@ -150,12 +150,12 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h
     <div class="tb-image-content tf_overflow">
         <div class="tb-menu-title-wrap">
             <?php if ($fields_args['title_service_menu'] !== '') : ?>
-                <<?php echo $fields_args['title_tag']; ?> class='tb-menu-title'><?php echo $fields_args['title_service_menu']; ?></<?php echo $fields_args['title_tag']; ?>>
+                <<?php echo $fields_args['title_tag']; ?> class='tb-menu-title'><?php echo wp_kses_post($fields_args['title_service_menu']); ?></<?php echo $fields_args['title_tag']; ?>>
             <?php endif; ?>
 
             <?php if ($fields_args['description_service_menu'] !== '') : ?>
                 <div class="tb-menu-description">
-                    <?php echo $fields_args['description_service_menu']; ?>
+                    <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['description_service_menu'])); ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -172,18 +172,18 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h
                         ?>
                         <div class="tb-price-item">
                             <?php if (!empty($content['label'])): ?>
-                                <div class="tb-price-title"><?php echo $content['label']; ?></div>
+                                <div class="tb-price-title"><?php echo wp_kses_post($content['label']); ?></div>
                             <?php endif; ?>
 
                             <?php if (isset($content['price']) && $content['price'] !== ''): ?>
-                                <div class="tb-price-value"><?php echo $content['price']; ?></div>
+                                <div class="tb-price-value"><?php echo wp_kses_post($content['price']); ?></div>
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                     <?php
                 }
                 else{
-                    echo $fields_args['price_service_menu'];
+                    echo wp_kses_post($fields_args['price_service_menu']);
                     if (isset($fields_args['_render_plain_content']) && true === $fields_args['_render_plain_content']):?>
                         <br/>
                     <?php

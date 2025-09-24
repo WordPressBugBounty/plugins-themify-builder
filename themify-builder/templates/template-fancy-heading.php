@@ -68,7 +68,7 @@ $fields_args['heading_tag'] = themify_whitelist_tag( $fields_args['heading_tag']
 <!-- module fancy heading -->
 <div <?php echo themify_get_element_attributes($container_props); ?>>
     <?php $container_props = $container_class = $args = null; ?>
-    <<?php echo esc_attr($fields_args['heading_tag']); ?> class="fancy-heading<?php echo esc_attr($alignment); ?>">
+    <<?php echo $fields_args['heading_tag']; ?> class="fancy-heading<?php echo esc_attr($alignment); ?>">
     <span class="main-head <?php echo $is_inline === true ? 'tf_inline_b' : 'tf_block'; ?>">
         <?php if ('' !== $fields_args['heading_link']): ?>
             <a href="<?php echo esc_url($fields_args['heading_link']); ?>"><?php echo wp_kses_post($fields_args['heading']); ?></a>

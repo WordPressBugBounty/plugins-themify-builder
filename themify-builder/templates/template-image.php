@@ -143,7 +143,7 @@ self::sticky_element_props($container_props, $fields_args);
         <?php endif; ?>
         <?php if ($fields_args['caption_image'] !== ''): ?>
         <div class="image-caption tb_text_wrap">
-            <?php echo apply_filters('themify_builder_module_content', $fields_args['caption_image']); ?>
+            <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['caption_image'])); ?>
         </div>
         <!-- /image-caption -->
         <?php endif; ?>

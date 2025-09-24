@@ -83,27 +83,27 @@ self::sticky_element_props($container_props, $fields_args);
 
     <?php else : ?>
         <?php if ( $fields_args['fail_action'] === 'm' && isset( $_GET['login_error'] ) ) : ?>
-            <div class="tb_login_error"><?php echo esc_html( $fields_args['msg_fail'] ) ?></div>
+            <div class="tb_login_error"><?php echo wp_kses_post( $fields_args['msg_fail'] ) ?></div>
         <?php endif; ?>
 
         <form class="tb_login_form tf_clearfix tf_box tf_clear" name="loginform" action="<?php echo esc_url( site_url( 'wp-login.php', 'login_post' ) ) ?>" method="post">
             <p class="tb_login_username">
                 <label>
                     <?php if ( $fields_args['icon_username'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['icon_username'] ); ?></em><?php endif; ?>
-                    <span class="tb_login_username_text"><?php echo esc_html( $fields_args['label_username'] ) ?></span>
+                    <span class="tb_login_username_text"><?php echo wp_kses_post( $fields_args['label_username'] ) ?></span>
                     <input type="text" name="log" required="required">
                 </label>
             </p>
             <p class="tb_login_password">
                 <label>
                     <?php if ( $fields_args['icon_password'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['icon_password'] ); ?></em><?php endif; ?>
-                    <span class="tb_login_password_text"><?php echo esc_html( $fields_args['label_password'] ) ?></span>
+                    <span class="tb_login_password_text"><?php echo wp_kses_post( $fields_args['label_password'] ) ?></span>
                     <input type="password" name="pwd" required="required" autocomplete="current-password">
                 </label>
             </p>
             <div class="tb_login_links tf_box tf_clear">
                 <?php if ( $fields_args['icon_forgotten_password'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['icon_forgotten_password'] ); ?></em><?php endif; ?>
-                <a href="<?php echo esc_url( network_site_url( 'wp-login.php?action=lostpassword', 'login_post' ) ); ?>"><?php echo esc_html( $fields_args['label_forgotten_password'] ); ?></a>
+                <a href="<?php echo esc_url( network_site_url( 'wp-login.php?action=lostpassword', 'login_post' ) ); ?>"><?php echo wp_kses_post( $fields_args['label_forgotten_password'] ); ?></a>
             </div>
 
             <?php
@@ -116,14 +116,14 @@ self::sticky_element_props($container_props, $fields_args);
                 <label>
                     <input name="rememberme" type="checkbox" value="forever"> 
                     <?php if ( $fields_args['icon_remember'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['icon_remember'] ); ?></em><?php endif; ?>
-                    <span class="tb_login_remember_text"><?php echo esc_html( $fields_args['label_remember'] ); ?></span>
+                    <span class="tb_login_remember_text"><?php echo wp_kses_post( $fields_args['label_remember'] ); ?></span>
                 </label>
             </p>
             <?php endif; ?>
             <p class="tb_login_submit tf_right">
                 <button name="wp-submit">
                     <?php if ( $fields_args['icon_log_in'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['icon_log_in'] ); ?></em><?php endif; ?>
-                    <?php echo esc_html( $fields_args['label_log_in'] ) ?>
+                    <?php echo wp_kses_post( $fields_args['label_log_in'] ) ?>
                 </button>
                 <input type="hidden" name="redirect_to" value="<?php echo esc_url( $fields_args['redirect_to'] ) ?>">
                 <input type="hidden" name="tb_login" value="1">
@@ -141,7 +141,7 @@ self::sticky_element_props($container_props, $fields_args);
             <p class="tb_lostpassword_username">
                 <label>
                     <?php if ( $fields_args['lostpasswordform_icon_username'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['lostpasswordform_icon_username'] ); ?></em><?php endif; ?>
-                    <span class="tb_lostpassword_username_text"><?php echo esc_html( $fields_args['lostpasswordform_label_username'] ) ?></span>
+                    <span class="tb_lostpassword_username_text"><?php echo wp_kses_post( $fields_args['lostpasswordform_label_username'] ) ?></span>
                     <input type="text" name="user_login" required="required">
                 </label>
             </p>
@@ -155,11 +155,11 @@ self::sticky_element_props($container_props, $fields_args);
                 <input type="hidden" name="redirect_to" value="<?php echo esc_attr( $fields_args['lostpasswordform_redirect_to'] ); ?>">
             <?php endif; ?>
             <p class="tb_lostpassword_submit tf_right">
-                <button><?php if ( $fields_args['lostpasswordform_icon_reset'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['lostpasswordform_icon_reset'] ); ?></em><?php endif; ?> <?php echo esc_html( $fields_args['lostpasswordform_label_reset'] ) ?></button>
+                <button><?php if ( $fields_args['lostpasswordform_icon_reset'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['lostpasswordform_icon_reset'] ); ?></em><?php endif; ?> <?php echo wp_kses_post( $fields_args['lostpasswordform_label_reset'] ) ?></button>
             </p>
 
             <div class="tb_login_links tf_left tf_box">
-                <a href="<?php echo esc_url( site_url( 'wp-login.php' ) ); ?>"><?php echo esc_html( $fields_args['label_log_in'] ); ?></a>
+                <a href="<?php echo esc_url( site_url( 'wp-login.php' ) ); ?>"><?php echo wp_kses_post( $fields_args['label_log_in'] ); ?></a>
             </div>
         </form>
 

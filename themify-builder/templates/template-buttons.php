@@ -142,9 +142,9 @@ foreach ($fields_args['content_button'] as $content) {
                 <?php echo $icon ?>
             <?php endif; ?>
             <?php if ($content['link'] !== ''): ?>
-                <?php echo $content['label'] ?>
+                <?php echo wp_kses_post($content['label']) ?>
             <?php else:?>
-                <?php echo $content['label'] ?>
+                <?php echo wp_kses_post($content['label']) ?>
             <?php endif; ?>
             <?php if ($icon !== '' && $content['icon_alignment'] === 'right'): ?>
                 <?php echo $icon ?>
