@@ -217,6 +217,8 @@ if (!class_exists('Themify_Builder',false)) :
             Themify_Builder_Stylesheet::init();
             // Visibility controls
             Themify_Builder_Visibility_Controls::init();
+            // Element-level display conditions
+            Themify_Builder_Display_Conditions::init();
 
             //convert old data to new grid data,can be removed after updates
 
@@ -361,6 +363,7 @@ if (!class_exists('Themify_Builder',false)) :
             include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-stylesheet.php';
             include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-widgets.php';
             include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-visibility-controls.php';
+            include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-display-conditions.php';
             if (current_user_can('publish_pages')) {
                 include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-page.php';
             }
@@ -496,6 +499,7 @@ if (!class_exists('Themify_Builder',false)) :
                             foreach ($row['cols'] as &$col) {
                                 if (isset($convert[$col['element_id']])) {
                                     $hasChange = false;
+                                    $convertedAny = false;
                                     foreach ($convert[$col['element_id']] as $bp => $props) {
                                         if (in_array($bp, $breakpints, true)) {
                                             foreach ($props as $prop => $v) {
@@ -509,9 +513,9 @@ if (!class_exists('Themify_Builder',false)) :
                                                             }
                                                             if (strpos($col['styling'][$prop], ',') === false && is_numeric($v)) {
                                                                 //the first value is old value of v5(if user will try to downgrade FW),the second after converting
-                                                                $v = (int) $v;
+                                                                $v = round((float) $v, 2);
                                                                 $col['styling'][$prop] .= ',' . $v;
-                                                                $update = true;
+                                                                $update = $convertedAny = true;
                                                             }
                                                         }
                                                     } else {
@@ -525,15 +529,19 @@ if (!class_exists('Themify_Builder',false)) :
                                                                 $col['styling']['breakpoint_' . $bp][$prop] = '';
                                                             }
                                                             if (strpos($col['styling']['breakpoint_' . $bp][$prop], ',') === false && is_numeric($v)) {
-                                                                $v = (int) $v;
+                                                                $v = round((float) $v, 2);
                                                                 $col['styling']['breakpoint_' . $bp][$prop] .= ',' . $v;
-                                                                $update = $hasChange = true;
+                                                                $update = $hasChange = $convertedAny = true;
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
                                         }
+                                    }
+                                    // Persist the conversion marker so the converter won't re-run on next page load
+                                    if ($convertedAny === true && !empty($convert[$col['element_id']]['_padding_converted'])) {
+                                        $col['styling']['_padding_converted'] = true;
                                     }
                                     if ($hasChange === true) {
                                         for ($i = 0; $i < $bpLength - 1; ++$i) {
@@ -569,6 +577,7 @@ if (!class_exists('Themify_Builder',false)) :
                                             foreach ($mod['cols'] as &$sub_col) {
                                                 if (isset($convert[$sub_col['element_id']])) {
                                                     $hasChange = false;
+                                                    $convertedAny = false;
                                                     foreach ($convert[$sub_col['element_id']] as $bp => $props) {
                                                         if (in_array($bp, $breakpints, true)) {
                                                             foreach ($props as $prop => $v) {
@@ -581,9 +590,9 @@ if (!class_exists('Themify_Builder',false)) :
                                                                                 $sub_col['styling'][$prop] = '';
                                                                             }
                                                                             if (strpos($sub_col['styling'][$prop], ',') === false && is_numeric($v)) {
-                                                                                $v = (int) $v;
+                                                                                $v = round((float) $v, 2);
                                                                                 $sub_col['styling'][$prop] .= ',' . $v;
-                                                                                $update = true;
+                                                                                $update = $convertedAny = true;
                                                                             }
                                                                         }
                                                                     } else {
@@ -597,15 +606,19 @@ if (!class_exists('Themify_Builder',false)) :
                                                                                 $sub_col['styling']['breakpoint_' . $bp][$prop] = '';
                                                                             }
                                                                             if (strpos($sub_col['styling']['breakpoint_' . $bp][$prop], ',') === false && is_numeric($v)) {
-                                                                                $v = (int) $v;
+                                                                                $v = round((float) $v, 2);
                                                                                 $sub_col['styling']['breakpoint_' . $bp][$prop] .= ',' . $v;
-                                                                                $update = $hasChange = true;
+                                                                                $update = $hasChange = $convertedAny = true;
                                                                             }
                                                                         }
                                                                     }
                                                                 }
                                                             }
                                                         }
+                                                    }
+                                                    // Persist the conversion marker for sub-columns
+                                                    if ($convertedAny === true && !empty($convert[$sub_col['element_id']]['_padding_converted'])) {
+                                                        $sub_col['styling']['_padding_converted'] = true;
                                                     }
                                                     if ($hasChange === true) {
                                                         for ($i = 0; $i < $bpLength - 1; ++$i) {

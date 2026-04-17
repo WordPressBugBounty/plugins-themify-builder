@@ -21,6 +21,14 @@ add_action( 'themify_post_start', 'themify_post_edit_link' );
 add_action( 'themify_post_start_module', 'themify_post_edit_link' );
 
 /**
+ * Disable separate core block assets
+ */
+global $wp_version;
+if(version_compare($wp_version, '6.9', '>=')){
+    add_filter('should_load_separate_core_block_assets', '__return_false');
+}
+
+/**
  * load all themify, plugins and theme js with attribute defer(without blocking page render)
  *
  * @since 3.2.3

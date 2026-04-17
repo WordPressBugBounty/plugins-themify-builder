@@ -96,6 +96,8 @@ class Themify_Builder_Active{
             themify_enque_script('themify-builder-modules-js', $editorUrl . 'build/modules.min.js', THEMIFY_VERSION, array('themify-builder-app-js'));
 
             themify_enque_script('themify-builder-front-ui-js', $editorUrl . 'frontend/themify-builder-visual.js', THEMIFY_VERSION, array('themify-builder-app-js'));
+            themify_enque_style('tb-display-conditions-css', THEMIFY_BUILDER_URI . '/css/editor/display-conditions.css', array(), THEMIFY_VERSION, 'all', true);
+            themify_enque_script('tb-display-conditions-js', THEMIFY_BUILDER_URI . '/js/editor/display-conditions.js', THEMIFY_VERSION, array('themify-builder-app-js'));
 
             global $shortcode_tags;
             $builderData = self::get_active_builder_vars();
@@ -128,6 +130,8 @@ class Themify_Builder_Active{
             themify_enque_script('themify-builder-modules-js', $editorUrl . 'build/modules.min.js', THEMIFY_VERSION, array('themify-builder-app-js'));
 
             themify_enque_script('themify-builder-backend-js', $editorUrl . 'backend/themify-builder-backend.js', THEMIFY_VERSION, array('themify-builder-app-js'));
+            themify_enque_style('tb-display-conditions-css', THEMIFY_BUILDER_URI . '/css/editor/display-conditions.css', array(), THEMIFY_VERSION, 'all', true);
+            themify_enque_script('tb-display-conditions-js', THEMIFY_BUILDER_URI . '/js/editor/display-conditions.js', THEMIFY_VERSION, array('themify-builder-app-js'));
 
             themify_enque_script('themify-static-badge', THEMIFY_BUILDER_URI . '/js/editor/backend/themify-builder-static-badge.js', THEMIFY_VERSION, array('mce-view', 'themify-builder-backend-js'));
 
@@ -542,7 +546,10 @@ class Themify_Builder_Active{
                         if(!function_exists('gzdecode')){
                             wp_send_json_error(__('gzdecode is disabled', 'themify'));
                         }
-                        $data=gzdecode(base64_decode($_POST['data']));
+                        $data = function_exists( 'themify_safe_gzbase64_decode' ) ? themify_safe_gzbase64_decode( $_POST['data'] ) : @gzdecode( base64_decode( $_POST['data'] ) );
+						if ( $data === false ) {
+							wp_send_json_error( __( 'Invalid data.', 'themify' ) );
+						}
                     }
                     else{
                         $data = stripslashes_deep($_POST['data']);
@@ -556,7 +563,10 @@ class Themify_Builder_Active{
                     if (current_user_can('edit_post', $post_id)) {
                         if (!empty($_POST['images'])) {
                             if(isset($_POST['mode']) && $_POST['mode']==='gzip'){
-                                $images = gzdecode(base64_decode($_POST['images']));                                
+                                $images = function_exists( 'themify_safe_gzbase64_decode' ) ? themify_safe_gzbase64_decode( $_POST['images'], 5242880, 7864320 ) : @gzdecode( base64_decode( $_POST['images'] ) );                                
+									if ( $images === false ) {
+										$images = '';
+									}
                             }
                             else{
                                 $images = stripslashes_deep($_POST['images']);

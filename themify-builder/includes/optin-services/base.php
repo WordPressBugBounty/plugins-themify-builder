@@ -107,6 +107,7 @@ abstract class Builder_Optin_Service {
      * Hooked to wp_ajax_tb_optin_subscribe
      */
     public static function ajax_subscribe() {
+        check_ajax_referer( 'tf_nonce', 'nonce' );
         if (!isset($_POST['tb_optin_provider'], $_POST['tb_optin_fname'], $_POST['tb_optin_lname'], $_POST['tb_optin_email'], $_POST['tb_post_id'], $_POST['tb_element_id'])) {
             wp_send_json_error(array('error' => __('Required fields are empty.', 'themify')));
         }
@@ -150,13 +151,26 @@ abstract class Builder_Optin_Service {
             if (is_wp_error($result)) {
                 wp_send_json_error(array('error' => $result->get_error_message()));
             } else {
+                // Validate the redirect URL is on the same site to prevent open redirect.
+                // $data['redirect'] comes from $_POST (tb_optin_redirect), which was
+                // sanitize_text_field()'d above - strip esc_url() before validation.
+                $redirect_url = ! empty( $data['redirect'] ) ? $data['redirect'] : '';
+                $parsed       = $redirect_url ? wp_parse_url( $redirect_url ) : false;
+                $home_host    = wp_parse_url( home_url(), PHP_URL_HOST );
+                if (
+                    ! $parsed
+                    || ( ! empty( $parsed['host'] ) && $parsed['host'] !== $home_host )
+                ) {
+                    // Fall back to home URL if redirect points off-site.
+                    $redirect_url = home_url();
+                }
                 wp_send_json_success(array(
                     /* send name and email in GET, these may come useful when building the page that the visitor will be redirected to */
                     'redirect' => esc_url( add_query_arg(array(
                         'fname' => $data['fname'],
                         'lname' => $data['lname'],
                         'email' => $data['email'],
-                        ), $data['redirect']) )
+                        ), $redirect_url) )
                 ));
             }
         } else {

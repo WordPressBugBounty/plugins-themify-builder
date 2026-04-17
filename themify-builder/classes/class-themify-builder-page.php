@@ -87,9 +87,19 @@ class Themify_Builder_Builder_Page {
                 ThemifyBuilder_Data_Manager::save_data( $builder_data, $new_page );
             }
         } elseif ( ! empty( $layout ) ) {
-            ThemifyBuilder_Data_Manager::save_data( $layout['builder_data'], $new_page );
-            if(!empty($layout['used_gs'])){
-                Themify_Global_Styles::builder_import($layout['used_gs'],true);
+            $custom_css = isset( $layout['custom_css'] ) ? $layout['custom_css'] : null;
+            ThemifyBuilder_Data_Manager::save_data( $layout['builder_data'], $new_page, 'frontend', $custom_css );
+            if ( ! empty( $layout['used_gs'] ) ) {
+                Themify_Global_Styles::builder_import( $layout['used_gs'], true );
+            }
+            $layout_sv = [];
+            if ( ! empty( $layout['used_sv'] ) && is_array( $layout['used_sv'] ) ) {
+                $layout_sv = $layout['used_sv'];
+            } elseif ( ! empty( $layout['style_variables'] ) && is_array( $layout['style_variables'] ) ) {
+                $layout_sv = $layout['style_variables'];
+            }
+            if ( ! empty( $layout_sv ) && class_exists( 'TF_SV_Framework', false ) ) {
+                TF_SV_Framework::import_missing_vars( $layout_sv );
             }
         }
         if ( themify_is_themify_theme() ) {
@@ -113,7 +123,9 @@ class Themify_Builder_Builder_Page {
                 'manage_layout_link' => admin_url( 'edit.php?post_type='.Themify_Builder_Layouts::LAYOUT_SLUG ),
                 'i18n'=>array(
                     'layout_error' => __( 'There was an error in loading layout, please try again later, or you can download this file: ({FILE}) and then import manually (https://themify.me/docs/builder#import-export).', 'themify' ),
-                    'preview'=>__( 'Preview', 'themify' ),
+                    'layouts_unavailable_title' => __( 'Unable to load pre-designed layouts.', 'themify' ),
+                    'layouts_unavailable_offline' => __( 'It looks like you are offline. Please check your internet connection and try again.', 'themify' ),
+                    'layouts_unavailable_server' => __( 'Please try again later. If the issue persists, the demo server may be temporarily unavailable.', 'themify' ),                    'preview'=>__( 'Preview', 'themify' ),
                     'cancel'=>__( 'Cancel', 'themify' ),
                     'title'=> __( 'Add title', 'themify' ),
                     'all'=>__( 'All', 'themify' ),

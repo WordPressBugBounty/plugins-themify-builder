@@ -853,7 +853,7 @@ export class Module extends BaseStyles {
                     ],
                     h: [
                         this.get_font_family(' .post-filter li a', 'f_f_pt_f', 'h'),
-                        this.get_color(' .post-filter li a:hover', 'f_c_pt_f_h', null, null, 'h'),
+                        this.get_color(' .post-filter li a', 'f_c_pt_f_h', null, null, 'h'),
                         this.get_font_size(' .post-filter li a', 'f_s_pt_f', '', 'h'),
                         this.get_font_style(' .post-filter li a', 'f_st_pt_f', 'f_b_pt_f', 'h'),
                         this.get_text_shadow(' .post-filter li a', 't_sh_pt_f', 'h')

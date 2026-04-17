@@ -51,6 +51,7 @@ class TB_Signup_Form_Module extends Themify_Builder_Component_Module {
      *
      */
     public static function signup_process() {
+        check_ajax_referer( 'tf_nonce', 'nonce' );
         if ( empty( $_POST['tb_post_id'] ) || ! self::signup_enabled() ) {
             die(-1);
         }
@@ -165,7 +166,8 @@ class TB_Signup_Form_Module extends Themify_Builder_Component_Module {
                     wp_new_user_notification($new_user_id, null, $notify);
                 }
 
-                $_SESSION['tb_signup'] = time();
+                $key = 'tb_signup_' . md5( ( $_SERVER['REMOTE_ADDR'] ?? '' ) . ( $_SERVER['HTTP_USER_AGENT'] ?? '' ) );
+                set_transient( $key, 1, MINUTE_IN_SECONDS );
 
                 wp_send_json_success( [
                     'user_id' => $new_user_id
@@ -182,10 +184,11 @@ class TB_Signup_Form_Module extends Themify_Builder_Component_Module {
      * @return bool
      */
     private static function flood_check():bool {
-        if( !session_id() ){
-            session_start();
+        $key = 'tb_signup_' . md5( ( $_SERVER['REMOTE_ADDR'] ?? '' ) . ( $_SERVER['HTTP_USER_AGENT'] ?? '' ) );
+        if ( get_transient( $key ) ) {
+            return true;
         }
-        return ! ( empty( $_SESSION['tb_signup'] ) || ( time() > ( $_SESSION['tb_signup'] + MINUTE_IN_SECONDS ) ) );
+        return false;
     }
 
     public static function get_styling_image_fields() : array {

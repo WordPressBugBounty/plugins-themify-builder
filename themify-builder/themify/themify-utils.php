@@ -471,7 +471,10 @@ function themify_video_image(string $url):string {
         }
         $content = Themify_Filesystem::get_contents('https://vimeo.com/api/v2/video/' . $id . '.php');
         if (!empty($content)) {
-            $hash = unserialize($content);
+            $hash = themify_maybe_unserialize( $content );
+            if ( ! is_array( $hash ) ) {
+                $hash = array();
+            }
             if (!empty($hash[0])) {
                 $return_url = $hash[0]["thumbnail_large"];
             }
@@ -584,7 +587,21 @@ function themify_shop_pageId() {
  * @return string
  */
 function themify_get_color(string $var, $default = null, bool $data_only = false) {
-    return themify_sanitize_hex_color(themify_get($var, $default, $data_only));
+    $value = themify_get($var, $default, $data_only);
+    if ( $value === null || false === $value || '' === $value ) {
+        return $value;
+    }
+    $value = trim( (string) $value );
+    if ( '' === $value ) {
+        return $value;
+    }
+    if ( 0 === stripos( $value, 'var(' ) ) {
+        return $value;
+    }
+    if ( 0 === strpos( $value, '--' ) ) {
+        return 'var(' . $value . ')';
+    }
+    return themify_sanitize_hex_color( $value );
 }
 
 /**
@@ -2016,3 +2033,62 @@ function themify_whitelist_tag( string $input, string $default = 'div' ) : strin
         return $input;
     }
 }
+
+/**
+ * Uses wp_safe_remote_get and retries once with sslverify=false only if the first request fails.
+ *
+ * @since 7.0.0
+ */
+function themify_safe_remote_get_with_ssl_fallback( string $url, array $args = array() ) {
+    $defaults = array(
+        'timeout'     => 5,
+        'redirection' => 3,
+        'sslverify'   => true,
+    );
+    $args = wp_parse_args( $args, $defaults );
+
+    $resp = wp_safe_remote_get( $url, $args );
+    if ( is_wp_error( $resp ) ) {
+        // Backward-compatibility: some hosts may still have SSL chain issues.
+        $args['sslverify'] = false;
+        $resp = wp_safe_remote_get( $url, $args );
+    }
+    return $resp;
+}
+
+
+if ( ! function_exists( 'themify_safe_gzbase64_decode' ) ) :
+/**
+ * Safely base64-decode and gzdecode a payload with size limits.
+ *
+ * @param string $payload Base64 string.
+ * @param int    $max_decoded_bytes Maximum decoded bytes allowed.
+ * @param int    $max_encoded_bytes Maximum base64 string length allowed.
+ *
+ * @return string|false Decoded string on success, false on failure.
+ */
+function themify_safe_gzbase64_decode( $payload, $max_decoded_bytes = 10485760, $max_encoded_bytes = 15728640 ) {
+	if ( ! is_string( $payload ) || $payload === '' ) {
+		return false;
+	}
+	$len = strlen( $payload );
+	if ( $len > $max_encoded_bytes ) {
+		return false;
+	}
+
+	$decoded = base64_decode( $payload, true );
+	if ( $decoded === false ) {
+		return false;
+	}
+	if ( strlen( $decoded ) > $max_decoded_bytes ) {
+		return false;
+	}
+
+	$out = function_exists( 'gzdecode' ) ? @gzdecode( $decoded ) : false;
+	if ( $out === false ) {
+		return false;
+	}
+	return $out;
+}
+endif;
+

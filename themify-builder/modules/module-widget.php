@@ -19,6 +19,7 @@ class TB_Widget_Module extends Themify_Builder_Component_Module {
     }
 
     public static function get_items() {
+        check_ajax_referer( 'tf_nonce', 'nonce' );
         $result = array();
         global $wp_widget_factory;
         if (!empty($wp_widget_factory->widgets)) {

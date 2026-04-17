@@ -107,10 +107,10 @@ export class Module extends BaseStyles {
             this.get_expand('r_c', [
                 this.get_tab({
                     n: [
-                        this.get_border_radius()
+                        this.get_border_radius(['', ' .video-wrap'])
                     ],
                     h: [
-                        this.get_border_radius('', 'r_c', 'h')
+                        this.get_border_radius(['', ' .video-wrap'], 'r_c', 'h')
                     ]
                 })
             ]),
@@ -247,10 +247,10 @@ export class Module extends BaseStyles {
             this.get_expand('r_c', [
                 this.get_tab({
                     n: [
-                        this.get_border_radius(' .tb_video_overlay', 'r_c_o_i')
+                        this.get_border_radius([' .tb_video_overlay', ' .tb_video_overlay img'], 'r_c_o_i')
                     ],
                     h: [
-                        this.get_border_radius(' .tb_video_overlay', 'r_c_o_i', 'h')
+                        this.get_border_radius([' .tb_video_overlay', ' .tb_video_overlay img'], 'r_c_o_i', 'h')
                     ]
                 })
             ]),

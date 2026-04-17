@@ -23,7 +23,7 @@ if( $query->have_posts()):
                     break;
             }
             ?>
-            <li><a href="#<?php echo $type ?>"><?php echo $title; ?></a></li>
+            <li><a href="#<?php echo esc_attr( $type ) ?>"><?php echo esc_html( $title ); ?></a></li>
         <?php endforeach; ?>
     </ul>
     <?php $is_disabled = themify_is_image_script_disabled();?>
@@ -31,7 +31,7 @@ if( $query->have_posts()):
     <?php
     $query->the_post();
     $post_type  = get_post_type();
-    $is_product = $post_type === 'product';
+    $is_product = $post_type === 'product' && themify_is_woocommerce_active();
     if(has_post_thumbnail()){
         $post_image = $is_disabled===false?themify_get_image(array('w'=>47,'h'=>48,'crop'=>true,'urlonly'=>true)):'';
         if(!$post_image){
@@ -42,10 +42,10 @@ if( $query->have_posts()):
         $post_image = false;
     }
     ?>
-    <div class="tf_search_item tf_search_<?php echo $post_type; ?> tf_rel tf_overflow tf_clear">
+    <div class="tf_search_item tf_search_<?php echo esc_attr( $post_type ); ?> tf_rel tf_overflow tf_clear">
         <a href="<?php the_permalink()?>" class="tf_clearfix">
             <?php if($post_image!==false):?>
-                <img src="<?php echo $post_image;?>" width="47" height="48" />
+                <img src="<?php echo esc_url( $post_image );?>" width="47" height="48" />
             <?php endif;?>
             <span class="title"><?php the_title()?></span>
             <?php if($is_product===true):?>
@@ -62,9 +62,9 @@ if( $query->have_posts()):
         <?php $search_link = get_search_link($_POST['s']);?>
         <?php foreach ($found_types as $type): ?>
             <?php $type_obj = get_post_type_object( $type ); ?>
-            <a id="tf_result_link_<?php echo $type; ?>" href="<?php echo esc_url( add_query_arg(array('type'=>$type),$search_link) ); ?>" class="tf_view_button tf_hide"><?php echo __('View All','themify').' '.$type_obj->label; ?></a>
+            <a id="tf_result_link_<?php echo esc_attr( $type ); ?>" href="<?php echo esc_url( add_query_arg(array('type'=>$type),$search_link) ); ?>" class="tf_view_button tf_hide"><?php echo esc_html( __('View All','themify') . ' ' . $type_obj->label ); ?></a>
         <?php endforeach; ?>
-        <a id="tf_result_link_item" href="<?php echo $search_link ?>" class="tf_view_button tf_hide"><?php _e('View All','themify')?></a>
+        <a id="tf_result_link_item" href="<?php echo esc_url( $search_link )?>" class="tf_view_button tf_hide"><?php _e('View All','themify')?></a>
     </div>
     <!-- /tf_view_all -->
 <?php endif;?>

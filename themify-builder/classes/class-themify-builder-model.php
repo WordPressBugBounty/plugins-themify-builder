@@ -968,10 +968,20 @@ final class Themify_Builder_Model {
         return array_filter(compact('include_by_id', 'exclude_by_id', 'include_by_slug', 'exclude_by_slug'));
     }
 
-    public static function parseTermsQuery(array &$args,string $term,string $taxonomy):void {
+    /**
+     * Build a taxonomy query from a term string.
+     *
+     * @param array  $args     WP_Query arguments array (modified by reference)
+     * @param string $term     Term string (supports IDs/slugs and exclusions)
+     * @param string $taxonomy Taxonomy name
+     * @param bool   $reset    Whether to reset existing tax_query (default true for backward compatibility)
+     */
+    public static function parseTermsQuery(array &$args,string $term,string $taxonomy,bool $reset=true):void {
         $terms = self::parseTerms($term);
         if (!empty( $terms ) ) {
-            $args['tax_query'] = array();
+            if ( $reset === true || empty( $args['tax_query'] ) || ! is_array( $args['tax_query'] ) ) {
+                $args['tax_query'] = array();
+            }
             if (!empty($terms['include_by_id']) && !in_array('0', $terms['include_by_id'])) {
                 $args['tax_query'][] = array(
                     array(

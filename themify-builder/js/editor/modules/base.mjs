@@ -193,6 +193,15 @@
                                 txt += 'hide' === styling[i] ? prefix + visiblityVars[i] : '';
                             }
                         }
+                        let dcVal = styling.display_condition;
+                        if (dcVal) {
+                            if (typeof dcVal === 'string') {
+                                try { dcVal = JSON.parse(dcVal); } catch(e) {}
+                            }
+                            if ((Array.isArray(dcVal) && dcVal.length > 0) || (typeof dcVal === 'object' && !Array.isArray(dcVal) && Object.keys(dcVal).length > 0)) {
+                                txt += (txt !== '' ? ', ' : '') + 'DC';
+                            }
+                        }
                         if (txt !== '') {
                             if(label.tfTag('svg')[0]===undefined){
                                 label.appendChild(api.Helper.getIcon('ti-eye'));
@@ -1325,7 +1334,10 @@
         }
         static clearPadding(key,bp,settings){
             const current=bp==='desktop'?settings:settings['breakpoint_'+bp],
-                stVals=this.getStylingValue;
+                stVals=this.getStylingValue,
+                hasSideValue=(k)=>{
+                    return stVals(k,bp,settings)!==undefined || stVals('tf_sv_'+k,bp,settings);
+                };
             if(current!==undefined){
                 const applyAll=stVals('checkbox_'+key+'_apply_all',bp,settings);
                 if(applyAll==='false' || applyAll==='|' || applyAll===null){
@@ -1337,13 +1349,17 @@
                     delete current[key+'_bottom'];
                     delete current[key+'_left'];
                     delete current[key+'_right'];
+                    delete current['tf_sv_'+key+'_bottom'];
+                    delete current['tf_sv_'+key+'_left'];
+                    delete current['tf_sv_'+key+'_right'];
                     delete current[key+'_opp_top'];
                     delete current[key+'_opp_bottom'];
                 }
                 for(let sides=['top','left','right','bottom'],i=sides.length-1;i>-1;--i){
                     let k=key+'_'+sides[i];
-                    if(stVals(k,bp,settings)===undefined){
+                    if(!hasSideValue(k)){
                         delete current[k+'_unit'];
+                        delete current['tf_sv_'+k];
                         if(sides[i]==='top'){
                             delete current['checkbox_'+key+'_apply_all'];
                         }
@@ -1355,15 +1371,15 @@
                 const oppLeft=stVals(key+'_opp_left',bp,settings),
                     oppBottom=stVals(key+'_opp_bottom',bp,settings),
                     oppTop=stVals(key+'_opp_top',bp,settings);
-                if(!oppLeft || oppLeft==='false' || oppLeft==='|' || stVals(key+'_left',bp,settings)===undefined){
+                if(!oppLeft || oppLeft==='false' || oppLeft==='|' || !hasSideValue(key+'_left')){
                     delete current[key+'_opp_left'];
-                }   
-                if(!oppBottom || oppBottom==='false' || oppBottom==='|' || stVals(key+'_top',bp,settings)===undefined){
+                }
+                if(!oppBottom || oppBottom==='false' || oppBottom==='|' || !hasSideValue(key+'_top')){
                     delete current[key+'_opp_bottom'];
-                }  
-                if(!oppTop || oppTop==='false' || oppTop==='|' || stVals(key+'_top',bp,settings)===undefined){
+                }
+                if(!oppTop || oppTop==='false' || oppTop==='|' || !hasSideValue(key+'_top')){
                     delete current[key+'_opp_top'];
-                }  
+                }
             }
         }
         static builderSave(settings,type){

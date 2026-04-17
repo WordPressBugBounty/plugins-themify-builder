@@ -253,7 +253,7 @@ $isGsPost=Themify_Global_Styles::$isGlobalEditPage===true?' gs_post':'';
 </template>
 <div id="tb_lite_lightbox_root" class="tf_hide tf_w tf_h" role="dialog">
     <template shadowrootmode="open">
-        <link href="<?php echo THEMIFY_BUILDER_URI ?>/css/editor/components/lite-lightbox.css?ver<?php echo THEMIFY_VERSION?>" as="style" rel="preload" onload="this.rel = 'stylesheet'">
+        <link href="<?php echo THEMIFY_BUILDER_URI ?>/css/editor/components/lite-lightbox.css?ver<?php echo THEMIFY_VERSION?>" rel="stylesheet">
         <div id="wrapper" class="tf_w tf_h<?php echo $isGsPost?>"></div>
     </template>
 </div>
@@ -624,7 +624,7 @@ $isGsPost=Themify_Global_Styles::$isGlobalEditPage===true?' gs_post':'';
 </template>
 
 <template id="tmpl-last_row_add_btn">
-    <link href="<?php echo THEMIFY_BUILDER_URI ?>/css/editor/components/last-row.css?ver<?php echo THEMIFY_VERSION?>" as="style" rel="preload" onload="this.rel = 'stylesheet'">
+    <link href="<?php echo THEMIFY_BUILDER_URI ?>/css/editor/components/last-row.css?ver<?php echo THEMIFY_VERSION?>" rel="stylesheet">
     <div id="container" tabindex="-1" class="tf_overflow tf_rel tf_box tf_w<?php echo $isGsPost?>">
         <a href="javascript:;" class="add_btn tf_textc tf_text_dec">+</a>
     </div>
@@ -860,7 +860,7 @@ $isGsPost=Themify_Global_Styles::$isGlobalEditPage===true?' gs_post':'';
 </div>
 <div id="tb_small_panel_root" class="tf_abs_t tf_hide tf_hidden">
     <template shadowrootmode="open">
-        <link href="<?php echo THEMIFY_BUILDER_URI ?>/css/editor/components/small-panel.css?ver<?php echo THEMIFY_VERSION?>" as="style" rel="preload" onload="this.rel = 'stylesheet'">
+        <link href="<?php echo THEMIFY_BUILDER_URI ?>/css/editor/components/small-panel.css?ver<?php echo THEMIFY_VERSION?>" rel="stylesheet">
         <?php do_action('tb_small_panel_styles')?>
         <div id="small_panel" class="panel<?php if($is_admin===true):?> backend<?php endif;?><?php echo $isGsPost?> tf_textc tf_box"></div>
     </template>

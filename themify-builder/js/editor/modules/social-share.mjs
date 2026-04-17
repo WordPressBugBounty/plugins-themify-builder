@@ -34,6 +34,10 @@
                         {
                             name: 'em',
                             value: 'em'
+                        },
+                        {
+                            name: 'wa',
+                            value: 'wa'
                         }
                     ]
                 },
@@ -162,7 +166,8 @@
                     tw:{icon:'fab x-twitter',type:'twitter'},
                     lk:{icon:'ti-linkedin',type:'linkedin'},
                     pi:{icon:'ti-pinterest',type:'pinterest'},
-                    em:{icon:'ti-email',type:'email'}
+                    em:{icon:'ti-email',type:'email'},
+                    wa:{icon:'fab whatsapp',type:'whatsapp'}
                 },
                 classes = ['module', 'module-social-share'];
             if (data.css_social_share) {

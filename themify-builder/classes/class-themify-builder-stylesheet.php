@@ -163,6 +163,25 @@ final class Themify_Builder_Stylesheet {
         check_ajax_referer('tf_nonce', 'nonce');
         if (!empty($_POST['bid'])) {
             $id = (int) $_POST['bid'];
+
+            // Security: non-logged-in visitors may only write CSS for posts that
+            // are published, publicly queryable, and not password-protected.
+            // This prevents anonymous actors from writing CSS files for arbitrary,
+            // draft, or private posts even though they hold a valid nonce.
+            if ( ! is_user_logged_in() ) {
+                $post = get_post( $id );
+                if ( ! $post ) {
+                    wp_die();
+                }
+                $post_type_obj = get_post_type_object( $post->post_type );
+                if (
+                    $post->post_status !== 'publish'
+                    || post_password_required( $post )
+                    || empty( $post_type_obj->public )
+                ) {
+                    wp_die();
+                }
+            }
             if (!empty($_FILES['css'])) {
                 $data = file_get_contents($_FILES['css']['tmp_name']);
             } 
@@ -171,7 +190,10 @@ final class Themify_Builder_Stylesheet {
                     if (!function_exists('gzdecode')) {
                         wp_send_json_error(__('gzdecode is disabled', 'themify'));
                     }
-                    $data = gzdecode(base64_decode($_POST['css']));
+                    $data = function_exists( 'themify_safe_gzbase64_decode' ) ? themify_safe_gzbase64_decode( $_POST['css'] ) : @gzdecode( base64_decode( $_POST['css'] ) );
+					if ( $data === false ) {
+						wp_send_json_error( __( 'Invalid CSS data.', 'themify' ) );
+					}
                 } 
                 else {
                     $data = !empty($_POST['css']) ? stripslashes_deep($_POST['css']) : array();
@@ -535,11 +557,17 @@ final class Themify_Builder_Stylesheet {
      * @return string
      */
     public static function get_rgba_color(string $color):string {
-        if (strpos($color, 'rgba') !== false) {
+        if (strpos($color, 'rgba') !== false || strpos($color, 'var(--') === 0) {
             return $color;
+        }
+        if (strpos($color, '--') === 0) {
+            return 'var(' . $color . ')';
         }
         $color = explode('_', $color);
         $opacity = isset($color[1]) && $color[1] !== '' ? $color[1] : '1';
-        return $opacity >= 0 && $opacity !== '1' && $opacity !== '1.00' && $opacity !== '0.99' ? 'rgba(' . self::hex2rgb($color[0]) . ', ' . $opacity . ')' : ($color[0] !== '' ? ('#' . str_replace('#', '', $color[0])) : '');
+        if ($opacity >= 0 && $opacity !== '1' && $opacity !== '1.00' && $opacity !== '0.99') {
+            return 'rgba(' . self::hex2rgb($color[0]) . ', ' . $opacity . ')';
+        }
+        return $color[0] !== '' ? ('#' . str_replace('#', '', $color[0])) : '';
     }
 }

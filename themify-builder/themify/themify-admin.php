@@ -573,13 +573,19 @@ function themify_page() {
                 </ul>
 
                 <div id="load-load" class="subtab">
-                    <?php if( $skins_and_demos ) : ?>
-                        <div class="themify-info-link"><?php _e( 'Select a skin and import the demo content (demo import is optional). Importing the demo content will override your Themify settings, menu and widget settings. It will also add the content (posts, pages, widgets, menus, etc.) to your site as per our demo setup. It is recommend to do on a fresh/development site. Erase demo will delete all the imported posts/pages (either modified or unmodified). Themify panel settings, user&rsquo;s created content, and widgets will not be removed.', 'themify' ); ?></div>
-                    <?php endif; ?>
+                    <div class="tf_skins_toolbar">
+                        <div class="tf_skins_search">
+                            <span class="tf_skins_search_icon"><?php echo themify_get_icon( 'search', 'ti' ); ?></span>
+                            <input type="search" class="tf_skins_search_input" placeholder="<?php esc_attr_e( 'Search', 'themify' ); ?>" autocomplete="off" />
+                        </div>
+                    </div>
                     <div class="themify-skins">
                         <input type="hidden" name="skin" value="<?php echo themify_get( 'skin','',true ); ?>">
                         <?php echo themify_get_skins_admin(); ?>
                     </div>
+                    <?php if( $skins_and_demos ) : ?>
+                        <div class="themify-info-link tf_skins_notice"><?php _e( 'Select a skin and import the demo content (demo import is optional). Importing the demo content will override your Themify settings, including your menu and widget configurations. It will also add content (posts, pages, featured images, widgets, menus, etc.) to your site based on our demo setup. It is recommended to perform this only on a fresh or development site. Erase demo will delete all the imported posts/pages (either modified or unmodified). Themify panel settings, user&rsquo;s created content, and widgets will not be removed.', 'themify' ); ?></div>
+                    <?php endif; ?>
                 </div>
             </div>
             <!--/skins tab -->
@@ -625,7 +631,7 @@ function themify_page() {
                 </div>
                 <p><?php _e( 'Import demo will replicate your site like our demo setup.', 'themify' ); ?> <br><br>
                 
-                <small><?php _e( 'WARNING: Importing the demo content will override your Themify settings, menu and widget settings. It will also add the content (posts, pages, widgets, menus, etc.) to your site as per our demo setup. It is recommend to do on a fresh/development site.', 'themify' ); ?></small></p>
+                <small><?php _e( 'WARNING: Importing the demo content will override your Themify settings, including your menu and widget configurations. It will also add content (posts, pages, featured images, widgets, menus, etc.) to your site based on our demo setup. It is recommended to perform this only on a fresh or development site.', 'themify' ); ?></small></p>
                 <div>
                 <a href="#" class="themify_button big-button erase-sample-content" data-default="<?php _e( 'Erase Demo', 'themify' ); ?>" data-erasing="<?php _e( 'Erasing', 'themify' ); ?>" data-success="<?php _e( 'Done', 'themify' ); ?>"> <i class="tf_close"></i> <span><?php _e( 'Erase Demo', 'themify' ); ?></span> </a>
                 </div>
@@ -655,8 +661,8 @@ function themify_page() {
                             </div>
                             
                         <?php
-                        elseif ( $updater->has_error() && !$updater->has_attribute( $theme->stylesheet, 'free') ) :
-                            printf( __('Error: please check <a class="license-link" data-src="update" href="#">Themify License</a> settings.', 'themify'));
+                        elseif ( ( method_exists( $updater, 'should_block_themify_reinstall_for_missing_license' ) ? $updater->should_block_themify_reinstall_for_missing_license( $theme->stylesheet ) : ( $updater->has_error() && ! $updater->has_attribute( $theme->stylesheet, 'free' ) ) ) ) :
+                            printf( __( 'To use theme re-installation, add your Themify username and license key under <a class="license-link" data-src="update" href="#">Themify License</a>.', 'themify' ) );
                             $license_modal=true;
                         else:
                             $updater->themify_reinstall_theme( $theme->stylesheet );
@@ -715,7 +721,7 @@ function themify_page() {
         <?php if( $skins_and_demos ) : ?>
             <h3><?php _e( 'Skins & Demos', 'themify' ); ?></h3>
             <p><?php _e( 'Select a skin and import the demo content as per our demo (optional). You can do this later at the Skins & Demos tab.', 'themify' ); ?></p>
-            <div class="skins-demo-import-notice">
+            <div class="themify-skins">
                 <?php echo themify_get_skins_admin(); ?>
             </div>
         <?php else : ?>
@@ -724,7 +730,7 @@ function themify_page() {
             <p><?php _e( 'You may import or erase demo content later at the Import tab of the Themify panel.', 'themify' ); ?></p>
             <a href="#" class="themify_button import-sample-content" data-plugins="<?php echo esc_attr(themify_get_theme_required_plugins()); ?>" data-default="<?php _e( 'Import Demo', 'themify' ); ?>" data-success="<?php _e( 'Done', 'themify' ); ?>" data-importing="<?php _e( 'Importing', 'themify' ) ?>"> <i class="ti-arrow-down"></i> <span><?php _e( 'Yes, import', 'themify' ); ?></span> </a>
             <a href="#" class="thanks-button dismiss-import-notice"> <?php _e( 'No, thanks', 'themify' ); ?> </a>
-            <div class="note"><?php _e( 'WARNING: Importing the demo content will override your Themify settings, menu and widget settings. It will also add the content (posts, pages, widgets, menus, etc.) to your site as per our demo setup. It is recommend to do on a fresh/development site.', 'themify' ); ?></div>
+            <div class="note"><?php _e( 'WARNING: Importing the demo content will override your Themify settings, including your menu and widget configurations. It will also add content (posts, pages, featured images, widgets, menus, etc.) to your site based on our demo setup. It is recommended to perform this only on a fresh or development site.', 'themify' ); ?></div>
         <?php endif; ?>
             <a href="#" class="close dismiss-import-notice"><i class="tf_close"></i></a>
         </div>
@@ -2795,7 +2801,7 @@ function themify_turnstile_setting($data=array()) : string {
     $output = '<p><span class="label">' . __( 'Secret Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_secret" value="' . esc_attr( $secret_key ) . '" />' . $validate . '</p>';
 
     $validate = !empty($site_key) && strip_tags( $site_key ) !== $site_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
-    $output .= '<p><span class="label">' . __( 'Site Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_site" value="' . esc_attr( $site_key ) . '" /><br/><span class="pushlabel"><small>' . sprintf( __( '<a href="%s" target="_blank">Get sitekey and secret key</a>', 'themify' ), 'https://developers.cloudflare.com/turnstile/get-started/#get-a-sitekey-and-secret-key' ) . '</small></span> ' . $validate . '</p>';
+    $output .= '<p><span class="label">' . __( 'Site Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_site" value="' . esc_attr( $site_key ) . '" /><br/><span class="pushlabel"><small>' . sprintf( __( 'Get API keys at Cloudflare Dashboard &gt; Application Security &gt; Turnstile (<a href="%s" target="_blank">more info</a>).', 'themify' ), 'https://developers.cloudflare.com/turnstile/get-started/#get-a-sitekey-and-secret-key' ) . '</small></span> ' . $validate . '</p>';
     return $output;
 }
 

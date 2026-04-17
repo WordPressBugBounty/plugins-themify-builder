@@ -17,6 +17,7 @@ class Themify_Enqueue_Assets {
     private static $localiztion = array();
     private static $theme_css_support = array('mobile-menu'=>true,'rtl'=>true);
     private static $concateFile = null;
+    private static $bufferLevel = 0;
     private static $googleFonts = array();
     private static $guttenbergCss = array();
     public static $preLoadMedia = array();
@@ -81,7 +82,7 @@ class Themify_Enqueue_Assets {
                 add_filter('wp_title', array(__CLASS__, 'wp_title'), 10, 2);
                 remove_action('wp_head', 'locale_stylesheet'); //remove rtl loading
             }
-            add_action( 'template_redirect', array( __CLASS__, 'start_buffer' ) );
+            add_action( 'template_redirect', array( __CLASS__, 'start_buffer' ), 1 );
             add_action('wp_enqueue_scripts', array(__CLASS__, 'before_enqueue'), 7);
             add_action('wp_enqueue_scripts', array(__CLASS__, 'after_enqueue'), 11);
             add_filter('style_loader_tag', array(__CLASS__, 'style_header_tag'), 10, 4);
@@ -125,6 +126,7 @@ class Themify_Enqueue_Assets {
     public static function start_buffer(){
         self::createDir();
         ob_start(array(__CLASS__, 'getBuffer'));
+        self::$bufferLevel = ob_get_level();
     }
 
     public static function createDir():bool {
@@ -185,10 +187,11 @@ class Themify_Enqueue_Assets {
             if (themify_is_shop() || is_product() || (!is_checkout() && !is_account_page() && !is_checkout_pay_page() && !is_edit_account_page() && !is_order_received_page() && !is_add_payment_method_page())) {
                 wp_enqueue_script('wc-add-to-cart-variation'); //load tmpl files
                 wp_enqueue_script('wc-single-product');
-                wp_enqueue_script('jquery-blockui');
+                wp_enqueue_script(themify_wc_get_script_handle('wc-jquery-blockui'));
                 WC_Frontend_Scripts::localize_printed_scripts();
                 global $wp_scripts;
-                $js = array('js-cookie', 'wc-add-to-cart', 'wc-add-to-cart-variation', 'wc-cart-fragments', 'woocommerce', 'wc_additional_variation_images_script', 'wc-single-product');
+
+                $js = array(themify_wc_get_script_handle('js-cookie'), 'wc-add-to-cart', 'wc-add-to-cart-variation', 'wc-cart-fragments', 'woocommerce', 'wc_additional_variation_images_script', 'wc-single-product');
                 $arr = array();
                 $disableOptimize = themify_check('setting-optimize-wc', true);
                 $isDefered=themify_check('setting-jquery', true)?true:($disableOptimize?false:!themify_check('setting-defer-wc', true));
@@ -643,11 +646,123 @@ class Themify_Enqueue_Assets {
         if (self::$themeVersion !== null) {
             echo "\n\n", themify_get('setting-footer_html', '', true);
         }
-        add_action('shutdown',array(__CLASS__,'buffer_end'),-99999999);
+        add_action('shutdown',array(__CLASS__,'buffer_end'),PHP_INT_MAX);
     }
 
     public static function buffer_end():void{
-        ob_end_flush();
+        while (ob_get_level() > self::$bufferLevel) {
+            ob_end_flush();
+        }
+
+        if (ob_get_level() === self::$bufferLevel) {
+            ob_end_flush();
+        }
+    }
+
+    private static function minify_concate_css_should_preserve_comment(string $inner):bool {
+        $inner = trim($inner);
+        if ($inner === '') {
+            return false;
+        }
+        if (preg_match('/^(.+\s+)?framework\s+[\w.+-]+$/i', $inner) === 1) {
+            return true;
+        }
+        if (preg_match('/\.css$/i', $inner) === 1) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Strip block comments; leaves quoted strings unchanged (handles \\ escapes).
+     * Keeps theme/framework version and per-file path comments from getBuffer().
+     */
+    private static function minify_concate_css_strip_comments(string $css):string {
+        $len = strlen($css);
+        $out = '';
+        for ($i = 0; $i < $len; $i++) {
+            $c = $css[$i];
+            if ($c === '"' || $c === "'") {
+                $q = $c;
+                $out .= $q;
+                for ($i++; $i < $len; $i++) {
+                    $c = $css[$i];
+                    $out .= $c;
+                    if ($c === '\\' && $i + 1 < $len) {
+                        $out .= $css[++$i];
+                        continue;
+                    }
+                    if ($c === $q) {
+                        break;
+                    }
+                }
+                continue;
+            }
+            if ($c === '/' && $i + 1 < $len && $css[$i + 1] === '*') {
+                $commentStart = $i;
+                $innerStart = $i + 2;
+                for ($i += 2; $i < $len; $i++) {
+                    if ($css[$i] === '*' && $i + 1 < $len && $css[$i + 1] === '/') {
+                        $inner = substr($css, $innerStart, $i - $innerStart);
+                        if (self::minify_concate_css_should_preserve_comment($inner)) {
+                            $out .= substr($css, $commentStart, $i - $commentStart + 2);
+                        }
+                        $i++;
+                        break;
+                    }
+                }
+                continue;
+            }
+            $out .= $c;
+        }
+        return $out;
+    }
+
+    /**
+     * Compress whitespace and braces/semicolons in concatenated cache CSS.
+     *
+     * Only normalizes whitespace runs to a single space, then trims around { } ; — we do not
+     * strip spaces around :, commas, +, ~, or >. That keeps transition/animation/background/
+     * grid-template shorthands, !important, and multi-token values intact.
+     *
+     * Avoids stripping around > (child combinator): the same character appears in @container
+     * (width > 700px), @supports selector(...), and arbitrary custom-property values.
+     *
+     * Native CSS nesting (&) is unchanged by comment removal; avoid adding combinator-only
+     * regex passes without tracking parens/at-rules if minification is extended later.
+     */
+    private static function minify_concate_css(string $css):string {
+        if ($css === '') {
+            return '';
+        }
+        if (strncmp($css, "\xEF\xBB\xBF", 3) === 0) {
+            $css = substr($css, 3);
+        }
+        $css = self::minify_concate_css_strip_comments($css);
+        if ($css === '') {
+            return '';
+        }
+        $quoted = array();
+        $css = preg_replace_callback(
+            '/"(?:\\\\.|[^\\\\"])*"|\'(?:\\\\.|[^\\\\\'])*\'/',
+            static function (array $m) use (&$quoted): string {
+                $quoted[] = $m[0];
+                return '##TFQ' . (count($quoted) - 1) . '##';
+            },
+            $css
+        );
+        if (!is_string($css)) {
+            return '';
+        }
+        $css = preg_replace('/\s+/', ' ', $css);
+        $css = preg_replace('/\s*{\s*/', '{', $css);
+        $css = preg_replace('/\s*;\s*/', ';', $css);
+        $css = preg_replace('/\s*}\s*/', '}', $css);
+        $css = trim($css);
+        for ($i = count($quoted) - 1; $i >= 0; $i--) {
+            $css = str_replace('##TFQ' . $i . '##', $quoted[$i], $css);
+        }
+        return $css;
     }
 
     private static function getBuffer(string $body):string{
@@ -765,6 +880,9 @@ class Themify_Enqueue_Assets {
                     }
                 }
                 if ($key !== '' && (empty(self::$concateFile) || (($regenerate === true || !Themify_Filesystem::is_file(self::$concateFile))))) {
+                    if (apply_filters('themify_minify_concate_css', !$isDevMode)) {
+                        $str = self::minify_concate_css($str);
+                    }
                     if(!file_put_contents(self::$concateFile.'tmp', $str) || Themify_Filesystem::rename(self::$concateFile.'tmp',self::$concateFile)===false){//tmp file need because file_put_contents isn't atomic(another process can read not ready file),locking file(LOCK_EX) is slow,that is why we are using rename(it is atomic)
                         $key = '';
                         Themify_Filesystem::delete(self::$concateFile.'tmp','f');
@@ -801,6 +919,9 @@ class Themify_Enqueue_Assets {
         }
         if (themify_get('setting-ga_m_id', '', true) !== '' || strpos($body, 'googletagmanager.com') !== false) {
             $path .= '<link rel="preconnect" href="https://www.google-analytics.com">';
+        }
+        if ( class_exists( 'TF_SV_Framework', false ) ) {
+            $path .= TF_SV_Framework::get_frontend_head_fragment();
         }
         if (self::$themeVersion !== null && ($custom_css = themify_get('setting-custom_css', false, true))) {
             $path.='<!--custom css:start--><style>'. $custom_css.'</style><!--custom css:end-->';
@@ -1161,7 +1282,7 @@ class Themify_Enqueue_Assets {
                     ? (themify_check('setting-jquery', true) ? true : (themify_check('setting-optimize-wc', true) ? false : !themify_check('setting-defer-wc', true)))
                     : !themify_builder_check('setting-defer-wc', 'defer-wc', true);
                 if ($isDefered===true && themify_is_woocommerce_active()) {
-                    $arr = array('flexslider', 'wc-single-product', 'woocommerce', 'zoom', 'js-cookie', 'jquery-blockui', 'jquery-cookie', 'jquery-payment', 'prettyPhoto', 'prettyPhoto-init', 'select2', 'selectWoo', 'wc-address-i18n', 'wc-add-payment-method', 'wc-cart', 'wc-cart-fragments', 'wc-checkout', 'wc-country-select', 'wc-credit-card-form', 'wc-add-to-cart', 'wc-add-to-cart-variation', 'wc-geolocation', 'wc-lost-password', 'wc-password-strength-meter', 'photoswipe', 'photoswipe-ui-default', 'wc-add-to-cart-composite');
+                    $arr = array('flexslider', 'wc-single-product', 'woocommerce', 'zoom', themify_wc_get_script_handle('js-cookie'), themify_wc_get_script_handle('wc-jquery-blockui'), 'jquery-cookie', 'jquery-payment', 'prettyPhoto', 'prettyPhoto-init', 'select2', 'selectWoo', 'wc-address-i18n', 'wc-add-payment-method', 'wc-cart', 'wc-cart-fragments', 'wc-checkout', 'wc-country-select', 'wc-credit-card-form', 'wc-add-to-cart', 'wc-add-to-cart-variation', 'wc-geolocation', 'wc-lost-password', 'wc-password-strength-meter', 'photoswipe', 'photoswipe-ui-default', 'wc-add-to-cart-composite');
                     //Authorize.Net Gateway for WooCommerce
                     if (function_exists('wc_authorize_net_cim')) {
                         $arr[] = 'wc-authorize-net-cim';
@@ -1244,6 +1365,7 @@ class Themify_Enqueue_Assets {
                 'breakpoints' => themify_get_breakpoints(),
                 'wp' => $wp_version,
                 'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce'    => wp_create_nonce( 'tf_nonce' ),
                 'map_key' => wp_strip_all_tags( themify_builder_get('setting-google_map_key', 'builder_settings_google_map_key') ?: '' ),
                 'bing_map_key' =>wp_strip_all_tags( themify_builder_get('setting-bing_map_key', 'builder_settings_bing_map_key') ?: '' ),
                 'azure_key' => wp_strip_all_tags( themify_builder_get('setting-azure_map_key', 'builder_settings_azure_map_key') ?: '' ),
@@ -1463,12 +1585,18 @@ class Themify_Enqueue_Assets {
                 $isNew=false;
                 unset($fonts,$res);
                 if(!$css){
-                    $resp = wp_remote_get('https' . $path, array(
-                        'sslverify' => false,
-                        'httpversion' => '2',
-                        'timeout'=>10,
-                        'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
-                    ));
+                    $resp = function_exists('themify_safe_remote_get_with_ssl_fallback')
+                        ? themify_safe_remote_get_with_ssl_fallback( 'https' . $path, array(
+                            'httpversion' => '2',
+                            'timeout' => 10,
+                            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
+                        ) )
+                        : wp_remote_get( 'https' . $path, array(
+                            'sslverify' => false,
+                            'httpversion' => '2',
+                            'timeout' => 10,
+                            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
+                        ) );
                     $css = wp_remote_retrieve_body($resp);
                     /* validate response's content type */
                     $content_type = wp_remote_retrieve_header( $resp, 'content-type' );
@@ -1620,7 +1748,14 @@ class Themify_Enqueue_Assets {
                 }
                 if(!$css){
                     $path = ( is_ssl() ? 'https' : 'http' ) . $path;
-                    $css='<link rel="preload" fetchpriority="high" as="style" href="' . $path . '"><link fetchpriority="high" id="themify-google-fonts-css" rel="stylesheet" href="' . $path . '">';
+                    // Use font-display=optional to prevent FOUT: browser uses fallback font rather than
+                    // showing a flash if the font is not cached. Swap &display=swap for &display=optional.
+                    $path_optional = str_replace( '&display=swap', '&display=optional', $path );
+                    $preconnect = '<link rel="preconnect" href="https://fonts.googleapis.com">'
+                        . '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
+                    $css = $preconnect
+                        . '<link rel="preload" fetchpriority="high" as="style" href="' . $path_optional . '">'
+                        . '<link fetchpriority="high" id="themify-google-fonts-css" rel="stylesheet" href="' . $path_optional . '">';
                 }
                 else{
                     $css='<style id="tf_gf_fonts_style">'.$css.'</style>';
@@ -2195,6 +2330,21 @@ class Themify_Enqueue_Assets {
         if(!empty(self::$preLoadMedia)){
             foreach (self::$preLoadMedia as $src => $arr) {
                 $type=$arr['t'];
+                $rel=$arr['r'];
+                // Preload only above-the-fold assets
+                if($type==='image' && $rel==='preload'){
+                    // Keep preload only when explicitly marked high priority.
+                    if(!isset($arr['i']) || $arr['i']!=='high'){
+                        $rel='prefetch';
+                        unset($arr['i']);
+                    }
+                }
+                elseif($type==='style' && $rel==='preload' && isset($arr['i']) && $arr['i']==='low'){
+                    $rel='prefetch';
+                    unset($arr['i']);
+                }
+
+                $type=$arr['t'];
                 if ($type === 'style' && isset(self::$css[$src])) {
                     continue;
                 }
@@ -2212,13 +2362,19 @@ class Themify_Enqueue_Assets {
                     $extra=' type="application/json" crossorigin="anonymous"';
                     $type='fetch';
                 }
-                $return .= sprintf('<link rel="%s" href="%s" as="%s"%s%s>',
-                    $arr['r'],
-                    $src,
-                    $type,
-                    $extra,
-                    (isset($arr['i']) ? ' fetchpriority="' . $arr['i'] . '"' : '')
-                );
+                if($rel==='prefetch'){
+                    // For prefetch, omit `as` to avoid incorrect type signalling and warnings.
+                    $return .= sprintf('<link rel="prefetch" href="%s">', $src);
+                }
+                else{
+                    $return .= sprintf('<link rel="%s" href="%s" as="%s"%s%s>',
+                        $rel,
+                        $src,
+                        $type,
+                        $extra,
+                        (isset($arr['i']) ? ' fetchpriority="' . $arr['i'] . '"' : '')
+                    );
+                }
             }
         }
         return $return;

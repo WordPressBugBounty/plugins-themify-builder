@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Themify Compatibility Code
  *
@@ -7,152 +8,196 @@
 
 /**
  * WooCommerce
+ *
  * @link https://woocommerce.com/
  */
 class Themify_Compat_woocommerce {
 
-    static function init() {
-        add_action( 'template_redirect', array( __CLASS__, 'template_redirect' ) );
-        add_action( 'woocommerce_init', array( __CLASS__, 'woocommerce_init' ) );
-    }
 
-    public static function woocommerce_init() {
-        remove_action( 'woocommerce_before_main_content', 'woocommerce_output_content_wrapper' );
-        remove_action( 'woocommerce_after_main_content', 'woocommerce_output_content_wrapper_end' );
-        remove_action( 'woocommerce_sidebar', 'woocommerce_get_sidebar' );
-        add_action( 'woocommerce_before_main_content', 'themify_before_wrap_content', 1 );
-        add_action( 'woocommerce_after_main_content', 'themify_after_wrap_content', 100 );
-        if ( current_theme_supports( 'themify-sticky-buy' ) ) {
-            add_action( 'template_redirect', 'themify_wc_sticky_buy', 12 );
-        }
-        if ( current_theme_supports( 'themify-wc-accordion-tabs' ) ) {
-            $tabType=themify_get( 'setting-product_tabs_layout','tab',true );
-            if('none'===$tabType){
-            remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
-            }elseif($tabType==='accordion'){
-            add_filter( 'wc_get_template', 'themify_wc_accordion_tabs', 10, 5 );
-            }
-        }
-        add_filter( 'body_class', array( __CLASS__, 'single_product_body_class' ) );
-        add_action( 'woocommerce_before_shop_loop_item', 'themify_post_edit_link' );
-    }
+	static function init() {
+		add_action( 'template_redirect', array( __CLASS__, 'template_redirect' ) );
+		add_action( 'woocommerce_init', array( __CLASS__, 'woocommerce_init' ) );
+	}
 
-    /**
-     * Fix video display in Focus Mode
-     *
-     * @access public
-     */
-    public static function template_redirect() {
-        global $themify;
-        if ( $themify->page_title === 'yes' && themify_is_shop() ) {
-            add_filter( 'woocommerce_show_page_title', '__return_false', 100 );
-        }
-        if ( is_product() ) {
-            add_filter( 'woocommerce_post_class', [ __CLASS__, 'woocommerce_post_class' ], 10, 2 );
-        }
-    }
+	public static function woocommerce_init() {
+		remove_action( 'woocommerce_before_main_content', 'woocommerce_output_content_wrapper' );
+		remove_action( 'woocommerce_after_main_content', 'woocommerce_output_content_wrapper_end' );
+		remove_action( 'woocommerce_sidebar', 'woocommerce_get_sidebar' );
+		add_action( 'woocommerce_before_main_content', 'themify_before_wrap_content', 1 );
+		add_action( 'woocommerce_after_main_content', 'themify_after_wrap_content', 100 );
+		if ( current_theme_supports( 'themify-sticky-buy' ) ) {
+			add_action( 'template_redirect', 'themify_wc_sticky_buy', 12 );
+		}
+		if ( current_theme_supports( 'themify-wc-accordion-tabs' ) ) {
+			$tabType = themify_get( 'setting-product_tabs_layout', 'tab', true );
+			if ( 'none' === $tabType ) {
+				remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
+			} elseif ( $tabType === 'accordion' ) {
+				add_filter( 'wc_get_template', 'themify_wc_accordion_tabs', 10, 5 );
+			}
+		}
+		add_filter( 'body_class', array( __CLASS__, 'single_product_body_class' ) );
+		add_action( 'woocommerce_before_shop_loop_item', 'themify_post_edit_link' );
+	}
 
-    /**
-     * Add Product taxonomy as Body Class to Single Product Page
-     *
-     * @access public
-     */
-    public static function single_product_body_class($classes) {
-    $classes[]='woocommerce-js';
-    $index=array_search('woocommerce-no-js', $classes,true);
-    if($index!==false){
-        unset($classes[$index]);
-    }
-        if ( is_singular( 'product' ) ) {
-            $current_product = wc_get_product();
-            $id = $current_product->get_id();
-            $tax = array('product_cat','product_tag');
-            foreach($tax as $v){
-                $custom_terms = get_the_terms( $id, $v );
-                if ( $custom_terms ) {
-                    foreach ( $custom_terms as $custom_term ) {
-                        $classes[] = $v . '_' . $custom_term->slug;
-                    }
-                }
-            }
-        }
-        return $classes;
-    }
+	/**
+	 * Fix video display in Focus Mode
+	 *
+	 * @access public
+	 */
+	public static function template_redirect() {
+		global $themify;
+		if ( $themify->page_title === 'yes' && themify_is_shop() ) {
+			add_filter( 'woocommerce_show_page_title', '__return_false', 100 );
+		}
+		if ( is_product() ) {
+			add_filter( 'woocommerce_post_class', array( __CLASS__, 'woocommerce_post_class' ), 10, 2 );
+		}
+	}
 
-    public static function woocommerce_post_class( $classes, $product ) {
-        if ( $product->get_id() === get_queried_object_id() ) {
-            $classes[] = 'tf_clearfix';
-        }
+	/**
+	 * Add Product taxonomy as Body Class to Single Product Page
+	 *
+	 * @access public
+	 */
+	public static function single_product_body_class( $classes ) {
+		$classes[] = 'woocommerce-js';
+		$index     = array_search( 'woocommerce-no-js', $classes, true );
+		if ( $index !== false ) {
+			unset( $classes[ $index ] );
+		}
+		if ( is_singular( 'product' ) ) {
+			$current_product = wc_get_product();
+			$id              = $current_product->get_id();
+			$tax             = array( 'product_cat', 'product_tag' );
+			foreach ( $tax as $v ) {
+				$custom_terms = get_the_terms( $id, $v );
+				if ( $custom_terms ) {
+					foreach ( $custom_terms as $custom_term ) {
+						$classes[] = $v . '_' . $custom_term->slug;
+					}
+				}
+			}
+		}
+		return $classes;
+	}
 
-        return $classes;
-    }
+	public static function woocommerce_post_class( $classes, $product ) {
+		if ( $product->get_id() === get_queried_object_id() ) {
+			$classes[] = 'tf_clearfix';
+		}
+
+		return $classes;
+	}
 }
 
 if ( ! function_exists( 'themify_wc_accordion_tabs' ) ) :
-    function themify_wc_accordion_tabs( $located, $template_name, $args, $template_path, $default_path ) {
-        if ( 'single-product/tabs/tabs.php' == $template_name) {
-        remove_filter( 'wc_get_template', 'themify_wc_accordion_tabs', 10);
-            return THEMIFY_DIR.'/includes/wc-accordion-tabs.php';
-        }
-        return $located;
-    }
+	function themify_wc_accordion_tabs( $located, $template_name, $args, $template_path, $default_path ) {
+		if ( 'single-product/tabs/tabs.php' == $template_name ) {
+			remove_filter( 'wc_get_template', 'themify_wc_accordion_tabs', 10 );
+			return THEMIFY_DIR . '/includes/wc-accordion-tabs.php';
+		}
+		return $located;
+	}
 endif;
 
 if ( ! function_exists( 'themify_wc_sticky_buy' ) ) :
-function themify_wc_sticky_buy(){
-    if ( is_product() && ! ( class_exists('Themify_Builder_Model',false) && Themify_Builder_Model::is_front_builder_activate() ) && ! themify_check('setting-st_add_cart', true ) ) {
-        add_action( 'woocommerce_before_add_to_cart_form', 'themify_sticky_buy_observer_start' );
-        add_action( 'woocommerce_after_add_to_cart_form', 'themify_sticky_buy_observer_end' );
-    }
-}
+	function themify_wc_sticky_buy() {
+		if ( is_product() && ! ( class_exists( 'Themify_Builder_Model', false ) && Themify_Builder_Model::is_front_builder_activate() ) && ! themify_check( 'setting-st_add_cart', true ) ) {
+			add_action( 'woocommerce_before_add_to_cart_form', 'themify_sticky_buy_observer_start' );
+			add_action( 'woocommerce_after_add_to_cart_form', 'themify_sticky_buy_observer_end' );
+		}
+	}
 endif;
 
 
 if ( ! function_exists( 'themify_sticky_buy_observer_start' ) ) :
-function themify_sticky_buy_observer_start() {
-    ob_start();
-    echo '<div id="tf_sticky_form_wrap" data-lazy="1">';
-    return ob_end_flush();
-}
+	function themify_sticky_buy_observer_start() {
+		ob_start();
+		echo '<div id="tf_sticky_form_wrap" data-lazy="1">';
+		return ob_end_flush();
+	}
 endif;
 
 if ( ! function_exists( 'themify_sticky_buy_observer_end' ) ) :
-function themify_sticky_buy_observer_end() {
-    ob_start();
-    echo '</div>';
-    return ob_end_flush();
-}
+	function themify_sticky_buy_observer_end() {
+		ob_start();
+		echo '</div>';
+		return ob_end_flush();
+	}
 endif;
 
 if ( ! function_exists( 'themify_before_wrap_content' ) ) :
-function themify_before_wrap_content() {
-    if ( function_exists( 'themify_before_shop_content' ) && current_action() === 'woocommerce_before_main_content' ) {
-        return;
-    }
-    ?>
-    <!-- layout -->
-    <div id="layout" class="pagewidth tf_box tf_clearfix">
-        <?php themify_content_before(); // Hook ?>
-        <!-- content -->
-        <main id="content" class="tf_box tf_clearfix">
-        <?php themify_content_start(); // Hook
-}
-endif;
+	function themify_before_wrap_content() {
+		if ( function_exists( 'themify_before_shop_content' ) && current_action() === 'woocommerce_before_main_content' ) {
+			return;
+		}
+		?>
+		<!-- layout -->
+		<div id="layout" class="pagewidth tf_box tf_clearfix">
+			<?php
+			themify_content_before(); // Hook
+			?>
+			<!-- content -->
+			<main id="content" class="tf_box tf_clearfix">
+			<?php
+			themify_content_start(); // Hook
+	}
+	endif;
 
 if ( ! function_exists( 'themify_after_wrap_content' ) ) :
-function themify_after_wrap_content() {
-    if ( function_exists( 'themify_after_shop_content' ) && current_action() === 'woocommerce_after_main_content' ) {
-        return;
-    }
-        themify_content_end(); // Hook 
-        ?>
-        </main>
-        <!-- /#content -->
-    <?php
-    themify_content_after(); // Hook 
-    themify_get_sidebar();
-    ?>
-    </div><!-- /#layout -->
-    <?php
-}
+	function themify_after_wrap_content() {
+		if ( function_exists( 'themify_after_shop_content' ) && current_action() === 'woocommerce_after_main_content' ) {
+			return;
+		}
+		themify_content_end(); // Hook
+		?>
+			</main>
+			<!-- /#content -->
+		<?php
+		themify_content_after(); // Hook
+		themify_get_sidebar();
+		?>
+		</div><!-- /#layout -->
+		<?php
+	}
+	endif;
+
+if (! function_exists('themify_wc_get_script_handle')) :
+	/**
+	 * Get the correct WooCommerce script handle depending on WC version.
+	 *
+	 * @param string $handle The original (legacy) handle name, e.g. 'js-cookie' or 'jquery-blockui'.
+	 * @return string The correct handle name for the current WooCommerce version.
+	 */
+	function themify_wc_get_script_handle($handle)
+	{
+		// Ensure WooCommerce is active.
+		if (! defined('WC_VERSION')) {
+			return $handle;
+		}
+
+		$version = WC_VERSION;
+		$is_new  = version_compare($version, '10.3.0', '>=');
+
+		// Map of renamed script handles (WooCommerce 10.3.0+)
+		$renamed_scripts = [
+			'js-cookie'             => 'wc-js-cookie',
+			'jquery-blockui'        => 'wc-jquery-blockui',
+			'flexslider'            => 'wc-flexslider',
+			'photoswipe-ui-default' => 'wc-photoswipe-ui-default',
+			'zoom'                  => 'wc-zoom',
+		];
+
+		// Normalize both prefixed and unprefixed handles.
+		foreach ($renamed_scripts as $old => $new) {
+			if ($handle === $old || $handle === $new) {
+				return $is_new ? $new : $old;
+			}
+		}
+
+		// Return original handle if no match found.
+		return $handle;
+	}
+
 endif;

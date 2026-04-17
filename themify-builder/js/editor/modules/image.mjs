@@ -6,238 +6,242 @@
         }
         static getOptions() {
             return [
-                {
-                    id: 'mod_title_image',
-                    type: 'title'
+              {
+                id: "mod_title_image",
+                type: "title",
+              },
+              {
+                id: "style_image",
+                type: "layout",
+                label: "imgst",
+                mode: "sprite",
+                options: [
+                  {
+                    img: "image_top",
+                    value: "image-top",
+                    label: "imgtop",
+                  },
+                  {
+                    img: "image_left",
+                    value: "image-left",
+                    label: "imgleft",
+                  },
+                  {
+                    img: "image_center",
+                    value: "image-center",
+                    label: "imgcenter",
+                  },
+                  {
+                    img: "image_right",
+                    value: "image-right",
+                    label: "imgright",
+                  },
+                  {
+                    img: "image_overlay",
+                    value: "image-overlay",
+                    label: "pover",
+                  },
+                  {
+                    img: "image_card_layout",
+                    value: "image-card-layout",
+                    label: "clay",
+                  },
+                  {
+                    img: "image_centered_overlay",
+                    value: "image-full-overlay",
+                    label: "fover",
+                  },
+                ],
+                binding: {
+                  not_empty: {
+                    hide: "caption_on_overlay",
+                  },
+                  "image-overlay": {
+                    show: "caption_on_overlay",
+                  },
+                  "image-full-overlay": {
+                    show: "caption_on_overlay",
+                  },
                 },
-                {
-                    id: 'style_image',
-                    type: 'layout',
-                    label: 'imgst',
-                    mode: 'sprite',
-                    options: [
-                        {
-                            img: 'image_top',
-                            value: 'image-top',
-                            label: 'imgtop'
-                        },
-                        {
-                            img: 'image_left',
-                            value: 'image-left',
-                            label: 'imgleft'
-                        },
-                        {
-                            img: 'image_center',
-                            value: 'image-center',
-                            label: 'imgcenter'
-                        },
-                        {
-                            img: 'image_right',
-                            value: 'image-right',
-                            label: 'imgright'
-                        },
-                        {
-                            img: 'image_overlay',
-                            value: 'image-overlay',
-                            label: 'pover'
-                        },
-                        {
-                            img: 'image_card_layout',
-                            value: 'image-card-layout',
-                            label: 'clay'
-                        },
-                        {
-                            img: 'image_centered_overlay',
-                            value: 'image-full-overlay',
-                            label: 'fover'
-                        }
-                    ],
-                    binding: {
-                        not_empty: {
-                            hide: 'caption_on_overlay'
-                        },
-                        'image-overlay': {
-                            show: 'caption_on_overlay'
-                        },
-                        'image-full-overlay': {
-                            show: 'caption_on_overlay'
-                        }
+                control: {
+                  classSelector: "",
+                },
+              },
+              {
+                id: "caption_on_overlay",
+                type: "checkbox",
+                label: "",
+                options: [
+                  {
+                    name: "yes",
+                    value: "sover_h",
+                  },
+                ],
+              },
+              {
+                id: "url_image",
+                type: "image",
+                label: "imgurl",
+                required: {
+                  message: "imgerr",
+                },
+              },
+              {
+                id: "appearance_image",
+                type: "checkbox",
+                label: "app",
+                img_appearance: true,
+              },
+              {
+                id: "image_size_image",
+                type: "image_size",
+              },
+              {
+                id: "width_image",
+                label: "w",
+                type: "number",
+                after: "px",
+              },
+              {
+                id: "auto_fullwidth",
+                type: "checkbox",
+                label: "",
+                options: [
+                  {
+                    name: "1",
+                    value: "afullwimg",
+                  },
+                ],
+                wrap_class: "auto_fullwidth",
+              },
+              {
+                id: "height_image",
+                type: "number",
+                label: "ht",
+                after: "px",
+              },
+              {
+                id: "title_image",
+                type: "text",
+                label: "imgt",
+                control: {
+                  selector: "[data-name='title_image']",
+                },
+              },
+              {
+                id: "title_tag",
+                type: "select",
+                label: "tht",
+                h_tags: true,
+                default: "h3",
+              },
+              {
+                id: "link_image",
+                type: "url",
+                label: "imgl",
+                binding: {
+                  empty: {
+                    hide: ["param_image", "image_zoom_icon", "lightbox_size","download_link"],
+                  },
+                  not_empty: {
+                    show: ["param_image", "image_zoom_icon", "lightbox_size","download_link"],
+                  },
+                },
+              },
+              {
+                id: "param_image",
+                type: "radio",
+                label: "o_l",
+                link_type: true,
+                option_js: true,
+                wrap_class: "link_options tb_compact_radios",
+                binding: {
+                  regular: {
+                    hide: "lightbox_size",
+                  },
+                  newtab: {
+                    hide: "lightbox_size",
+                  },
+                  lightbox: {
+                    show: "lightbox_size",
+                  },
+                },
+              },
+              {
+                id: "download_link",
+                type: "toggle_switch",
+                label: "dwnable",
+                options: {
+                  on: {
+                    name: "yes",
+                  },
+                },
+                help: "dwnablef",
+                control: false,
+              },
+              {
+                type: "multi",
+                label: "lbdim",
+                id: "multi_lightbox",
+                options: [
+                  {
+                    id: "lightbox_width",
+                    type: "range",
+                    label: "w",
+                    control: false,
+                    units: {
+                      px: {
+                        max: 3500,
+                      },
+                      "%": "",
                     },
-                    control: {
-                        classSelector: ''
-                    }
+                  },
+                  {
+                    id: "lightbox_height",
+                    type: "range",
+                    label: "ht",
+                    control: false,
+                    units: {
+                      px: {
+                        max: 3500,
+                      },
+                      "%": "",
+                    },
+                  },
+                ],
+                wrap_class: "tb_group_element_lightbox",
+              },
+              {
+                id: "image_zoom_icon",
+                type: "checkbox",
+                label: "",
+                options: [
+                  {
+                    name: "zoom",
+                    value: "szoomic",
+                  },
+                ],
+                wrap_class: "tb_group_element_lightbox tb_group_element_newtab",
+              },
+              {
+                id: "caption_image",
+                type: "textarea",
+                label: "imgc",
+                control: {
+                  selector: ".image-caption",
                 },
-                {
-                    id: 'caption_on_overlay',
-                    type: 'checkbox',
-                    label: '',
-                    options: [
-                        {
-                            name: 'yes',
-                            value: 'sover_h'
-                        }
-                    ]
-                },
-                {
-                    id: 'url_image',
-                    type: 'image',
-                    label: 'imgurl',
-                    required: {
-                        message: 'imgerr'
-                    }
-                },
-                {
-                    id: 'appearance_image',
-                    type: 'checkbox',
-                    label: 'app',
-                    img_appearance: true
-                },
-                {
-                    id: 'image_size_image',
-                    type: 'image_size'
-                },
-                {
-                    id: 'width_image',
-                    label: 'w',
-                    type: 'number',
-                    after: 'px'
-                },
-                {
-                    id: 'auto_fullwidth',
-                    type: 'checkbox',
-                    label: '',
-                    options: [
-                        {
-                            name: '1',
-                            value: 'afullwimg'
-                        }
-                    ],
-                    wrap_class: 'auto_fullwidth'
-                },
-                {
-                    id: 'height_image',
-                    type: 'number',
-                    label: 'ht',
-                    after: 'px'
-                },
-                {
-                    id: 'title_image',
-                    type: 'text',
-                    label: 'imgt',
-                    control: {
-                        selector: "[data-name='title_image']"
-                    }
-                },
-                {
-                    id: 'title_tag',
-                    type: 'select',
-                    label: 'tht',
-                    h_tags: true,
-                    default: 'h3'
-                },
-                {
-                    id: 'link_image',
-                    type: 'url',
-                    label: 'imgl',
-                    binding: {
-                        empty: {
-                            hide: [
-                                'param_image',
-                                'image_zoom_icon',
-                                'lightbox_size'
-                            ]
-                        },
-                        not_empty: {
-                            show: [
-                                'param_image',
-                                'image_zoom_icon',
-                                'lightbox_size'
-                            ]
-                        }
-                    }
-                },
-                {
-                    id: 'param_image',
-                    type: 'radio',
-                    label: 'o_l',
-                    link_type: true,
-                    option_js: true,
-                    wrap_class: 'link_options tb_compact_radios',
-                    binding: {
-                        regular: {
-                            hide: 'lightbox_size'
-                        },
-                        newtab: {
-                            hide: 'lightbox_size'
-                        },
-                        lightbox: {
-                            show: 'lightbox_size'
-                        }
-                    }
-                },
-                {
-                    type: 'multi',
-                    label: 'lbdim',
-                    id: 'multi_lightbox',
-                    options: [
-                        {
-                            id: 'lightbox_width',
-                            type: 'range',
-                            label: 'w',
-                            control: false,
-                            units: {
-                                px: {
-                                    max: 3500
-                                },
-                                '%': ''
-                            }
-                        },
-                        {
-                            id: 'lightbox_height',
-                            type: 'range',
-                            label: 'ht',
-                            control: false,
-                            units: {
-                                px: {
-                                    max: 3500
-                                },
-                                '%': ''
-                            }
-                        }
-                    ],
-                    wrap_class: 'tb_group_element_lightbox'
-                },
-                {
-                    id: 'image_zoom_icon',
-                    type: 'checkbox',
-                    label: '',
-                    options: [
-                        {
-                            name: 'zoom',
-                            value: 'szoomic'
-                        }
-                    ],
-                    wrap_class: 'tb_group_element_lightbox tb_group_element_newtab'
-                },
-                {
-                    id: 'caption_image',
-                    type: 'textarea',
-                    label: 'imgc',
-                    control: {
-                        selector: '.image-caption'
-                    }
-                },
-                {
-                    id: 'alt_image',
-                    type: 'text',
-                    label: 'alt',
-                    help: 'alth',
-                    control: false
-                },
-                {
-                    type: 'custom_css_id',
-                    custom_css: 'css_image'
-                }
+              },
+              {
+                id: "alt_image",
+                type: "text",
+                label: "alt",
+                help: "alth",
+                control: false,
+              },
+              {
+                type: "custom_css_id",
+                custom_css: "css_image",
+              },
             ];
         }
         static builderSave(settings) {
@@ -262,6 +266,7 @@
             }
             if (!settings.link_image) {
                 delete settings.param_image;
+                delete settings.download_link;
             }
             if (!settings.param_image) {
                 delete settings.image_zoom_icon;
@@ -413,6 +418,9 @@
                 else if (linkType === 'newtab') {
                     linkParams.rel= 'noopener';
                     linkParams.target='_blank';
+                }
+                if ('yes' === data.download_link &&  'lightbox' !== linkType) {
+                    linkParams.download = '';
                 }
                 linkParams.href=data.link_image;
                 const link =createElement('a',linkParams);

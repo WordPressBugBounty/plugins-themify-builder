@@ -89,18 +89,20 @@ if (!empty($settings['tab_content_testimonial'])):
                         </figure>
                     <?php endif; ?>
 
-                    <?php if (!empty($content['person_name_testimonial'])): ?>
+                    <?php if (!empty($content['person_name_testimonial']) || !empty($content['person_position_testimonial']) || !empty($content['company_testimonial'])): ?>
                         <div class="testimonial-author">
-                            <div class="person-name"><?php echo $content['person_name_testimonial'] ?></div>
+                            <?php if (!empty($content['person_name_testimonial'])): ?>
+                                <div class="person-name"><?php echo $content['person_name_testimonial'] ?></div>
+                            <?php endif; ?>
                             <?php if (!empty($content['person_position_testimonial'])): ?>
                                 <span class="person-position"><?php echo $content['person_position_testimonial'] ?></span>
                             <?php endif; ?>
                             <?php if (!empty($content['company_testimonial'])): ?>
                                 <div class="person-company">
                                     <?php if (!empty($content['company_website_testimonial'])): ?>
-                                        <a href="<?php echo $content['company_website_testimonial'] ?>"><?php echo $content['company_testimonial'] ?></a>
+                                        <a href="<?php echo esc_url( $content['company_website_testimonial'] ) ?>"><?php echo esc_html( $content['company_testimonial'] ) ?></a>
                                     <?php else: ?>
-                                        <?php echo $content['company_testimonial'] ?>
+                                        <?php echo esc_html( $content['company_testimonial'] ) ?>
                                     <?php endif; ?>
                                 </div>
                             <?php endif; ?>

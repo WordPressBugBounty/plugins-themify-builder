@@ -278,6 +278,28 @@
                         api.ActionBar.clear();
                     }
 
+                    const liveStyling = oldSettings;
+                    if (liveStyling && typeof liveStyling === 'object' && settings && typeof settings === 'object') {
+                        for (const k in liveStyling) {
+                            if (!Object.prototype.hasOwnProperty.call(liveStyling, k)) {
+                                continue;
+                            }
+                            if (k.indexOf('breakpoint_') === 0 && liveStyling[k] !== null && typeof liveStyling[k] === 'object' && !Array.isArray(liveStyling[k])) {
+                                settings[k] ??= {};
+                                for (const j in liveStyling[k]) {
+                                    if (!Object.prototype.hasOwnProperty.call(liveStyling[k], j)) {
+                                        continue;
+                                    }
+                                    if (j.indexOf('tf_sv_') === 0 && liveStyling[k][j] !== '' && liveStyling[k][j] != null) {
+                                        settings[k][j] = liveStyling[k][j];
+                                    }
+                                }
+                            } else if (k.indexOf('tf_sv_') === 0 && liveStyling[k] !== '' && liveStyling[k] != null) {
+                                settings[k] = liveStyling[k];
+                            }
+                        }
+                    }
+
                     //check diff
                     api.Base.builderSave(settings, 'empty');
                     api.Base.builderSave(oldSettings, 'empty');
@@ -1171,7 +1193,9 @@
                             continue;
                         }
                     }
-                    if ( type !== 'checkbox' || value !== '' ) {
+                    if (type === 'checkbox') {
+                        o[name] = value !== '' ? value : '1';
+                    } else if ( type !== 'checkbox' || value !== '' ) {
                         o[name] = value;
                     }
                 }

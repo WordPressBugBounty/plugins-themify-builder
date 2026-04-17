@@ -765,7 +765,7 @@ if (!class_exists('TFCache',false)) {
                     themify_set_data($tmp);
                 }
                 $link = remove_query_arg(['tf-cache','nonce'], self::get_current_url());
-                if (wp_redirect($link)) {
+                if ( wp_safe_redirect( $link ) ) {
                     exit;
                 }
             }

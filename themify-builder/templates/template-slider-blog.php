@@ -127,7 +127,7 @@ if (!empty($posts)):
                             <?php if ($fields_args['unlink_feat_img_slider'] === 'yes'): ?>
                                 <?php echo $post_image; ?>
                             <?php else: ?>
-                                <a href="<?php echo $ext_link; ?>"
+                                <a href="<?php echo esc_url( $ext_link ); ?>"
                                    <?php if ('lightbox' !== $ext_link_type && 'yes' === $fields_args['open_link_new_tab_slider']): ?> target="_blank" rel="noopener"<?php endif; ?>
                                    <?php if ('lightbox' === $ext_link_type) : ?> class="themify_lightbox" rel="prettyPhoto[slider]"<?php endif; ?>>
                                    <?php echo $post_image; ?>
@@ -146,7 +146,7 @@ if (!empty($posts)):
                                 <?php if ($fields_args['unlink_post_title_slider'] === 'yes'): ?>
                                    <?php the_title(); ?>
                                 <?php else: ?>
-                                        <a href="<?php echo $ext_link; ?>"  
+                                        <a href="<?php echo esc_url( $ext_link ); ?>"  
                                            <?php if ('lightbox' !== $ext_link_type && 'yes' === $fields_args['open_link_new_tab_slider']): ?> target="_blank" rel="noopener"<?php endif; ?>
                                            <?php if ('lightbox' === $ext_link_type) : ?> class="themify_lightbox" rel="prettyPhoto[slider]"<?php endif; ?>>
                                            <?php the_title(); ?>

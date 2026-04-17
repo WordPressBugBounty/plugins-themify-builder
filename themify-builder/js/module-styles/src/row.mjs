@@ -457,7 +457,7 @@ export class Row extends BaseStyles {
                             ],
                             option_js: true,
                             is_overlay: true,
-                            selector: [ ':hover>.builder_row_cover::after', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::after' ]
+                            selector: [ ':hover>.builder_row_cover::before', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ]
                         },
                         {
                             id: 'cover_color_hover',
@@ -466,7 +466,7 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_hover_color',
                             is_overlay: true,
                             prop: 'background-color',
-                            selector: [ ':hover>.builder_row_cover::after', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::after' ]
+                            selector: [ ':hover>.builder_row_cover::before', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ]
                         },
                         {
                             id: 'cover_gradient_hover',
@@ -475,7 +475,7 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_hover_gradient',
                             is_overlay: true,
                             prop: 'background-image',
-                            selector: [ ':hover>.builder_row_cover::after', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::after' ]
+                            selector: [ ':hover>.builder_row_cover::before', ':hover >:is(.tf_lax, .tf_lax_done) > .builder_row_cover::before' ]
                         },
                         {
                             id: 'cover_backdrop_h',

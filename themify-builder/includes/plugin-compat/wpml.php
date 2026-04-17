@@ -20,6 +20,7 @@ class Themify_Builder_Plugin_Compat_WPML {
      * @since 1.4.3
      */
     public static function icl_copy_from_original() {
+        check_ajax_referer( 'tf_nonce', 'nonce' );
 
         if ( isset( $_POST['source_page_id'],$_POST['source_page_lang'] ) && current_user_can( 'edit_post', $_POST['source_page_id'] ) ) {
             global $wpdb;

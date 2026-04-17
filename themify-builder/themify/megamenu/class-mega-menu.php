@@ -360,8 +360,8 @@ if( ! function_exists( 'themify_theme_mega_posts' ) ) {
      * @since 1.0.0
      */
     function themify_theme_mega_posts() {
-        $termid = isset( $_POST['termid'] )? $_POST['termid']: '';
-        $taxonomy  = isset( $_POST['tax'] )? $_POST['tax']: 'category';
+        $termid   = isset( $_POST['termid'] ) ? absint( $_POST['termid'] ) : 0;
+        $taxonomy = isset( $_POST['tax'] ) ? sanitize_key( $_POST['tax'] ) : 'category';
         die(themify_theme_mega_get_posts( $termid, $taxonomy ));
     }
 }

@@ -200,7 +200,8 @@ window.ThemifyConstructor = {
                         'no-repeat': 'r_no',
                         space: 'r_sp',
                         round: 'r_rn',
-                        fullcover: 'fcover'
+                        fullcover: 'fcover',
+                        'best-fit-image': 'bfit'
                     },
                     border: {
                         solid: 'solid',
@@ -2262,11 +2263,8 @@ window.ThemifyConstructor = {
                     }
                 }
             }
-            if ((v === undefined || v === '') && id.endsWith('_unit') && id.indexOf('lightbox_')!==0 && !id.includes('frame_')) {//because in the very old version, px wasn't saved and we can't detect after removing it was px value or not
-                v = 'px';
-            }
             //for columns it can be "value1,value2" where "value1" is value for v5, "value2" is for v7
-            else if (v !== undefined && v !== '' && api.activeModel.type === 'column' && v.toString().includes(',') && (id.indexOf('padding') === 0 || id.includes('margin'))) {
+            if (v !== undefined && v !== '' && api.activeModel.type === 'column' && v.toString().includes(',') && (id.indexOf('padding') === 0 || id.includes('margin'))) {
                 v = v.trim().split(',');
                 if (v[1] !== undefined && v[1] !== '') {
                     v = v[1];
@@ -2274,6 +2272,34 @@ window.ThemifyConstructor = {
                     v = v[0];
                 }
                 v = v.trim();
+            }
+            if ((v === undefined || v === '') && id && id.indexOf('tf_sv_') !== 0 && !id.endsWith('_unit')) {
+                const ts = ThemifyStyles.getStyleVal(id, vals, bp);
+                if (ts !== undefined && ts !== '') {
+                    v = ts;
+                }
+            }
+            if ((v === undefined || v === '') && id && /^(padding|margin)_/.test(id) && /_(top|right|bottom|left)$/.test(id) && id.indexOf('_opp_') === -1) {
+                const base = id.replace(/_(top|right|bottom|left)$/, ''),
+                    applyId = 'checkbox_' + base + '_apply_all',
+                    applyRaw = this.getStyleVal(applyId, bp, vals);
+                if (applyRaw && applyRaw.toString().split('|').includes('1')) {
+                    const topId = base + '_top';
+                    if (id !== topId) {
+                        const topTs = ThemifyStyles.getStyleVal(topId, vals, bp);
+                        if (topTs !== undefined && topTs !== '') {
+                            v = topTs;
+                        }
+                    }
+                }
+            }
+            if ((v === undefined || v === '') && id.endsWith('_unit') && id.indexOf('lightbox_')!==0 && !id.includes('frame_')) {//because in the very old version, px wasn't saved and we can't detect after removing it was px value or not
+                const baseField = id.slice(0, -5);
+                if (!ThemifyStyles.getStyleVal(baseField, vals, bp)) {
+                    v = 'px';
+                } else {
+                    v = ThemifyStyles.getStyleVal(id, vals, bp) ?? 'px';
+                }
             }
         }
         return v;
@@ -2317,6 +2343,42 @@ window.ThemifyConstructor = {
                 }
             }
         }
+        // Sync tf_sv_ hidden inputs to the new breakpoint values
+        const stylingForm = api.LightBox.el.querySelector('#tb_options_styling');
+        if (stylingForm) {
+            const tfSvInputs = stylingForm.querySelectorAll('input.tf_sv_hidden');
+            for (let j = tfSvInputs.length - 1; j >= 0; --j) {
+                const hid = tfSvInputs[j],
+                    tfSvId = hid.id || hid.dataset.inputId || '';
+                if (!tfSvId) {
+                    continue;
+                }
+                let newVal = '';
+                if (breakpoint === 'desktop') {
+                    newVal = this.values[tfSvId] || '';
+                } else {
+                    newVal = (this.values['breakpoint_' + breakpoint] && this.values['breakpoint_' + breakpoint][tfSvId]) || '';
+                }
+                if (hid.value !== newVal) {
+                    hid.value = newVal;
+                    const host = hid.closest('.tb_range_input') || hid.parentNode;
+                    if (host) {
+                        host.dataset.tfSvVar = newVal;
+                        const chip = host.querySelector('.tf_sv_var');
+                        if (chip) {
+                            if (newVal) {
+                                chip.style.display = '';
+                                chip.classList.add('is_active');
+                                host.classList.remove('tf_sv_show_btn');
+                            } else {
+                                chip.classList.remove('is_active');
+                                chip.style.display = 'none';
+                            }
+                        }
+                    }
+                }
+            }
+        }
         //Disable responsive disable options
         const disabled_options = api.LightBox.el.querySelectorAll('#tb_options_styling option.tb_responsive_disable');
         for (let j = disabled_options.length - 1; j >= 0; j--) {
@@ -2336,6 +2398,36 @@ window.ThemifyConstructor = {
             } 
             else {
                 this.values['breakpoint_' + breakpoint][i] = data[i];
+            }
+        }
+        const model = api.activeModel;
+        if (model !== null) {
+            const live = model.get('mod_settings');
+            if (live && typeof live === 'object') {
+                const mergeTfSv = (fromBag, toBag) => {
+                    if (!fromBag || !toBag || typeof fromBag !== 'object' || typeof toBag !== 'object') {
+                        return 0;
+                    }
+                    let n = 0;
+                    for (const k in fromBag) {
+                        if (!Object.prototype.hasOwnProperty.call(fromBag, k)) {
+                            continue;
+                        }
+                        if (k.indexOf('tf_sv_') !== 0 || fromBag[k] === '' || fromBag[k] == null) {
+                            continue;
+                        }
+                        toBag[k] = fromBag[k];
+                        ++n;
+                    }
+                    return n;
+                };
+                mergeTfSv(live, this.values);
+                for (const lk in live) {
+                    if (Object.prototype.hasOwnProperty.call(live, lk) && lk.indexOf('breakpoint_') === 0 && live[lk] !== null && typeof live[lk] === 'object' && !Array.isArray(live[lk])) {
+                        this.values[lk] ??= {};
+                        mergeTfSv(live[lk], this.values[lk]);
+                    }
+                }
             }
         }
     },
@@ -2398,31 +2490,47 @@ window.ThemifyConstructor = {
         }
 
         const styleFields = ThemifyStyles.getStyleOptions(type),
-                values = model.id === api.activeModel?.id ? this.values : model.get('styling');
+                values = model.id === api.activeModel?.id ? this.values : model.get('styling'),
+                clearStyleValues = vals => {
+                    if (!vals || typeof vals !== 'object') {
+                        return;
+                    }
+                    for (let i in vals) {
+                        let key = i.includes('_color') ? 'color' : (i.includes('_style') ? 'style' : false),
+                                remove = null;
+                        if (i.indexOf('breakpoint_') === 0 || i.indexOf('tf_sv_') === 0 || i === api.GS.key || styleFields[i] !== undefined || i.includes('_apply_all')) {
+                            remove = true;
+                        } else if (i.includes('_unit')) {//unit
+                            key = i.replace(/_unit$/ig, '', '');
+                            if (styleFields[key] !== undefined) {
+                                remove = true;
+                            }
+                        } else if (i.includes('_w')) {//weight
+                            key = i.replace(/_w$/ig, '', '');
+                            if (styleFields[key] !== undefined && styleFields[key].type === 'font_select') {
+                                remove = true;
+                            }
+                        } else if (key !== false) {
+                            key = i.replace('_' + key, '_width');
+                            if (styleFields[key] !== undefined && styleFields[key].type === 'border') {
+                                remove = true;
+                            }
+                        }
+                        if (remove === true) {
+                            delete vals[i];
+                        }
+                    }
+                };
 
-        for (let i in values) {
-            let key = i.includes('_color') ? 'color' : (i.includes('_style') ? 'style' : false),
-                    remove = null;
-            if (i.indexOf('breakpoint_') === 0 || i === api.GS.key || styleFields[i] !== undefined || i.includes('_apply_all')) {
-                remove = true;
-            } else if (i.includes('_unit')) {//unit
-                key = i.replace(/_unit$/ig, '', '');
-                if (styleFields[key] !== undefined) {
-                    remove = true;
-                }
-            } else if (i.includes('_w')) {//weight
-                key = i.replace(/_w$/ig, '', '');
-                if (styleFields[key] !== undefined && styleFields[key].type === 'font_select') {
-                    remove = true;
-                }
-            } else if (key !== false) {
-                key = i.replace('_' + key, '_width');
-                if (styleFields[key] !== undefined && styleFields[key].type === 'border') {
-                    remove = true;
-                }
+        clearStyleValues(values);
+        if (model) {
+            const liveValues = model.get('mod_settings');
+            if (liveValues && liveValues !== values) {
+                clearStyleValues(liveValues);
             }
-            if (remove === true) {
-                delete values[i];
+            const stylingValues = model.get('styling');
+            if (stylingValues && stylingValues !== values && stylingValues !== liveValues) {
+                clearStyleValues(stylingValues);
             }
         }
         if (model.id === api.activeModel?.id) {
@@ -3883,6 +3991,65 @@ window.ThemifyConstructor = {
     },
     color: {
         _is_typing: null,
+        _isClipEl(node) {
+            if (!node || node.nodeType !== 1) {
+                return false;
+            }
+            const cs = getComputedStyle(node),
+                ox = cs.overflowX || cs.overflow,
+                oy = cs.overflowY || cs.overflow;
+            return ['auto', 'scroll', 'hidden', 'clip'].includes(ox) || ['auto', 'scroll', 'hidden', 'clip'].includes(oy);
+        },
+        _getClipEls(node) {
+            const out = [];
+            let p = node;
+            while (p && p !== doc.body && p !== doc.documentElement) {
+                if (this._isClipEl(p)) {
+                    out.push(p);
+                }
+                p = p.parentElement;
+            }
+            return out;
+        },
+        _getVisibleRect(node) {
+            const rect = {
+                top: 0,
+                left: 0,
+                right: window.innerWidth,
+                bottom: window.innerHeight
+            };
+            this._getClipEls(node).forEach(el => {
+                const r = el.getBoundingClientRect();
+                rect.top = Math.max(rect.top, r.top);
+                rect.left = Math.max(rect.left, r.left);
+                rect.right = Math.min(rect.right, r.right);
+                rect.bottom = Math.min(rect.bottom, r.bottom);
+            });
+            return rect;
+        },
+        _positionPopupAroundField(field, popup, wrap) {
+            if (!field || !popup || !wrap) {
+                return;
+            }
+            const fieldRect = field.getBoundingClientRect(),
+                popupHeight = Math.max(popup.getBoundingClientRect().height, popup.scrollHeight || 0, popup.offsetHeight || 0),
+                popupWidth = Math.max(popup.getBoundingClientRect().width, popup.scrollWidth || 0, popup.offsetWidth || 0),
+                visible = this._getVisibleRect(field),
+                lightbox = field.closest('.builder-lightbox'),
+                actions = lightbox ? lightbox.querySelector('.tb_lightbox_actions') : null;
+            if (actions) {
+                const r = actions.getBoundingClientRect();
+                if (r.top < visible.bottom && r.bottom > visible.top) {
+                    visible.bottom = Math.min(visible.bottom, r.top);
+                }
+            }
+            const spaceBelow = visible.bottom - fieldRect.bottom,
+                spaceAbove = fieldRect.top - visible.top,
+                openUp = popupHeight + 10 > spaceBelow && spaceAbove > spaceBelow,
+                openRight = visible.right < fieldRect.left + popupWidth && fieldRect.right - popupWidth >= visible.left;
+            wrap.classList.toggle('tfminicolors-position-top', openUp);
+            wrap.classList.toggle('tfminicolors_right', openRight);
+        },
         _controlChange(el, btn_opacity, data) {
             const that = this,
                     $el = $(el),
@@ -3892,11 +4059,12 @@ window.ThemifyConstructor = {
                 swatches: themifyColorManager.toColorsArray(),
                 changeDelay: 10,
                 beforeShow() {
-                    const box = api.LightBox.el.getBoundingClientRect(),
-                            p = $el.closest('.tfminicolors'),
-                            panel = p.find('.tfminicolors-panel');
+                    const p = $el.closest('.tfminicolors'),
+                            panel = p.find('.tfminicolors-panel'),
+                            wrap = p[0],
+                            field = wrap || $el[0];
                     panel.css('visibility', 'hidden').show();//get offset
-                    p[0].classList.toggle('tfminicolors_right', ((box.left + box.width) <= panel.offset().left + panel.width()));
+                    that._positionPopupAroundField(field, panel[0], wrap);
                     panel.css('visibility', '').hide();
                 },
                 show() {
@@ -4475,7 +4643,7 @@ window.ThemifyConstructor = {
                 file_frame.open();
                 file_frame.content.mode('browse');
             });
-            if (type === 'image') {
+            if (type === 'image' && uploader.classList && uploader.classList.contains('thumb_preview')) {
                 input.tfOn('change', e => {
                     this.setImage(uploader, e.currentTarget.value.trim());
                 }, {passive: true});
@@ -5997,6 +6165,7 @@ window.ThemifyConstructor = {
                 extend.repeat = true;
                 extend.type = 'select';
                 extend.id = extend.repeatId;
+                extend.label = 'b_r';
                 group.options.push(api.Helper.cloneObject(extend));
 
                 //position
@@ -6255,6 +6424,7 @@ window.ThemifyConstructor = {
                                 {
                                     type: 'color',
                                     id: id + '_divider_color',
+                                    label: false,
                                     prop: 'column-rule-color',
                                     selector: selector
                                 },
@@ -7125,6 +7295,18 @@ window.ThemifyConstructor = {
         update(id, v='', self) {
             const select = self.getEl(id);
             if (select !== null) {
+                // Handle CSS variable values (e.g. 'var(--font2)')
+                const isVar = v && /^var\s*\(/i.test(String(v));
+                if (isVar) {
+                    let existing = Array.from(select.options).find(o => o.value === v);
+                    if (!existing) {
+                        existing = createElement('option', {value: v});
+                        existing.textContent = '--' + String(v).replace(/^var\s*\(\s*--?/i, '').replace(/\s*\)$/, '');
+                        existing.dataset.value = v;
+                        existing.dataset.tfSvPersistent = '1';
+                        select.insertBefore(existing, select.firstChild?.nextSibling || null);
+                    }
+                }
                 select.value = v;
                 this.updateFontVariant(v, select.closest('.tb_tab').tfClass('font-weight-select')[0], self);
                 if (select.dataset.init === undefined) {
@@ -7148,7 +7330,10 @@ window.ThemifyConstructor = {
                     }
                 }
                 else {
-                    select.parentNode.tfClass('themify-combo-input')[0].value = v;
+                    const comboInput = select.parentNode.tfClass('themify-combo-input')[0];
+                    if (comboInput) {
+                        comboInput.value = isVar ? ('--' + String(v).replace(/^var\s*\(\s*--?/i, '').replace(/\s*\)$/, '')) : v;
+                    }
                 }
             }
         },
@@ -7657,6 +7842,7 @@ window.ThemifyConstructor = {
                                     clearTimeout(timeout);
                                     timeout = setTimeout(() => {
                                         self.callbacks();
+                                        Themify.trigger('tb_options_expand', parent.parentNode.parentNode);
                                     }, 2);
                                 }
                                 if (!isType) {
@@ -8303,7 +8489,18 @@ window.ThemifyConstructor = {
         update(id, v='', self) {
             const range = self.getEl(id);
             if (range !== null) {
-                range.value = v;
+                let nv = v;
+                if (nv === undefined || nv === null || (typeof nv === 'number' && isNaN(nv))) {
+                    nv = '';
+                } else {
+                    nv = String(nv).trim();
+                    if (nv === 'NaN') {
+                        nv = '';
+                    } else if (nv !== '' && !/^var\s*\(/i.test(nv) && !/^--[\w-]+$/.test(nv) && isNaN(parseFloat(nv))) {
+                        nv = '';
+                    }
+                }
+                range.value = nv;
                 const unit_id = id + '_unit',
                         unit = self.getEl(unit_id);
                 if (unit !== null && unit.tagName === 'SELECT') {
@@ -8419,18 +8616,51 @@ window.ThemifyConstructor = {
             range.tfOn('change', () => {
                 this._setMinMax(range, range.min, range.max, range.step);
             }, {passive: true});
+            const eventName = event;
+            range.tfOn('keydown', function (ev) {
+                if ((ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown') || ev.altKey || ev.ctrlKey || ev.metaKey) {
+                    return;
+                }
+                ev.preventDefault();
+                const rng = this,
+                    max = parseFloat(rng.max),
+                    min = parseFloat(rng.min),
+                    step = rng.step || 1,
+                    isFloat = step % 1 !== 0,
+                    inc = isFloat ? parseFloat(step) : ~~step,
+                    raw = rng.value || 0,
+                    val = isFloat ? parseFloat(raw) : ~~raw,
+                    next = ev.key === 'ArrowUp' ? (val >= max ? max : val + inc) : (val <= min ? min : val - inc);
+                rng.value = +next.toFixed(2);
+                const dot = rng.parentNode.tfClass('tb_angle_dot')[0];
+                if (dot) {
+                    dot.style.transform = 'rotate(' + next + 'deg)';
+                }
+                Themify.triggerEvent(rng, eventName);
+                if (eventName !== 'change') {
+                    Themify.triggerEvent(rng, 'change');
+                }
+            }, {passive: false});
         },
         render(data, self) {
             const wrapper = createElement('','tb_tooltip_container tf_rel'),
                     range_wrap = createElement('','tb_range_input tf_inline_b tf_rel'),
-                    input = createElement('input',{type:'number',autocomplete:'off',class:'tb_range'}),
+                    input = createElement('input',{type:'text',inputmode:'decimal',autocomplete:'off',class:'tb_range'}),
                     units=data.units;
             let v = data.value ?? self.getStyleVal(data.id) ?? data.default??'',
                     select;
             
-            if (v !== '') {
-                v = parseFloat(v);
-                input.value = v;
+            if (v !== '' && v != null) {
+                const vs = String(v).trim();
+                if (vs !== '' && vs !== 'NaN') {
+                    const pf = parseFloat(vs);
+                    if (!isNaN(pf)) {
+                        v = pf;
+                        input.value = pf;
+                    } else if (/^var\s*\(/i.test(vs) || /^--[\w-]+$/.test(vs)) {
+                        input.value = vs;
+                    }
+                }
             }
             if (data.wrap_class !== undefined) {
                 wrapper.className = ' ' + data.wrap_class;
@@ -8776,6 +9006,67 @@ window.ThemifyConstructor = {
         }
     },
     margin: {
+        _syncTfSvVar(sourceInput, targetInput) {
+            const sourceHost = sourceInput.closest('.tb_range_input'),
+                targetHost = targetInput.closest('.tb_range_input');
+            if (!sourceHost || !targetHost) {
+                return;
+            }
+            const sourceHidden = sourceHost.querySelector('input.tf_sv_hidden'),
+                sourceVarName = sourceHidden ? sourceHidden.value : '',
+                targetHiddenId = 'tf_sv_' + (targetInput.id || (targetInput.dataset && targetInput.dataset.inputId) || '');
+            let targetHidden = targetHost.querySelector('input.tf_sv_hidden');
+            if (sourceVarName) {
+                // Source has a variable assigned - sync it to target
+                if (!targetHidden) {
+                    targetHidden = document.createElement('input');
+                    targetHidden.type = 'hidden';
+                    targetHidden.id = targetHiddenId;
+                    targetHidden.name = targetHiddenId;
+                    targetHidden.className = 'tf_sv_hidden tb_lb_option';
+                    targetHidden.dataset.inputId = targetHiddenId;
+                    if (targetInput.classList.contains('tb_lb_option_child')) {
+                        targetHidden.className += ' tb_lb_option_child';
+                    }
+                    targetHost.appendChild(targetHidden);
+                }
+                targetHidden.value = sourceVarName;
+                targetHost.dataset.tfSvVar = sourceVarName;
+                targetInput.value = 'var(--' + sourceVarName + ')';
+                Themify.triggerEvent(targetHidden, 'change');
+                Themify.triggerEvent(targetInput, 'change');
+                // Re-render the chip on the target
+                if (targetHost._tfSvInput) {
+                    const target = {
+                        host: targetHost,
+                        anchor: targetHost._tfSvAnchor || targetHost,
+                        mode: targetHost.dataset.tfSvMode || 'builder',
+                        type: targetHost.dataset.tfSvType || 'number',
+                        input: targetHost._tfSvInput
+                    };
+                    const chip = targetHost.querySelector('.tf_sv_var');
+                    if (chip) {
+                        chip.style.display = '';
+                        chip.classList.add('is_active');
+                        targetHost.classList.remove('tf_sv_show_btn');
+                    }
+                }
+            } else {
+                // Source has no variable - clear target's variable if any
+                if (targetHidden) {
+                    targetHidden.value = '';
+                    Themify.triggerEvent(targetHidden, 'change');
+                }
+                if (targetHost.dataset) {
+                    targetHost.dataset.tfSvVar = '';
+                }
+                const chip = targetHost.querySelector('.tf_sv_var');
+                if (chip) {
+                    chip.classList.remove('is_active');
+                    chip.style.display = 'none';
+                }
+            }
+        },
         _bindingOppositive(el, init) {
             const li = el.closest('.tb_seperate_opposite'),
                     p = li.parentNode,
@@ -8791,13 +9082,16 @@ window.ThemifyConstructor = {
                 if (init === true) {
                     const firstInput = firstItem.tfClass('tb_range')[0],
                             v = firstInput.value,
-                            v2 = field.value;
-                    if (v !== '' || v2 === '') {
+                            v2 = field.value,
+                            sourceHasVar = !!(firstInput.closest('.tb_range_input')?.querySelector('input.tf_sv_hidden')?.value);
+                    if (sourceHasVar || v !== '' || v2 === '') {
                         field.value = v;
                         u.value = firstItem.tfClass('tb_unit')[0].value;
+                        this._syncTfSvVar(firstInput, field);
                     } else {
                         firstInput.value = v2;
                         firstItem.tfClass('tb_unit')[0].value = u.value;
+                        this._syncTfSvVar(field, firstInput);
                     }
 
                 }
@@ -8805,6 +9099,27 @@ window.ThemifyConstructor = {
                 const v = field.dataset.v;
                 field.value = v??'';
                 u.value = u.dataset.u;
+                // When unchecking opposite, restore the target's original var state
+                // by clearing the synced var if the original didn't have one
+                const targetHost = field.closest('.tb_range_input');
+                if (targetHost) {
+                    const targetHidden = targetHost.querySelector('input.tf_sv_hidden');
+                    if (targetHidden && targetHidden.value) {
+                        // Only clear if the restored numeric value suggests there was no var originally
+                        if (v !== undefined && v !== '' && !String(v).startsWith('var(')) {
+                            targetHidden.value = '';
+                            if (targetHost.dataset) {
+                                targetHost.dataset.tfSvVar = '';
+                            }
+                            Themify.triggerEvent(targetHidden, 'change');
+                            const chip = targetHost.querySelector('.tf_sv_var');
+                            if (chip) {
+                                chip.classList.remove('is_active');
+                                chip.style.display = 'none';
+                            }
+                        }
+                    }
+                }
             }
             if (init === true) {
                 Themify.triggerEvent(field, 'keyup');
@@ -8818,7 +9133,9 @@ window.ThemifyConstructor = {
                         isBorder = input.classList.contains('tb_is_border_radius'),
                         chClass = dir === 'top' || (isBorder === true && dir === 'right') || (isBorder === false && dir === 'bottom') ? 'top' : 'left';
                 if (p.tfClass('tb_opposite_' + chClass)[0].tfClass('style_apply_oppositive')[0].checked === true) {
-                    p.tfClass('tb_range_' + dir)[0].closest('li').tfClass('tb_unit')[0].value = el.value;
+                    const targetField = p.tfClass('tb_range_' + dir)[0];
+                    targetField.closest('li').tfClass('tb_unit')[0].value = el.value;
+                    this._syncTfSvVar(input, targetField);
                 }
             }
         },
@@ -8846,7 +9163,9 @@ window.ThemifyConstructor = {
                         isBorder = el.classList.contains('tb_is_border_radius'),
                         ch = dir === 'top' || (isBorder === true && dir === 'right') || (isBorder === false && dir === 'bottom') ? p.tfClass('tb_opposite_top')[0] : p.tfClass('tb_opposite_left')[0];
                 if (ch.tfClass('style_apply_oppositive')[0].checked === true) {
-                    p.tfClass('tb_range_' + dir)[0].value = el.value;
+                    const targetField = p.tfClass('tb_range_' + dir)[0];
+                    targetField.value = el.value;
+                    this._syncTfSvVar(el, targetField);
                 }
             }
         },
@@ -8858,13 +9177,55 @@ window.ThemifyConstructor = {
             if (isChecked === true) {
                 ul.dataset.checked = 1;
                 text = i18n.all;
-
+                // Sync tf_sv from top to all other edges so stale vars are cleared or propagated
+                const firstMultiCheck = first.tfClass('tb_multi_field')[0],
+                    topRangeCheck = firstMultiCheck?.tfClass('tb_range')[0];
+                if (topRangeCheck?.id?.endsWith('_top')) {
+                    const prefixCheck = topRangeCheck.id.slice(0, -4);
+                    for (const side of ['bottom', 'left', 'right']) {
+                        const r = this.getEl(prefixCheck + '_' + side);
+                        if (r) {
+                            this._syncTfSvVar(topRangeCheck, r);
+                        }
+                    }
+                }
             } else {
                 ul.removeAttribute('data-checked');
                 text = ul.dataset.toptext || i18n.top;
+                const firstMulti = first.tfClass('tb_multi_field')[0],
+                    topRange = firstMulti?.tfClass('tb_range')[0];
+                if (topRange?.id?.endsWith('_top')) {
+                    const prefix = topRange.id.slice(0, -4),
+                        topVal = topRange.value,
+                        topLi = first,
+                        topUnitEl = topLi.tfClass('tb_unit')[0];
+                    for (const side of ['bottom', 'left', 'right']) {
+                        const rid = prefix + '_' + side,
+                            r = this.getEl(rid);
+                        if (r === null) {
+                            continue;
+                        }
+                        r.value = topVal;
+                        this._syncTfSvVar(topRange, r);
+                        const u = this.getEl(rid + '_unit');
+                        if (u && topUnitEl) {
+                            if (u.tagName === 'SELECT' && topUnitEl.tagName === 'SELECT') {
+                                u.value = topUnitEl.value;
+                                this.range._setData(r, u.selectedIndex !== -1 ? u[u.selectedIndex] : u[0]);
+                            } else if (u.tagName !== 'SELECT' && topUnitEl.tagName !== 'SELECT') {
+                                this.range._setData(r, u);
+                            }
+                        }
+                    }
+                }
             }
             if (trigger === true) {
                 Themify.triggerEvent(first.tfClass('tb_multi_field')[0], 'keyup');
+            }
+            if (api.isVisual && api.activeModel) {
+                requestAnimationFrame(() => {
+                    api.EdgeDrag?.addEdges(api.activeModel);
+                });
             }
             first.tfClass('tb_tooltip_up')[0].textContent = text;
         },
@@ -9344,17 +9705,24 @@ window.ThemifyConstructor = {
         render(data, self) {
             data.input_type = 'url';
             const fr = createDocumentFragment(),
-				input = self.text.render(data, self),
-				link = createElement( 'button', { class : 'tb_add_link' },i18n.addl );
+				inputFrag = self.text.render(data, self),
+				input = inputFrag.querySelector('input'),
+				link = createElement( 'button', { class : 'tb_add_link' }, i18n.addl ),
+				mediaLink = createElement( 'button', { class : 'tb_media_link' }, i18n.medl );
 
-			link.tfOn(_CLICK_, async function() {
+			// Lazy-load the internal link picker
+			link.tfOn( _CLICK_, async function() {
 				if ( typeof TB_Link_Lightbox === 'undefined' ) {
-					await Themify.loadJs( Themify.builder_url+'js/editor/lazy-components/link-lightbox.js',  );
+					await Themify.loadJs( Themify.builder_url + 'js/editor/lazy-components/link-lightbox.js' );
 					this.click();
-        }
+				}
 			}, { once: true } );
 
-			fr.append(input, link);
+			// Reuse the Builder media library opener used by Image URL (+) fields.
+			// IMPORTANT: pass the actual <input> element (not the fragment wrapper), so the selected URL can be inserted.
+			self.mediaFile.browse( mediaLink, input, self, '' );
+
+			fr.append( inputFrag, link, mediaLink );
 			return fr;
         }
     },
@@ -9561,7 +9929,19 @@ window.ThemifyConstructor = {
                             instance.addClass('open').html(form.html());
                             if (settings_instance) {
                                 for (let i in settings_instance) {
-                                    instance.find('[name="' + i + '"]').val(settings_instance[i]);
+                                    const v = settings_instance[i],
+                                        fields = instance.find('[name="' + i + '"]');
+                                    fields.each(function () {
+                                        const input = this,
+                                            {type, tagName} = input;
+                                        if (type === 'checkbox') {
+                                            input.checked = !(v === false || v === 0 || v === '0' || v === '' || v == null);
+                                        } else if (type === 'radio') {
+                                            input.checked = input.value == v;
+                                        } else {
+                                            $(input).val(v);
+                                        }
+                                    });
                                 }
                             }
                             if (base === 'text') {
@@ -9644,11 +10024,14 @@ window.ThemifyConstructor = {
             // backward compatibility with how Widget module used to save data
             if (settings_instance) {
                 for (let i in settings_instance) {
-                    if ( ! i ) continue;
-                    let old_pattern = i.match(/.*\[\d\]\[(.*)\]/);
-                    if (old_pattern && old_pattern[1] !== undefined && Array.isArray(old_pattern)) {
-                        delete settings_instance[ i ];
-                        settings_instance[ old_pattern[1] ] = v;
+                    if (!i) {
+                        continue;
+                    }
+                    const old_pattern = i.match(/.*\[\d\]\[(.*)\]/);
+                    if (old_pattern?.[1] !== undefined) {
+                        const oldVal = settings_instance[i];
+                        delete settings_instance[i];
+                        settings_instance[old_pattern[1]] = oldVal;
                     }
                 }
             }

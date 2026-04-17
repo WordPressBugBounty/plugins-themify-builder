@@ -115,12 +115,15 @@ function themify_import_settings() {
  * @package themify
  */
 function themify_plupload() {
-    if( ! current_user_can( 'upload_files' ) ) {
-        die;
+    if ( ! current_user_can( 'upload_files' ) ) {
+        wp_send_json_error( __( 'You are not allowed to upload files.', 'themify' ), 403 );
     }
 
-    $imgid = $_POST['imgid'];
-    check_ajax_referer( $imgid . 'themify-plupload' );
+    $imgid = isset( $_POST['imgid'] ) ? sanitize_text_field( wp_unslash( $_POST['imgid'] ) ) : '';
+    $nonce = isset( $_REQUEST['_ajax_nonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_ajax_nonce'] ) ) : '';
+    if ( $nonce === '' || ( ! wp_verify_nonce( $nonce, 'themify-plupload' ) && ! wp_verify_nonce( $nonce, $imgid . 'themify-plupload' ) ) ) {
+        wp_send_json_error( __( 'Upload verification failed.', 'themify' ), 403 );
+    }
     /** Decide whether to send this image to Media. @var String */
     $add_to_media_library = isset( $_POST['tomedia'] ) ? $_POST['tomedia'] : false;
     /** If post ID is set, uploaded image will be attached to it. @var String */
@@ -134,13 +137,20 @@ function themify_plupload() {
         wp_send_json_error( $file['error'] );
     }
 
-    $type = $_POST['type'];
+    $type = isset( $_POST['type'] ) ? sanitize_key( $_POST['type'] ) : '';
     $allowed_extensions = [
         'image' => [ 'jpg', 'jpeg', 'gif', 'png', 'ico', 'svg' ],
         'audio' => [ 'mp3', 'm4a', 'ogg', 'wav', 'wma' ],
         'video' => [ 'mp4', 'm4v', 'webm', 'ogv', 'wmv', 'flv' ],
         'font'  => [ 'woff', 'woff2', 'ttf', 'otf', 'svg', 'eot' ]
     ];
+
+    // Validate $type before using it as an array key to prevent PHP warnings
+    // and potential type-confusion attacks.
+    if ( ! isset( $allowed_extensions[ $type ] ) ) {
+        Themify_Filesystem::delete( $file['file'], 'f' );
+        wp_send_json_error( __( 'Invalid file type.', 'themify' ) );
+    }
 
     // let's see if it's a valid file type
     $extension = pathinfo( $file['file'], PATHINFO_EXTENSION );
@@ -175,9 +185,11 @@ function themify_plupload() {
         if( $postid ) {
             
             $full = wp_get_attachment_image_src( $attach_id, 'full' );
-
-            update_post_meta($postid, $_POST['fields'], $full[0]);
-            update_post_meta($postid, '_'.$_POST['fields'] . '_attach_id', $attach_id);             
+            $fields_key = isset( $_POST['fields'] ) ? sanitize_text_field( $_POST['fields'] ) : '';
+            if ( $fields_key !== '' && preg_match( '/^[\w\-\[\]]+$/', $fields_key ) ) {
+                update_post_meta($postid, $fields_key, $full[0]);
+                update_post_meta($postid, '_'.$fields_key . '_attach_id', $attach_id);
+            }
         }
 
         /* Return URL for the image field in meta box */
@@ -319,8 +331,7 @@ function themify_reset_settings(){
         }
     }
         $temp['setting-script_minification'] = 'disable';
-    print_r(themify_set_data($temp));
-    die();
+    wp_send_json( themify_set_data( $temp ) );
 }
 
 function themify_add_link_field(){
@@ -330,8 +341,12 @@ function themify_add_link_field(){
     }
     
     if( isset($_POST['fid']) ) {
-        $hash = $_POST['fid'];
-        $type = isset( $_POST['type'] )? $_POST['type'] : 'image-icon';
+        // $hash is used as an HTML id attribute - sanitize to alphanumeric/dashes only
+        $hash = preg_replace( '/[^a-zA-Z0-9_\-]/', '', sanitize_text_field( $_POST['fid'] ) );
+        if ( $hash === '' ) {
+            wp_die();
+        }
+        $type = isset( $_POST['type'] ) ? sanitize_key( $_POST['type'] ) : 'image-icon';
         echo themify_add_link_template( 'themify-link-'.$hash, array(), true, $type);
         wp_die();
     }
@@ -349,16 +364,28 @@ function themify_media_lib_browse() {
     }
 
     $file = array();
-    $postid = $_POST['post_id'];
-    $attach_id = $_POST['attach_id'];
+    $postid    = absint( $_POST['post_id'] );
+    $attach_id = absint( $_POST['attach_id'] );
+
+    // Capability check: the user must be able to edit the target post.
+    if ( ! current_user_can( 'edit_post', $postid ) ) {
+        die( -1 );
+    }
+
+    // Restrict meta_key to safe characters used by all Themify metabox fields
+    // (word chars, hyphens, brackets). Rejects injected or empty keys.
+    $field_name = isset( $_POST['field_name'] ) ? sanitize_text_field( $_POST['field_name'] ) : '';
+    if ( $field_name === '' || ! preg_match( '/^[\w\-\[\]]+$/', $field_name ) ) {
+        die( -1 );
+    }
 
     $full = wp_get_attachment_image_src( $attach_id, 'full' );
-    if( $_POST['featured'] ){
+    if ( ! empty( $_POST['featured'] ) ) {
         //Set the featured image for the post
-        set_post_thumbnail($postid, $attach_id);
+        set_post_thumbnail( $postid, $attach_id );
     }
-    update_post_meta($postid, $_POST['field_name'], $full[0]);
-    update_post_meta($postid, '_'.$_POST['field_name'] . '_attach_id', $attach_id);
+    update_post_meta( $postid, $field_name, $full[0] );
+    update_post_meta( $postid, '_' . $field_name . '_attach_id', $attach_id );
 
     $thumb = wp_get_attachment_image_src( $attach_id, 'thumbnail' );
 
@@ -527,8 +554,37 @@ function themify_search_autocomplete(){
 /*Load More Ajax - Used for module ajax load more*/
 if(!function_exists('themify_ajax_load_more')){
     function themify_ajax_load_more(){
+        // The nonce is output into themify_vars.nonce for every page load
+        // (see class-themify-enqueue.php) and sent by infinite.js / isotop.js.
+        // Using check_ajax_referer with die=false lets us handle the failure
+        // gracefully rather than outputting "-1" mid-stream.
+        if ( false === check_ajax_referer( 'tf_nonce', 'nonce', false ) ) {
+            wp_die();
+        }
+
         if(!empty($_POST['module']) && !empty($_POST['id'])){
             $builder_id=(int)($_POST['id']);
+
+            // Block non-logged-in access to unpublished or private post content.
+            if ( ! is_user_logged_in() ) {
+                $post = get_post( $builder_id );
+                if ( ! $post ) {
+                    wp_die();
+                }
+                $post_type_obj = get_post_type_object( $post->post_type );
+                // tbp_template is non-public by design but serves public archive content; exempt it from the public-type check.
+                $is_tbp_template = defined( 'TBP_Templates::SLUG' )
+                    ? $post->post_type === TBP_Templates::SLUG
+                    : $post->post_type === 'tbp_template';
+                if (
+                    $post->post_status !== 'publish'
+                    || post_password_required( $post )
+                    || ( ! $is_tbp_template && empty( $post_type_obj->public ) )
+                ) {
+                    wp_die();
+                }
+            }
+
             $mod_id=str_replace('tb_','',$_POST['module']);
             $data = Themify_Builder::get_builder_modules_list( (int)$_POST['id'] );
             if ( ! empty( $data ) ) {
@@ -625,7 +681,7 @@ function themify_required_plugins_modal() {
     'install'=>__( 'Install', 'themify' ),
     'activate'=>__( 'Activate', 'themify' ),
     'buy'=>__( 'Buy', 'themify' ),
-    'note'=>__('WARNING: Importing the demo content will override your Themify settings, menu and widget settings. It will also add the content (posts, pages, featured images, widgets, menus, etc.) to your site as per our demo setup. It is recommend to do on a fresh/development site.','themify'),
+    'note'=>__('WARNING: Importing the demo content will override your Themify settings, including your menu and widget configurations. It will also add content (posts, pages, featured images, widgets, menus, etc.) to your site based on our demo setup. It is recommended to perform this only on a fresh or development site.','themify'),
     'plugins'=>array(
         'activate_done'=>__('%plugin% successfully activated','themify'),
         'activate_fail'=>__('Failed to activate %plugin%: %error%','themify'),
@@ -846,22 +902,24 @@ function themify_upload_json(){
 
 function themify_update_license() {
     check_ajax_referer( 'tf_nonce', 'nonce' );
-    if(current_user_can( 'manage_options' )){
-        $themify_updater = Themify_Updater::get_instance();
-        $result = $themify_updater->menu_p(true);
-        if(true === $result){
-            $theme = wp_get_theme();
-            $theme = is_child_theme() ? $theme->parent() : $theme;
-            ob_start();
-            $themify_updater->themify_reinstall_theme( $theme->stylesheet );
-            $result = array('html'=>ob_get_clean());
-            wp_send_json_success($result);
-        }
-        else{
-            $msg = $result===false?__('Invalid license key. Please enter your Themify username and a valid license key.','themify'):
-                __('You need the latest Themify Updater plugin for this feature. Please update your Themify Updater plugin.','themify');
-
-            wp_send_json_error($msg);
-        }
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
     }
+    if ( ! class_exists( 'Themify_Updater', false ) || ! method_exists( 'Themify_Updater', 'get_instance' ) ) {
+        wp_send_json_error( __( 'You need the latest Themify Updater plugin for this feature. Please update your Themify Updater plugin.', 'themify' ) );
+    }
+    $themify_updater = Themify_Updater::get_instance();
+    if ( ! method_exists( $themify_updater, 'save_license_credentials_from_themify_theme' ) ) {
+        wp_send_json_error( __( 'You need the latest Themify Updater plugin for this feature. Please update your Themify Updater plugin.', 'themify' ) );
+    }
+    $username = isset( $_POST['themify_username'] ) ? wp_unslash( $_POST['themify_username'] ) : '';
+    $key      = isset( $_POST['updater_licence'] ) ? wp_unslash( $_POST['updater_licence'] ) : '';
+    $saved    = $themify_updater->save_license_credentials_from_themify_theme( $username, $key );
+    if ( is_wp_error( $saved ) ) {
+        $msg = 'empty' === $saved->get_error_code()
+            ? __( 'Invalid license key. Please enter your Themify username and a valid license key.', 'themify' )
+            : $saved->get_error_message();
+        wp_send_json_error( $msg );
+    }
+    wp_send_json_success( array() );
 }

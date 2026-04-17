@@ -104,6 +104,7 @@ $builder_id = $args['builder_id'];
                 <?php if ( 'c' === $fields_args['success_action'] ) : ?>data-redirect="<?php echo esc_url( $fields_args['redirect_to'] ); ?>"<?php endif; ?>
                 data-generic-error="<?php esc_attr_e( 'There was an error connecting to server, please try again.', 'themify' ) ?>"
             >
+                <input type="hidden" name="nonce" value="<?php echo wp_create_nonce( 'tf_nonce' ); ?>">
                 <div class="tb_signup_messages tb_signup_errors"></div>
                 <?php if ( 'm' === $fields_args['success_action'] && !empty( $fields_args['msg_success'] ) ): ?>
                     <div class="tf_hide tb_signup_messages tb_signup_success"><?php echo esc_html( $fields_args['msg_success'] ) ?></div>

@@ -78,6 +78,7 @@ $builder_id = $args['builder_id'];
         <?php else: ?>
         <form class="tb_optin_form" name="tb_optin" method="post" action="<?php echo admin_url( 'admin-ajax.php' ); ?>" data-success="<?php esc_attr_e( $fields_args['success_action'] ); ?>">
             <input type="hidden" name="action" value="tb_optin_subscribe">
+            <input type="hidden" name="nonce" value="<?php echo wp_create_nonce( 'tf_nonce' ); ?>">
             <input type="hidden" name="tb_optin_redirect" value="<?php esc_attr_e( $fields_args['redirect_to'] ); ?>">
             <input type="hidden" name="tb_optin_provider" value="<?php esc_attr_e( $fields_args['provider'] ); ?>">
             <input type="hidden" name="tb_post_id" value="<?php echo $builder_id; ?>">

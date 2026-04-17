@@ -1121,7 +1121,7 @@ function themify_get_uploader( $id = '', $args = array() ){
 
                     <input id="<?php echo esc_attr( $id ); ?>plupload-browse-button" type="button" value="<?php echo esc_attr( $args['label'] ); ?>" class="button plupload-button <?php echo esc_attr( 'plupload-' . $id . ' ' . $args['button_class'] ); ?>" />
 
-                    <span class="ajaxnonceplu" id="ajaxnonceplu<?php echo wp_create_nonce($id . 'themify-plupload'); ?>"></span>
+                    <span class="ajaxnonceplu" id="ajaxnonceplu<?php echo wp_create_nonce($id . 'themify-plupload'); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'themify-plupload' ) ); ?>"></span>
 
                 </div>
 
@@ -1189,41 +1189,50 @@ function themify_uploader($id = '', $args = array()){
 }
 
 function themify_wp_ajax_plupload_image() {
-    $imgid = (int) $_POST['imgid'];
-    check_ajax_referer($imgid . 'themify-plupload');
-    if( ! current_user_can( 'upload_files' ) ) {
-        die;
+    $imgid = isset( $_POST['imgid'] ) ? sanitize_text_field( wp_unslash( $_POST['imgid'] ) ) : '';
+    $nonce = isset( $_REQUEST['_ajax_nonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_ajax_nonce'] ) ) : '';
+
+    if ( $nonce === '' || ( ! wp_verify_nonce( $nonce, 'themify-plupload' ) && ! wp_verify_nonce( $nonce, $imgid . 'themify-plupload' ) ) ) {
+        wp_send_json_error( __( 'Upload verification failed.', 'themify' ), 403 );
+    }
+
+    if ( ! current_user_can( 'upload_files' ) ) {
+        wp_send_json_error( __( 'You are not allowed to upload files.', 'themify' ), 403 );
+    }
+
+    $file_key = $imgid . 'async-upload';
+    if ( $imgid === '' || empty( $_FILES[ $file_key ] ) ) {
+        wp_send_json_error( __( 'No file was uploaded.', 'themify' ), 400 );
     }
 
     /** Decide whether to send this image to Media. @var String */
-    $add_to_media_library = isset( $_POST['tomedia'] ) ? sanitize_text_field( $_POST['tomedia'] ) : false;
+    $add_to_media_library = isset( $_POST['tomedia'] ) ? sanitize_text_field( wp_unslash( $_POST['tomedia'] ) ) : false;
     /** If post ID is set, uploaded image will be attached to it. @var String */
-    $postid = isset( $_POST['topost'] )? (int) $_POST['topost'] : '';
+    $postid = isset( $_POST['topost'] ) ? (int) $_POST['topost'] : 0;
  
     /** Handle file upload storing file|url|type. @var Array */
-    $file = wp_handle_upload($_FILES[$imgid . 'async-upload'], array('test_form' => true, 'action' => 'themify_plupload'));
+    $file = wp_handle_upload( $_FILES[ $file_key ], array( 'test_form' => true, 'action' => 'themify_plupload' ) );
     
     // if $file returns error, return it and exit the function
     if ( isset( $file['error'] ) && ! empty( $file['error'] ) ) {
-        echo json_encode($file);
-        exit;
+        wp_send_json_error( $file['error'] );
     }
 
     //let's see if it's an image, a zip file or something else
-    $ext = explode('/', $file['type']);
+    $ext = explode( '/', $file['type'] );
     
     //Image Upload routines
-    if( 'tomedia' == $add_to_media_library ) {
+    if ( 'tomedia' === $add_to_media_library ) {
         
         // Insert into Media Library
         // Set up options array to add this file as an attachment
         $attachment = array(
-            'post_mime_type' => sanitize_mime_type($file['type']),
-            'post_title' => str_replace('-', ' ', sanitize_file_name(pathinfo($file['file'], PATHINFO_FILENAME))),
+            'post_mime_type' => sanitize_mime_type( $file['type'] ),
+            'post_title' => str_replace( '-', ' ', sanitize_file_name( pathinfo( $file['file'], PATHINFO_FILENAME ) ) ),
             'post_status' => 'inherit'
         );
         
-        if( $postid ){
+        if ( $postid ) {
             $attach_id = wp_insert_attachment( $attachment, $file['file'], $postid );
         } else {
             $attach_id = wp_insert_attachment( $attachment, $file['file'] );
@@ -1231,14 +1240,13 @@ function themify_wp_ajax_plupload_image() {
         $file['id'] = $attach_id;
 
         // Common attachment procedures
-        require_once(ABSPATH . "wp-admin" . '/includes/image.php');
+        require_once( ABSPATH . 'wp-admin/includes/image.php' );
         $attach_data = wp_generate_attachment_metadata( $attach_id, $file['file'] );
-        wp_update_attachment_metadata($attach_id, $attach_data);
+        wp_update_attachment_metadata( $attach_id, $attach_data );
         
-        if( $postid ) {
-            
+        if ( $postid && ! empty( $_POST['fields'] ) ) {
             $full = wp_get_attachment_image_src( $attach_id, 'full' );
-            $fields = sanitize_text_field( $_POST['fields'] );
+            $fields = sanitize_text_field( wp_unslash( $_POST['fields'] ) );
             update_post_meta( $postid, $fields, $full[0] );
             update_post_meta( $postid, '_' . $fields . '_attach_id', $attach_id );
         }
@@ -1248,10 +1256,9 @@ function themify_wp_ajax_plupload_image() {
         //Return URL for the image field in meta box
         $file['thumb'] = $thumb[0];
     }
-    $file['type'] = $ext[1];
+    $file['type'] = isset( $ext[1] ) ? $ext[1] : $file['type'];
     // send the uploaded file url in response
-    echo json_encode( $file );
-    exit;
+    wp_send_json_success( $file );
 }
 
 /**

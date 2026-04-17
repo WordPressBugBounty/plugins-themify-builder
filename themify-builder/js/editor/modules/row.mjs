@@ -93,6 +93,16 @@
         initialize() {
             super.initialize();
         }
+        /** Columns after background (cover, frames…), before builder UI — matches PHP subrow order. */
+        insertSubrowColumnsFragment(container, fr) {
+            const subAnchor = container.querySelector(':scope > .tb_visibility_hint')
+                || container.querySelector(':scope > .tb_subrow_action');
+            if (subAnchor) {
+                subAnchor.before(fr);
+            } else {
+                container.prepend(fr);
+            }
+        }
         defaults() {
             return {
                 cols: [],
@@ -199,7 +209,7 @@
             }
             else{
                 cl.push('tb_' + this.id);
-                container.prepend(fr);
+                this.insertSubrowColumnsFragment(container, fr);
             }
             container.className += ' ' + cl.join(' ');
             this.visibilityLabel();
@@ -777,7 +787,11 @@
                         for (let i = len - 1; i > -1; --i) {
                             fr.appendChild(cols[i]);
                         }
-                        inner.prepend(fr);
+                        if (self.type === 'subrow') {
+                            self.insertSubrowColumnsFragment(inner, fr);
+                        } else {
+                            inner.prepend(fr);
+                        }
                         this.tfOn('transitionend', () => {
                             for (let i = len - 1; i > -1; --i) {
                                 cols[i].style.setProperty('transition', '');

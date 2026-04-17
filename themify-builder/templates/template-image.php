@@ -25,6 +25,7 @@ $fields_args = $args['mod_settings']+ array(
     'title_tag' => 'h3',
     'title_image' => '',
     'link_image' => '',
+    'download_link' => '',
     'param_image' => '',
     'image_zoom_icon' => '',
     'lightbox_width' => '',
@@ -105,7 +106,7 @@ self::sticky_element_props($container_props, $fields_args);
     ?>
     <div class="image-wrap tf_rel tf_mw">
     <?php if ($fields_args['link_image'] !== ''): ?>
-        <a href="<?php echo esc_url($fields_args['link_image']); ?>"<?php if ($newtab===true): ?> rel="noopener" target="_blank"<?php elseif (isset($lightbox_data)) : ?> class="lightbox-builder themify_lightbox"<?php echo $lightbox_data; ?><?php endif; ?>>
+        <a href="<?php echo esc_url($fields_args['link_image']); ?>"<?php if ($newtab===true): ?> rel="noopener" target="_blank"<?php elseif (isset($lightbox_data)) : ?> class="lightbox-builder themify_lightbox"<?php echo $lightbox_data; ?><?php endif; ?><?php if ($fields_args['download_link'] === 'yes' &&  $fields_args['param_image'] !== 'lightbox') { echo ' download'; } ?>>
            <?php if ($fields_args['style_image']!=='image-full-overlay' && $fields_args['image_zoom_icon'] === 'zoom'): ?>
             <?php 
                 Themify_Builder_Model::load_module_self_style($mod_name,'zoom');

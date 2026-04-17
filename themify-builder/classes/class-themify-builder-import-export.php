@@ -217,8 +217,9 @@ final class Themify_Builder_Import_Export {
                             continue;
                         }
                         // fetch the remote url and write it to the placeholder file
-                        $request = new WP_Http;
-                        $response = $request->request($img, array('sslverify' => false));
+                        $response = function_exists( 'themify_safe_remote_get_with_ssl_fallback' )
+                            ? themify_safe_remote_get_with_ssl_fallback( $img, array( 'timeout' => 10, 'redirection' => 3 ) )
+                            : ( new WP_Http )->request( $img, array( 'sslverify' => false ) );
 
                         // request failed and make sure the fetch was successful
                         if (!$response || is_wp_error($response) || wp_remote_retrieve_response_code($response) != '200') {
@@ -377,9 +378,16 @@ final class Themify_Builder_Import_Export {
                     if (!empty($custom_css)) {
                         $response['custom_css'] = $custom_css;
                     }
+                    if ( ! empty( $result ) && class_exists( 'TF_SV_Framework', false ) ) {
+                        $used_sv = TF_SV_Framework::collect_used_vars( $result );
+                        if ( ! empty( $used_sv ) ) {
+                            $response['used_sv'] = $used_sv;
+                        }
+                    }
                 }
             }
         }
         wp_send_json($response);
     }
+
 }

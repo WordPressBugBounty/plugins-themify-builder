@@ -175,7 +175,13 @@ class Themify_Icon_Font {
         $cl.=' '.$attrs['class'];
     }
     $attrs['class']=$cl;
-    return '<svg '.self::svg_attributes($attrs).'><use href="#tf-' . $id . '"></use></svg>';
+	// Safari (and some WebKit builds) can fail to render <use href="#..."> in certain contexts
+	// (notably inside Shadow DOM). Provide both `href` and legacy `xlink:href` for compatibility.
+	if(!isset($attrs['xmlns:xlink'])){
+		$attrs['xmlns:xlink'] = 'http://www.w3.org/1999/xlink';
+	}
+	$ref = '#tf-' . $id;
+	return '<svg '.self::svg_attributes($attrs).'><use href="' . $ref . '" xlink:href="' . $ref . '"></use></svg>';
     }
 }
 endif;

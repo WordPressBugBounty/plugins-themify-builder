@@ -477,8 +477,10 @@
         if (cl) {
           classes += " " + cl;
         }
-        const svg = createElementNS("", classes);
-        svg.appendChild(createElementNS("use", { href: "#" + icon }));
+        const svg = createElementNS("", classes),
+            use = createElementNS("use", { href: "#" + icon });
+        use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#' + icon);
+        svg.appendChild(use);
         return svg;
       },
       getLottie(arr, sel) {
@@ -520,15 +522,45 @@
         return tb_createDocumentFragment();
       },
       getColor(el) {
-        let v = el.value;
-        if (v !== "") {
-          if (el.getAttribute("data-tfminicolors-initialized") !== null) {
-            v = jQuery(el).tfminicolors("rgbaString");
-          } else {
-            const opacity = el.dataset.opacity;
-            if (opacity !== "" && opacity !== null) {
-              v = ThemifyStyles.toRGBA(v + "_" + opacity);
-            }
+        const doc = el.ownerDocument || document,
+          rawTrim = (x) => (x != null ? String(x).trim() : "");
+        const hid = el.id ? doc.getElementById("tf_sv_" + el.id) : null,
+          hidVal = hid ? rawTrim(hid.value) : "";
+        const wrap = el.closest && el.closest(".tfminicolors"),
+          isVarChip =
+            (wrap && wrap.classList.contains("tfminicolors-var-input")) ||
+            el.classList.contains("tfminicolors-var-input");
+        if (hidVal && /^[a-zA-Z0-9_-]+$/.test(hidVal)) {
+          return "var(--" + hidVal + ")";
+        }
+        let raw = rawTrim(el.value);
+        if (isVarChip) {
+          if (/^--[\w-]+$/.test(raw)) {
+            return "var(" + raw + ")";
+          }
+          if (/^var\s*\(\s*--[\w-]+\s*\)$/i.test(raw)) {
+            return raw;
+          }
+        }
+        if (raw === "") {
+          return "";
+        }
+        if (/^--[\w-]+$/.test(raw)) {
+          return "var(" + raw + ")";
+        }
+        if (/^var\s*\(\s*--[\w-]+\s*\)$/i.test(raw)) {
+          return raw;
+        }
+        let v = raw;
+        const jq = typeof jQuery !== "undefined" ? jQuery(el) : null;
+        if (jq && jq.data && jq.data("tfminicolors-initialized")) {
+          v = jq.tfminicolors("rgbaString");
+        } else if (el.getAttribute("data-tfminicolors-initialized") !== null && jq) {
+          v = jq.tfminicolors("rgbaString");
+        } else {
+          const opacity = el.dataset.opacity;
+          if (opacity !== "" && opacity !== null) {
+            v = ThemifyStyles.toRGBA(raw + "_" + opacity);
           }
         }
         return v;

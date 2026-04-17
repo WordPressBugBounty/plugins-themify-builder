@@ -464,9 +464,14 @@
           }
         }
 
+        if (settings.effect_slider === "continuously" &&
+          (settings.auto_scroll_opt_slider === undefined || settings.auto_scroll_opt_slider === null || settings.auto_scroll_opt_slider === "")) {
+          settings.auto_scroll_opt_slider = 0;
+        }
+
         if (
-          !settings.auto_scroll_opt_slider ||
-          settings.auto_scroll_opt_slider === "off"
+          (settings.auto_scroll_opt_slider === undefined || settings.auto_scroll_opt_slider === null || settings.auto_scroll_opt_slider === "" ||
+          settings.auto_scroll_opt_slider === "off") && settings.effect_slider !== "continuously"
         ) {
           delete settings.pause_on_hover_slider;
           delete settings.play_pause_control;

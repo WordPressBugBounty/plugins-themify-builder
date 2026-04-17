@@ -567,6 +567,12 @@ if (!class_exists('Themify_Builder_Layouts',false)) {
                 $usedGS+=Themify_Global_Styles::used_global_styles($pId);
             }
 
+            if ( class_exists( 'TF_SV_Framework', false ) ) {
+                $used_sv = TF_SV_Framework::collect_used_vars( $data['content'] );
+                if ( ! empty( $used_sv ) ) {
+                    $data['used_sv'] = $used_sv;
+                }
+            }
             if (class_exists('ZipArchive',false)) {
                 $datafile = 'export_file.txt';
                 Themify_Filesystem::put_contents($datafile, serialize($data));
@@ -644,6 +650,9 @@ if (!class_exists('Themify_Builder_Layouts',false)) {
 
             $data = unserialize( stripslashes( $_POST['data'] ), [ 'allowed_classes' => false ] );
             if ( ! empty( $data ) ) {
+                if ( ! empty( $data['used_sv'] ) && class_exists( 'TF_SV_Framework', false ) ) {
+                    TF_SV_Framework::import_missing_vars( $data['used_sv'] );
+                }
                 self::set_data( $data );
                 if ( ! empty( $_POST['gs_data'] ) ) {
                     $gs_data = stripslashes( $_POST['gs_data'] );

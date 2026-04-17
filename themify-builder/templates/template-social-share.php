@@ -32,8 +32,10 @@ if($fields_args['networks']!==''){
             'tw' => array( 'icon' => 'fab x-twitter', 'title' => __( 'Twitter', 'themify' ),'type'=>'twitter' ),
             'lk' => array( 'icon' => 'linkedin', 'title' => __( 'Linkedin', 'themify' ),'type'=>'linkedin' ),
             'pi' => array( 'icon' => 'pinterest', 'title' => __( 'Pinterest', 'themify' ),'type'=>'pinterest' ),
-            'em' => array( 'icon' => 'email', 'title' => __( 'Email', 'themify' ),'type'=>'email' )
+            'em' => array( 'icon' => 'email', 'title' => __( 'Email', 'themify' ),'type'=>'email' ),
+            'wa' => array( 'icon' => 'whatsapp', 'title' => __( 'WhatsApp', 'themify' ),'type'=>'whatsapp' )
         );
+        $fa_nets = array( 'tw', 'wa' );
     }
 }
 $container_class = apply_filters( 'themify_builder_module_classes', array(
@@ -65,7 +67,7 @@ self::sticky_element_props($container_props, $fields_args);
                 <?php foreach ( $fields_args['networks'] as $net ): ?>
                     <div class="ss_anchor_wrap<?php echo 'h'===$fields_args['arrangement']?' tf_inline_b':''; ?>">
                         <a href="#" data-type="<?php echo $info[ $net ]['type']; ?>">
-                            <em class="tb_social_share_icon"><?php echo themify_get_icon($info[ $net ]['icon'], $net === 'tw' ? 'fa' : 'ti', false,false,array('aria-label'=>$info[$net]['title'])); ?></em>
+                            <em class="tb_social_share_icon"><?php echo themify_get_icon($info[ $net ]['icon'], in_array( $net, $fa_nets ) ? 'fa' : 'ti', false,false,array('aria-label'=>$info[$net]['title'])); ?></em>
                             <?php if('no' === $fields_args['title']): ?>
                                 <span class="tb_social_share_title"><?php echo $info[ $net ]['title']; ?></span>
                             <?php endif; ?>

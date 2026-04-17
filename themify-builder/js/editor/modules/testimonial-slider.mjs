@@ -256,13 +256,10 @@
                     if(!testominal.ic || ~~testominal.rating===5){
                         delete testominal.rating;
                     }
-                    if(!testominal.person_name_testimonial){
-                        delete testominal.person_position_testimonial;
-                        delete testominal.company_testimonial;
-                    }
-                    if(!testominal.company_testimonial){
-                        delete testominal.company_website_testimonial;
-                    }
+                    /**
+                     * Keep Person Position / Company / Company Website values even when
+                     * Person Name / Company are empty.
+                     */
                 }
             }
             super.builderSave(settings);
@@ -325,23 +322,25 @@
                 content.appendChild(figure);
             }
             
-            if (item.person_name_testimonial){
+            if ( item.person_name_testimonial || item.person_position_testimonial || item.company_testimonial ){
                 const author=createElement('','testimonial-author');
-                author.appendChild(constructor._setEditableContent(createElement('','person-name'),'person_name_testimonial',item.person_name_testimonial,'',repeatId,index));
-                
-                if (item.person_position_testimonial){
+
+                if ( item.person_name_testimonial ){
+                    author.appendChild(constructor._setEditableContent(createElement('','person-name'),'person_name_testimonial',item.person_name_testimonial,'',repeatId,index));
+                }
+                if ( item.person_position_testimonial ){
                     author.appendChild(constructor._setEditableContent(createElement('','person-position'),'person_position_testimonial',item.person_position_testimonial,'',repeatId,index));
                 }
-                if (item.company_testimonial){
+                if ( item.company_testimonial ){
                     let company=createElement('','person-company'),
                         editItem=company;
-                    
-                    if(item.company_website_testimonial){
+
+                    // Only output a company link when the company name is present.
+                    if( item.company_website_testimonial ){
                         editItem=createElement('a',{href:item.company_website_testimonial});
                         company.appendChild(editItem);
                     }
                     constructor._setEditableContent(editItem,'company_testimonial',item.company_testimonial,'',repeatId,index);
-                    
                     author.appendChild(company);
                 }
                 content.appendChild(author);

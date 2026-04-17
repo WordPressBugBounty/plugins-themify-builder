@@ -68,7 +68,7 @@ class Themify_System_Status {
                 <td>
                     <?php echo esc_html( $server_info ); ?>
                     <br>
-                    <strong><?php esc_html_e( 'Server IP', 'themify' ); ?></strong>: <?php echo $_SERVER['SERVER_ADDR']; ?>
+                    <strong><?php esc_html_e( 'Server IP', 'themify' ); ?></strong>: <?php echo esc_html( $_SERVER['SERVER_ADDR'] ); ?>
                 </td>
             </tr>
             <tr>

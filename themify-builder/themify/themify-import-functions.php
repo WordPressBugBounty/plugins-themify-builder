@@ -974,6 +974,9 @@ class Themify_Import_Helper {
                 $skinSettings = array_merge(themify_get_data(), $settings['themify_settings']);
                 themify_set_data($skinSettings);
             }
+            if (!empty($settings['style_variables']) && is_array($settings['style_variables']) && class_exists('TF_SV_Framework', false)) {
+                TF_SV_Framework::import_missing_vars($settings['style_variables']);
+            }
             return true;
         }
         return false;

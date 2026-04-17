@@ -3,7 +3,7 @@
 Plugin Name: Themify Builder
 Plugin URI: https://themify.me/builder
 Description: Build responsive layouts that work for any device using intuitive "what you see is what you get" drag & drop framework, with live edits and previews.
-Version: 7.7.0 
+Version: 7.7.1
 Author: Themify
 Author URI: https://themify.me
 Text Domain:  themify
@@ -131,7 +131,7 @@ if(!function_exists('themify_builder_themify_dependencies')){
 			// 
 			define( 'THEMIFY_BUILDER_REGENERATE_CSS', true );
 			$path = plugin_dir_path( __FILE__ ) ;
-			define( 'THEMIFY_VERSION', '7.7.0' );
+			define( 'THEMIFY_VERSION', '7.7.1' );
 			define( 'THEMIFY_DIR', $path. 'themify' );
 			define( 'THEMIFY_URI', plugin_dir_url( __FILE__ ) . 'themify' );
 			require_once THEMIFY_DIR . '/themify-database.php';
@@ -221,6 +221,7 @@ if ( ! function_exists( 'themify_builder_plugin_init' ) ){
 	   require_once THEMIFY_DIR . '/class-themify-access-role.php';
 	   require_once THEMIFY_DIR . '/class-themify-filesystem.php';
 	   require_once THEMIFY_DIR . '/class-themify-custom-fonts.php';
+	   require_once THEMIFY_DIR . '/class-tf-sv.php';
 	   require_once THEMIFY_DIR . '/class-themify-maintenance-mode.php';
 	   require_once THEMIFY_BUILDER_DIR . '/plugin/classes/class-themify-builder-page-options.php';
 

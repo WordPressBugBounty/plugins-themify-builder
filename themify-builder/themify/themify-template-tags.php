@@ -539,7 +539,7 @@ if (!function_exists('themify_permalink_attr')) {
         if ($echo === false) {
             return $result;
         }
-        echo 'href="' . $result['href'] . '"';
+        echo 'href="' . esc_url( $result['href'] ) . '"';
         if ($result['cl'] !== '') {
             echo ' class="' . $result['cl'] . '"';
         }
@@ -675,7 +675,7 @@ if (!function_exists('themify_post_media')) {
                 }
                 ?>
                     <?php if ($isImage === true): ?>
-                        <a href="<?php echo $link_attr['href'] ?>"<?php if ($link_attr['cl'] !== ''): ?> class="<?php echo $link_attr['cl'] ?>"<?php endif; ?><?php if ($link_attr['r'] !== ''): ?> <?php echo $link_attr['r'] ?><?php endif; ?>>
+                        <a href="<?php echo esc_url( $link_attr['href'] ) ?>"<?php if ($link_attr['cl'] !== ''): ?> class="<?php echo $link_attr['cl'] ?>"<?php endif; ?><?php if ($link_attr['r'] !== ''): ?> <?php echo $link_attr['r'] ?><?php endif; ?>>
                     <?php endif; ?>
                     <?php echo $post_image; ?>
                     <?php if ($isImage === true): ?>
@@ -715,7 +715,7 @@ if (!function_exists('themify_post_media')) {
                 $key = 'tf_vimeo_' . $video_url;
                 $data = Themify_Storage::get($key);
                 if (!$data) {
-                    $request = wp_remote_get('http://vimeo.com/api/oembed.json?url=' . urlencode($video_url));
+                    $request = wp_safe_remote_get( 'https://vimeo.com/api/oembed.json?url=' . rawurlencode( $video_url ), array( 'timeout' => 5, 'redirection' => 3 ) );
                     $response_body = wp_remote_retrieve_body($request);
                     if ('' != $response_body) {
                         $vimeo = json_decode($response_body);
@@ -770,7 +770,7 @@ if (!function_exists('themify_post_media')) {
                 <?php if (themify_check('setting-excerpt_more', true) && (!is_single() || isset($themify->post_module_hook))) : ?>
 
                     <div class="more-link-wrap"><a href="<?php $link = themify_permalink_attr(array(), false);
-                echo $link['href']; ?>" class="more-link"><?php echo $more_text; ?></a></div>
+                echo esc_url( $link['href'] ); ?>" class="more-link"><?php echo $more_text; ?></a></div>
 
             <?php endif; ?>
 
