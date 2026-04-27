@@ -144,9 +144,10 @@ final class Themify_Builder_Import_Export {
      * @return string
      */
     private static function replace_with_image_path(string $shortcode):string {
+        $resolved = themify_resolve_gallery_shortcode_string($shortcode);
         $images = themify_get_gallery_shortcode($shortcode);
         if (!empty($images)) {
-            preg_match('/\[gallery.*ids=.(.*).\]/im', $shortcode, $ids);
+            preg_match('/\[gallery.*ids=.(.*).\]/im', $resolved, $ids);
             $ids = trim($ids[1], '\\');
             $ids = trim($ids, '"');
             $path = array();
@@ -155,7 +156,7 @@ final class Themify_Builder_Import_Export {
             }
             if (!empty($path)) {
                 $path = implode(',', $path);
-                $shortcode = str_replace('[gallery', '[gallery path="' . $path . '" ', $shortcode);
+                $shortcode = str_replace('[gallery', '[gallery path="' . $path . '" ', $resolved);
             }
         }
         return $shortcode;

@@ -177,11 +177,28 @@ final class TF_SV_Framework {
             wp_register_script( $color_script, THEMIFY_METABOX_URI . 'js/themify.minicolors.js', [ $main_script_dep ], THEMIFY_VERSION, true );
         }
         if ( $is_customizer ) {
-            if ( ! wp_style_is( $combo_style, 'registered' ) ) {
-                wp_register_style( $combo_style, THEMIFY_CUSTOMIZER_URI . '/css/jquery-scombobox.css', [], THEMIFY_VERSION );
+            if ( ! defined( 'THEMIFY_CUSTOMIZER_URI' ) && defined( 'THEMIFY_URI' ) && defined( 'THEMIFY_DIR' ) && is_dir( THEMIFY_DIR . '/customizer' ) ) {
+                if ( ! defined( 'THEMIFY_CUSTOMIZER_DIR' ) ) {
+                    define( 'THEMIFY_CUSTOMIZER_DIR', THEMIFY_DIR . '/customizer' );
+                }
+                define( 'THEMIFY_CUSTOMIZER_URI', THEMIFY_URI . '/customizer' );
             }
-            if ( ! wp_script_is( $combo_script, 'registered' ) ) {
-                wp_register_script( $combo_script, THEMIFY_CUSTOMIZER_URI . '/js/jquery-scombobox.min.js', [ $main_script_dep ], THEMIFY_VERSION, true );
+            $scombo_style_url  = null;
+            $scombo_script_url = null;
+            if ( defined( 'THEMIFY_CUSTOMIZER_URI' ) && is_file( THEMIFY_DIR . '/customizer/css/jquery-scombobox.css' ) ) {
+                $scombo_style_url  = THEMIFY_CUSTOMIZER_URI . '/css/jquery-scombobox.css';
+                $scombo_script_url = THEMIFY_CUSTOMIZER_URI . '/js/jquery-scombobox.min.js';
+            } elseif ( defined( 'THEMIFY_BUILDER_URI' ) && defined( 'THEMIFY_BUILDER_DIR' ) && is_file( THEMIFY_BUILDER_DIR . '/css/editor/themify-combobox.css' ) && is_file( THEMIFY_BUILDER_DIR . '/js/editor/themify-combobox.min.js' ) ) {
+                $scombo_style_url  = THEMIFY_BUILDER_URI . '/css/editor/themify-combobox.css';
+                $scombo_script_url = THEMIFY_BUILDER_URI . '/js/editor/themify-combobox.min.js';
+            }
+            if ( $scombo_style_url && $scombo_script_url ) {
+                if ( ! wp_style_is( $combo_style, 'registered' ) ) {
+                    wp_register_style( $combo_style, $scombo_style_url, [], THEMIFY_VERSION );
+                }
+                if ( ! wp_script_is( $combo_script, 'registered' ) ) {
+                    wp_register_script( $combo_script, $scombo_script_url, [ $main_script_dep ], THEMIFY_VERSION, true );
+                }
             }
         } else {
             if ( ! wp_style_is( $combo_style, 'registered' ) ) {

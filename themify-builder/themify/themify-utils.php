@@ -818,6 +818,46 @@ if (!function_exists('themify_get_shortcode_template')) {
 
 }
 
+if (!function_exists('themify_resolve_gallery_shortcode_string')) {
+
+    /**
+     * Expand wrapper shortcodes (e.g. ACF) that return a literal [gallery ids="..."] string.
+     * Stops before WordPress would render [gallery] to HTML.
+     *
+     * @param string|null $shortcode Raw field value from Builder (may be [acf_...] or [gallery ...]).
+     * @return string String containing [gallery ... ids=...] when resolvable, otherwise original/expanded text.
+     */
+    function themify_resolve_gallery_shortcode_string(?string $shortcode): string {
+        if ($shortcode === null || $shortcode === '') {
+            return '';
+        }
+        $shortcode = trim($shortcode);
+        if (strpos($shortcode, '[') === false) {
+            return $shortcode;
+        }
+        // Already a gallery shortcode with ids — do not run do_shortcode() or core will output HTML.
+        if (preg_match('/\[gallery\s+[^\]]*ids\s*=/i', $shortcode)) {
+            return $shortcode;
+        }
+        $prev = '';
+        for ($i = 0; $i < 8; ++$i) {
+            if ($shortcode === $prev) {
+                break;
+            }
+            $prev = $shortcode;
+            $next = do_shortcode($shortcode);
+            if ($next === $shortcode) {
+                break;
+            }
+            $shortcode = $next;
+            if (preg_match('/\[gallery\s+[^\]]*ids\s*=/i', $shortcode)) {
+                break;
+            }
+        }
+        return $shortcode;
+    }
+}
+
 if (!function_exists('themify_get_gallery_shortcode')) {
 
     /**
@@ -826,6 +866,7 @@ if (!function_exists('themify_get_gallery_shortcode')) {
      */
     function themify_get_gallery_shortcode(?string $shortcode):array {
         if ($shortcode) {
+            $shortcode = themify_resolve_gallery_shortcode_string($shortcode);
             preg_match('/\[gallery.*ids.*?=.(.*).\]/si', $shortcode, $ids);
             if (isset($ids[1])) {
                 $ids = trim($ids[1], '\\');
@@ -860,6 +901,7 @@ if (!function_exists('themify_get_gallery_shortcode_params')) {
      * @param $param
      */
     function themify_get_gallery_shortcode_params(string $shortcode, string $param = 'link', $default = '') {
+        $shortcode = themify_resolve_gallery_shortcode_string($shortcode);
         $pattern = '/\[gallery .*?(?=' . $param . ')' . $param . '=.([^\']+)./si';
         preg_match($pattern, $shortcode, $out);
         $out = isset($out[1]) ? explode('"', $out[1]) : array('');

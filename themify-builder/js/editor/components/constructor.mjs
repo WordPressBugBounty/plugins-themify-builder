@@ -6567,6 +6567,28 @@ window.ThemifyConstructor = {
                     }
                     return res;
                 }
+                try {
+                    const prmsK = 'sc_' + shortcode.replace(/[\r\n]/gm, '').replace(/  +/g, ' ');
+                    let prms = this.cache.get(prmsK);
+                    if (!prms) {
+                        prms = api.LocalFetch({
+                            action: 'tb_get_ajax_data',
+                            dataset: 'gallery_shortcode',
+                            val: shortcode
+                        });
+                        this.cache.set(prmsK, prms);
+                    }
+                    res = await prms;
+                    if (!res.success) {
+                        throw '';
+                    }
+                    res = res.data;
+                    this.setCache(res);
+                    return res;
+                } catch (e) {
+                    api.Spinner.showLoader('error');
+                    throw e;
+                }
             }
             if(ids){
                 res=this.getCache(ids);

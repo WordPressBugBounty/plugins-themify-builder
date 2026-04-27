@@ -3,7 +3,7 @@
 Plugin Name: Themify Builder
 Plugin URI: https://themify.me/builder
 Description: Build responsive layouts that work for any device using intuitive "what you see is what you get" drag & drop framework, with live edits and previews.
-Version: 7.7.1
+Version: 7.7.2 
 Author: Themify
 Author URI: https://themify.me
 Text Domain:  themify
@@ -131,7 +131,7 @@ if(!function_exists('themify_builder_themify_dependencies')){
 			// 
 			define( 'THEMIFY_BUILDER_REGENERATE_CSS', true );
 			$path = plugin_dir_path( __FILE__ ) ;
-			define( 'THEMIFY_VERSION', '7.7.1' );
+			define( 'THEMIFY_VERSION', '7.7.2' );
 			define( 'THEMIFY_DIR', $path. 'themify' );
 			define( 'THEMIFY_URI', plugin_dir_url( __FILE__ ) . 'themify' );
 			require_once THEMIFY_DIR . '/themify-database.php';
@@ -217,6 +217,10 @@ if ( ! function_exists( 'themify_builder_plugin_init' ) ){
 	   require THEMIFY_BUILDER_DIR . '/plugin/classes/class-themify-builder-settings.php';
 	   require_once THEMIFY_DIR .'/class-themify-storage.php';
 	   require_once THEMIFY_DIR . '/cache/class-themify-cache.php';
+	   if ( ! function_exists( 'themify_wc_get_script_handle' )
+	       && function_exists( 'themify_is_woocommerce_active' ) && themify_is_woocommerce_active() ) {
+	       require_once THEMIFY_DIR . '/plugin-compat/woocommerce.php';
+	   }
 	   require_once THEMIFY_DIR . '/class-themify-enqueue.php'; 
 	   require_once THEMIFY_DIR . '/class-themify-access-role.php';
 	   require_once THEMIFY_DIR . '/class-themify-filesystem.php';

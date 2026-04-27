@@ -1,5 +1,93 @@
 (($,api,bodyCl,_CLICK_)=> {
     "use strict";
+    function tfSvColorVarWithFallback(nameWithDashes) {
+        const bare = String(nameWithDashes == null ? '' : nameWithDashes).replace(/^--/, '').trim();
+        if (!bare) {
+            return '';
+        }
+        const w = typeof window !== 'undefined' ? window : null,
+            rootData = w && w.tfSVData && w.tfSVData.vars ? w.tfSVData.vars : (w && w.parent && w.parent !== w && w.parent.tfSVData && w.parent.tfSVData.vars ? w.parent.tfSVData.vars : null),
+            list = rootData && Array.isArray(rootData.all) ? rootData.all : null;
+        if (!list) {
+            return 'var(--' + bare + ')';
+        }
+        const item = list.find(v => v && v.name === bare);
+        if (!item || item.type !== 'color') {
+            return 'var(--' + bare + ')';
+        }
+        const vals = item.values || {};
+        let raw = vals.desktop || vals.tablet_landscape || vals.tablet || vals.mobile || item.value || '';
+        raw = String(raw == null ? '' : raw).trim();
+        if (!raw) {
+            return 'var(--' + bare + ')';
+        }
+        if (/^var\s*\(/i.test(raw) || /^--[\w-]+$/.test(raw)) {
+            return 'var(--' + bare + ')';
+        }
+        return 'var(--' + bare + ', ' + raw + ')';
+    }
+    function gradientStopVarBackground(css) {
+        const c = String(css == null ? '' : css).trim();
+        if (!c) {
+            return c;
+        }
+        if (/^--[\w-]+$/.test(c)) {
+            return tfSvColorVarWithFallback(c);
+        }
+        if (/^var\(/i.test(c)) {
+            const m = c.match(/^var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\s*\)\s*$/i);
+            if (m) {
+                if (m[2] != null && String(m[2]).trim() !== '') {
+                    return c;
+                }
+                return tfSvColorVarWithFallback(m[1]);
+            }
+        }
+        return c;
+    }
+    const TF_SV_GRADIENT_STOP_ATTR = 'data-tf-sv-gradient-stop';
+    function gradientStopNormalizePersisted(css) {
+        const c = String(css == null ? '' : css).trim();
+        if (!c) {
+            return c;
+        }
+        const m = c.match(/^var\(\s*(--[a-zA-Z0-9_-]+)\s*(?:,\s*[^)]+)?\s*\)\s*$/i);
+        if (m) {
+            return 'var(' + m[1] + ')';
+        }
+        if (/^--[a-zA-Z0-9_-]+$/.test(c)) {
+            return 'var(' + c + ')';
+        }
+        return c;
+    }
+    function gradientStopDisplayBackground(canonical) {
+        const persisted = gradientStopNormalizePersisted(canonical);
+        const w = typeof window !== 'undefined' ? window : null,
+            fn = w && typeof w.tfSvGradientStopDisplayBackground === 'function' ? w.tfSvGradientStopDisplayBackground : null;
+        if (fn) {
+            const d = fn(persisted, 'builder');
+            if (d != null && String(d).trim() !== '') {
+                return String(d).trim();
+            }
+        }
+        return gradientStopVarBackground(persisted);
+    }
+    function applyGradientStopToPoint(el, stopColor) {
+        const raw = String(stopColor == null ? '' : stopColor).trim();
+        if (!raw) {
+            el.removeAttribute(TF_SV_GRADIENT_STOP_ATTR);
+            el.style.backgroundColor = '';
+            return;
+        }
+        const persisted = gradientStopNormalizePersisted(raw);
+        const isVarStop = /^var\(\s*--[a-zA-Z0-9_-]+\s*\)\s*$/i.test(persisted);
+        if (isVarStop) {
+            el.setAttribute(TF_SV_GRADIENT_STOP_ATTR, persisted);
+        } else {
+            el.removeAttribute(TF_SV_GRADIENT_STOP_ATTR);
+        }
+        el.style.backgroundColor = gradientStopDisplayBackground(persisted);
+    }
     $.ThemifyGradient = function (element, options) {
         const defaults = {
             gradient: $.ThemifyGradient.default,
@@ -266,7 +354,7 @@
             const fragment = createDocumentFragment();
             for (let i = 0, len = points.length; i < len; ++i) {
                 let p=createElement('', 'point');
-                p.style.backgroundColor = points[i][1];
+                applyGradientStopToPoint(p, points[i][1]);
                 p.style.left =  ((parseInt(points[i][0]) * this.settings.width) / 100)+'px';
 
                 fragment.appendChild(p);
@@ -286,6 +374,27 @@
                 b: parseInt(result[3], 16)
             } : null;
         };
+        this._parseGradientStopColor = function (raw) {
+            const out = {isVar: false, inputVal: '', displayCss: ''};
+            raw = (raw == null ? '' : String(raw)).trim();
+            if (!raw) {
+                return out;
+            }
+            const m = raw.match(/^var\(\s*(--[a-zA-Z0-9_-]+)\s*(?:,\s*([^)]+))?\s*\)\s*$/i);
+            if (m) {
+                out.isVar = true;
+                out.inputVal = m[1];
+                out.displayCss = gradientStopVarBackground(m[1]);
+                return out;
+            }
+            if (/^--[a-zA-Z0-9_-]+$/.test(raw)) {
+                out.isVar = true;
+                out.inputVal = raw;
+                out.displayCss = gradientStopVarBackground(raw);
+                return out;
+            }
+            return out;
+        };
         this._selectPoint = function (el, is_drag) {
 			if(!el){
 				return;
@@ -304,8 +413,15 @@
             $element.focus();
             _selPoint = $(el);
             _selPoint.addClass('themify_current_point').siblings().removeClass('themify_current_point');
-            let bgColor = _selPoint.css('backgroundColor');
-                $element.find('.point-color .tfminicolors').remove();
+            let rawStop = (el.getAttribute && el.getAttribute(TF_SV_GRADIENT_STOP_ATTR) || '').trim();
+            if (!rawStop && el.style && el.style.backgroundColor) {
+                rawStop = el.style.backgroundColor.trim();
+            }
+            if (!rawStop) {
+                rawStop = (el.style.getPropertyValue('background-color') || '').trim();
+            }
+            const parsedStop = self._parseGradientStopColor(rawStop);
+            $element.find('.point-color .tfminicolors').remove();
 
             // create the color picker element
             let $input = $pointColor.find('.themify-color-picker');
@@ -315,30 +431,72 @@
                     opacity: true,
                     changeDelay: 10,
                     change(value, opacity) {
+                        const sv = (typeof value === 'string' ? value.trim() : '');
+                        if (sv.indexOf('--') === 0 || /^var\(/i.test(sv)) {
+                            applyGradientStopToPoint(_selPoint[0], sv);
+                            self._renderCanvas();
+                            return;
+                        }
                         let rgb = self.hexToRgb(value);
                         if (!rgb) {
                             rgb = {r: 255, g: 255, b: 255};
                             opacity = 1;
                         }
+                        _selPoint[0].removeAttribute(TF_SV_GRADIENT_STOP_ATTR);
                         _selPoint.css('backgroundColor', 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + opacity + ')');
                         self._renderCanvas();
                     }
                 });
-                $element.find('.tfminicolors').first().addClass('tfminicolors-focus');
                 $btnPointDelete.off('click').on('click', this.removePoint.bind(this));
+                $input.on('change.tf_grad_sv_input', function () {
+                    const pt = _selPoint && _selPoint[0];
+                    if (!pt) {
+                        return;
+                    }
+                    const t = (this.value || '').trim();
+                    if (!t) {
+                        pt.removeAttribute(TF_SV_GRADIENT_STOP_ATTR);
+                        pt.style.backgroundColor = '#ffffff';
+                        self._renderCanvas();
+                        return;
+                    }
+                    if (t.indexOf('--') === 0) {
+                        applyGradientStopToPoint(pt, t);
+                        self._renderCanvas();
+                    }
+                });
             }
-            let rgb = bgColor.replace(/^rgba?\(|\s+|\)$/g, '').split(','),
-                    opacity = rgb.length === 4 ? rgb.pop() : 1; // opacity is the last item in the array
-            rgb = this._rgbToHex(rgb);
-            // set the color for colorpicker
-            $input.val(rgb).attr('data-opacity', opacity).data('opacity', opacity).tfminicolors('settings', {value: rgb});
+            const $miniHost = $input.parent('.tfminicolors');
+            if (parsedStop.isVar) {
+                $input.val(parsedStop.inputVal);
+                $input.attr('data-opacity', '1').data('opacity', 1);
+                $miniHost.addClass('tfminicolors-var-input');
+                try {
+                    $input.tfminicolors('show');
+                } catch (e2) {}
+            }
+            else {
+                $miniHost.removeClass('tfminicolors-var-input');
+                let bgColor = rawStop ? rawStop : _selPoint.css('backgroundColor');
+                let rgb = bgColor.replace(/^rgba?\(|\s+|\)$/g, '').split(','),
+                    opacity = rgb.length === 4 ? rgb.pop() : 1;
+                rgb = this._rgbToHex(rgb);
+                $input.val(rgb).attr('data-opacity', opacity).data('opacity', opacity).tfminicolors('settings', {value: rgb});
+                $element.find('.tfminicolors').first().addClass('tfminicolors-focus');
+            }
+            const _tfSvRefresh = window.tfSvRefreshColorTargets || (window.parent && window.parent.tfSvRefreshColorTargets);
+            if (typeof _tfSvRefresh === 'function') {
+                _tfSvRefresh($pointColor[0]);
+            }
         };
         this._renderCanvas = function () {
             const items = $pointsContainer[0].tfClass('point');
             points = [];
             for (let i = 0; i < items.length; ++i) {
                 let position = Math.round((parseInt(items[i].style.left) / this.settings.width) * 100);
-                points.push([position + '%', items[i].style.backgroundColor]);
+                const attrCol = (items[i].getAttribute && items[i].getAttribute(TF_SV_GRADIENT_STOP_ATTR) || '').trim();
+                const col = attrCol || (items[i].style.backgroundColor || '').trim();
+                points.push([position + '%', col]);
             }
             points.sort(this._sortByPosition);
             this._renderToCanvas();
@@ -346,35 +504,55 @@
                 this.settings.onChange(this.getString(), this.getCSSvalue());
             }
         };
+        this._resolveColorForCanvas = function (color) {
+            const raw = (color || '').trim();
+            if (!raw) {
+                return 'rgba(0,0,0,1)';
+            }
+            if (/^var\(/i.test(raw) || /^--[\w-]+$/.test(raw)) {
+                const w = typeof window !== 'undefined' ? window : null,
+                    fn = w && typeof w.tfSvGradientStopDisplayBackground === 'function' ? w.tfSvGradientStopDisplayBackground : null,
+                    persisted = gradientStopNormalizePersisted(raw),
+                    concrete = fn ? fn(persisted, 'builder') : '',
+                    doc = element.ownerDocument || document,
+                    win = doc.defaultView || window,
+                    probeCss = (concrete && !/^var\(/i.test(concrete) && !/^--[\w-]+$/.test(concrete))
+                        ? concrete
+                        : gradientStopVarBackground(raw),
+                    probe = doc.createElement('span');
+                probe.style.cssText = 'position:absolute;left:-9999px;top:0;color:' + probeCss;
+                doc.body.appendChild(probe);
+                const resolved = win.getComputedStyle(probe).color;
+                probe.remove();
+                if (resolved && resolved !== 'rgba(0, 0, 0, 0)') {
+                    return resolved;
+                }
+                return 'rgba(128,128,128,1)';
+            }
+            return raw;
+        };
         this._renderToCanvas = function () {
-            const gradient = _context.createLinearGradient(0, 0, this.settings.width, 0);
+            const self = this,
+                gradient = _context.createLinearGradient(0, 0, this.settings.width, 0);
             for (let i = 0; i < points.length; ++i) {
-                gradient.addColorStop(parseInt(points[i][0]) / 100, points[i][1]);
+                gradient.addColorStop(parseInt(points[i][0]) / 100, self._resolveColorForCanvas(points[i][1]));
             }
             _context.clearRect(0, 0, this.settings.width, this.settings.height);
             _context.fillStyle = gradient;
             _context.fillRect(0, 0, this.settings.width, this.settings.height);
         };
         this._getGradientFromString = function (gradient) {
-            const arr =[],
-                    points = gradient.split('|');
-            for (let i = 0, len = points.length; i < len; ++i) {
-                let position,
-                        el = points[i],
-                        index = el.indexOf('%'),
-                        sub = el.substr(index - 3, index);
-                if (sub === '100' || sub === '100%') {
-                    position = '100%';
+            const arr = [],
+                parts = String(gradient || '').split('|');
+            for (let i = 0, len = parts.length; i < len; ++i) {
+                const seg = parts[i].trim();
+                if (!seg) {
+                    continue;
                 }
-                else if (index > 1) {
-                    position = parseInt(el.substr(index - 2, index));
-                    position += '%';
+                const m = seg.match(/^(\d+)%\s*(.*)$/);
+                if (m) {
+                    arr.push([m[1] + '%', (m[2] || '').trim()]);
                 }
-                else {
-                    position = parseInt(el.substr(index - 1, index));
-                    position += '%';
-                }
-                arr.push([position, el.replace(position, '')]);
             }
             return arr;
         };

@@ -862,7 +862,8 @@ class Themify_Builder_Active{
                 if (empty($_POST['val'])) {
                     wp_send_json_error();
                 }
-                $images = themify_get_gallery_shortcode(sanitize_text_field($_POST['val']));
+                $raw = isset($_POST['val']) ? wp_unslash($_POST['val']) : '';
+                $images = themify_get_gallery_shortcode(sanitize_textarea_field($raw));
                 $result = array();
                 if (!empty($images)) {
                     foreach ($images as $image) {
