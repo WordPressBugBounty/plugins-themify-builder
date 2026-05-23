@@ -58,11 +58,11 @@ foreach ($arr as $mode) :
                     data-css_url="<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/carousel,<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/<?php echo $args['mod_name'] ?>"
                     <?php if ($settings['auto_scroll_opt_slider'] !== 'off'): ?>
                     data-auto="<?php echo $settings['auto_scroll_opt_slider'] ?>"
-                    data-pause_hover="<?php echo $settings['pause_on_hover_slider'] === 'resume' ? 1 : 0 ?>"
                     <?php if($settings['play_pause_control'] === 'yes'):?>
                         data-controller="1"
                     <?php endif;?>
                 <?php endif; ?>
+                    data-pause_hover="<?php echo $settings['pause_on_hover_slider'] === 'resume' ? 1 : 0 ?>"
                 <?php endif;?>
                 <?php if($showThumbs===true):?>
                     <?php if($is_slider===true): ?>

@@ -1467,6 +1467,9 @@ function themify_make_lazy(?string $html, bool $load = true):?string {//@todo mo
                         }
                         $orig = $item;
                         $item = preg_replace('/\s+/', ' ', $item);
+                        if (($ext === 'audio' || $ext === 'video') && (strpos($item, 'wcmp-player') !== false || strpos($item, 'data-lazyloading=') !== false || strpos($item, 'mejs__player') !== false)) {
+                            continue;
+                        }
                         if ($ext !== 'audio') {
                             preg_match('/ src=["\']([^"]+?)["\']/', $item, $image_src,0,4);
                         }
@@ -1769,7 +1772,11 @@ function themify_is_dev_mode():bool {
 }
 
 function themify_is_concate_disabled():bool {
-    return themify_is_dev_mode() && (themify_check('setting-dev-mode-concate', true) || (defined('THEMIFY_DEV') && THEMIFY_DEV));
+    $is_disabled = themify_check('setting-disable-concate-css', true)
+        || (defined('THEMIFY_DISABLE_CONCATE_CSS') && THEMIFY_DISABLE_CONCATE_CSS)
+        || (themify_is_dev_mode() && (themify_check('setting-dev-mode-concate', true) || (defined('THEMIFY_DEV') && THEMIFY_DEV)));
+
+    return apply_filters('themify_disable_concate_css', $is_disabled);
 }
 
 function themify_disable_other_lazy() {

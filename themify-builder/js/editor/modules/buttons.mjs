@@ -399,7 +399,7 @@
                 let bp=bps[i];
                 //Image Gradient
                 this.clearImageGradient('background_image','background_color','background_repeat','background_position',bp,settings);
-                this.clearImageGradient('b_i_h','bg_c_h','b_r_h','b_p_h',bp,settings);
+                this.clearImageGradient('gb_i_h','gbg_c_h','gb_r_h','gb_p_h',bp,settings);
                 this.clearImageGradient('b_i','button_background_color','b_r','b_p',bp,settings);
                 this.clearImageGradient('bl_i','button_hover_background_color','bl_r','bl_p',bp,settings);
                 this.clearImageGradient('bic_b_i','bic_b_c','bic_b_r','bic_b_p',bp,settings);

@@ -790,14 +790,24 @@ class Themify_Builder_Active{
                     'update_post_meta_cache' => false,
                     'lazy_load_term_meta' => false,
                     'cache_results' => false,
-                    'meta_query' => array(
+                    /* WPML, Polylang, etc. can filter WP_Query by current language; URL replace must scan all translations. */
+                    'suppress_filters' => apply_filters( 'themify_builder_url_replace_suppress_query_filters', true ),
+                    'meta_query'     => array(
+                        'relation' => 'OR',
                         array(
-                            'key' => ThemifyBuilder_Data_Manager::META_KEY,
-                            'compare_key' => '=',
-                            'compare' => 'EXISTS'
-                        )
-                    )
+                            'key'     => ThemifyBuilder_Data_Manager::META_KEY,
+                            'compare' => 'EXISTS',
+                        ),
+                        array(
+                            'key'     => ThemifyBuilder_Data_Manager::LEGACY_META_KEY,
+                            'compare' => 'EXISTS',
+                        ),
+                    ),
                 );
+                if ( function_exists( 'pll_languages_list' ) || function_exists( 'pll_current_language' ) ) {
+                    /* Polylang: empty lang disables the current-language filter. */
+                    $args['lang'] = '';
+                }
                 $query = new WP_Query($args);
                 if ($page === 1) {
                     $result['pages'] = $query->max_num_pages;
@@ -807,7 +817,7 @@ class Themify_Builder_Active{
                         'searching' => __('Searching "%find%" in posts(%count%/%total%): %posts%', 'themify'),
                         'found' => __('Found "%find%" in posts(%count%): %posts%', 'themify'),
                         'saving' => __('Saving posts(%count%/%total%): %posts%', 'themify'),
-                        'no_found' => __('There is no builder containg "%find%"', 'themify'),
+                        'no_found' => __('There is no builder containing "%find%"', 'themify'),
                         'error' => __('There are some errors: %posts%', 'themify'),
                         'wrong_url' => __('Please type url', 'themify'),
                         'done' => __('Done', 'themify')

@@ -178,7 +178,17 @@ final class Themify_Builder_Display_Conditions {
         }
 
         $view = self::build_view( $condition );
-        return ! empty( $view ) && self::is_current_view( $view ) > 0;
+        if ( empty( $view ) ) {
+            return false;
+        }
+        if ( self::should_translate_condition_assignments() ) {
+            self::translate_condition_assignments( $view );
+            self::prune_empty_condition_assignments( $view );
+        }
+        if ( empty( $view ) ) {
+            return false;
+        }
+        return self::is_current_view( $view ) > 0;
     }
 
     private static function build_view( array $condition ): array {
@@ -276,6 +286,235 @@ final class Themify_Builder_Display_Conditions {
         return [ 'single' => [ $general => $detail ] ];
     }
 
+    /**
+     * Same idea as Builder Pro translate_view(): resolve saved slugs to element IDs in the current language (WPML/Polylang).
+     */
+    private static function should_translate_condition_assignments(): bool {
+        if ( defined( 'ICL_SITEPRESS_VERSION' ) || has_filter( 'wpml_object_id' ) ) {
+            return true;
+        }
+        if ( function_exists( 'pll_current_language' ) && function_exists( 'pll_default_language' ) ) {
+            $current = pll_current_language();
+            $default = pll_default_language();
+            return (bool) ( $current && $default && $current !== $default );
+        }
+        return false;
+    }
+
+    private static function resolve_assignment_lookup_type( string $object_type ): string {
+        if ( $object_type === 'child_of' ) {
+            return 'page';
+        }
+        if ( $object_type === 'product_single' ) {
+            return 'product';
+        }
+        return $object_type;
+    }
+
+    /**
+     * @return int|false
+     */
+    private static function get_dc_post_id_by_slug( string $slug, string $post_type ) {
+        global $wpdb;
+
+        $post_type = (array) $post_type;
+        $post_type = array_values( array_filter( array_map( 'sanitize_key', $post_type ) ) );
+        if ( empty( $post_type ) ) {
+            return false;
+        }
+
+        $params       = array_merge( array( (string) $slug ), $post_type );
+        $placeholders = implode( ',', array_fill( 0, count( $post_type ), '%s' ) );
+        $sql          = $wpdb->prepare(
+            "SELECT ID FROM {$wpdb->posts} WHERE post_name=%s AND post_type IN ({$placeholders}) AND post_status NOT IN ('trash','auto-draft') ORDER BY ID ASC LIMIT 1",
+            $params
+        );
+
+        $id = (int) $wpdb->get_var( $sql );
+        return $id > 0 ? $id : false;
+    }
+
+    /**
+     * @return int|false
+     */
+    private static function get_dc_term_id_by_slug( string $slug, string $taxonomy ) {
+        if ( ! taxonomy_exists( $taxonomy ) ) {
+            return false;
+        }
+
+        $args = [
+            'taxonomy'               => $taxonomy,
+            'slug'                   => (string) $slug,
+            'hide_empty'             => false,
+            'number'                 => 1,
+            'orderby'                => 'none',
+            'suppress_filters'       => true,
+            'update_term_meta_cache' => false,
+        ];
+        if ( function_exists( 'pll_default_language' ) ) {
+            $args['lang'] = pll_default_language();
+        }
+
+        $terms = get_terms( $args );
+        if ( is_wp_error( $terms ) || empty( $terms ) ) {
+            return false;
+        }
+
+        return (int) $terms[0]->term_id;
+    }
+
+    /** @return int|false */
+    private static function get_translated_dc_object_id( int $object_id, string $type ) {
+        if ( defined( 'ICL_SITEPRESS_VERSION' ) || has_filter( 'wpml_object_id' ) ) {
+            $tid = apply_filters( 'wpml_object_id', $object_id, $type, false );
+            return ! empty( $tid ) ? (int) $tid : false;
+        }
+        if ( taxonomy_exists( $type ) && function_exists( 'pll_get_term' ) ) {
+            $tid = pll_get_term( $object_id );
+            return ! empty( $tid ) ? (int) $tid : false;
+        }
+        if ( post_type_exists( $type ) && function_exists( 'pll_get_post' ) ) {
+            $tid = pll_get_post( $object_id );
+            return ! empty( $tid ) ? (int) $tid : false;
+        }
+        return $object_id;
+    }
+
+    /**
+     * When the queried/default-language parent must match assignments stored as translated IDs (WPML canonical chain).
+     */
+    private static function dc_assignment_matches_term( WP_Term $term, array $assignments ): bool {
+        foreach ( $assignments as $item ) {
+            if ( (string) $item === $term->slug ) {
+                return true;
+            }
+            if ( is_numeric( $item ) && (int) $item === (int) $term->term_id ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function dc_assignment_matches_post( WP_Post $post, array $assignments ): bool {
+        if ( in_array( $post->post_name, $assignments, true ) || in_array( $post->ID, $assignments, true ) ) {
+            return true;
+        }
+        if ( defined( 'ICL_SITEPRESS_VERSION' ) || has_filter( 'wpml_object_id' ) ) {
+            $tid = (int) apply_filters( 'wpml_object_id', (int) $post->ID, $post->post_type, false );
+            return $tid > 0 && in_array( $tid, $assignments, true );
+        }
+        if ( function_exists( 'pll_get_post' ) ) {
+            $tid = (int) pll_get_post( (int) $post->ID );
+            return $tid > 0 && in_array( $tid, $assignments, true );
+        }
+        return false;
+    }
+
+    private static function translate_assignment_slug_list_for_posts( array &$values, string $post_type ): void {
+        foreach ( $values as $i => $raw ) {
+            $slug = is_scalar( $raw ) ? trim( (string) $raw ) : '';
+            if ( $slug === '' ) {
+                unset( $values[ $i ] );
+                continue;
+            }
+            $object_id = false;
+            if ( ctype_digit( $slug ) ) {
+                $maybe_id = (int) $slug;
+                $post     = get_post( $maybe_id );
+                if ( $post && $post->post_type === $post_type ) {
+                    $object_id = $maybe_id;
+                }
+            } else {
+                $found = self::get_dc_post_id_by_slug( $slug, $post_type );
+                $object_id = $found ? (int) $found : false;
+            }
+
+            if ( ! $object_id ) {
+                unset( $values[ $i ] );
+                continue;
+            }
+
+            $translated = self::get_translated_dc_object_id( $object_id, $post_type );
+            if ( ! empty( $translated ) ) {
+                $values[ $i ] = (int) $translated;
+            }
+        }
+        $values = array_values( $values );
+    }
+
+    private static function translate_assignment_slug_list_for_terms( array &$values, string $taxonomy ): void {
+        foreach ( $values as $i => $raw ) {
+            $slug = is_scalar( $raw ) ? trim( (string) $raw ) : '';
+            if ( $slug === '' ) {
+                unset( $values[ $i ] );
+                continue;
+            }
+            $object_id = false;
+            if ( ctype_digit( $slug ) ) {
+                $maybe_id = (int) $slug;
+                $term     = get_term( $maybe_id, $taxonomy );
+                if ( $term instanceof WP_Term && ! is_wp_error( $term ) ) {
+                    $object_id = $maybe_id;
+                }
+            } else {
+                $found = self::get_dc_term_id_by_slug( $slug, $taxonomy );
+                $object_id = $found ? (int) $found : false;
+            }
+
+            if ( ! $object_id ) {
+                unset( $values[ $i ] );
+                continue;
+            }
+
+            $translated = self::get_translated_dc_object_id( $object_id, $taxonomy );
+            if ( ! empty( $translated ) ) {
+                $values[ $i ] = (int) $translated;
+            }
+        }
+        $values = array_values( $values );
+    }
+
+    private static function translate_condition_assignments( array &$view ): void {
+        foreach ( $view as $location => &$assignments ) {
+            if ( ! is_array( $assignments ) ) {
+                continue;
+            }
+            foreach ( $assignments as $object_type => &$values ) {
+                if ( $values === 'all' || $object_type === 'is_author' ) {
+                    continue;
+                }
+                if ( ! is_array( $values ) ) {
+                    continue;
+                }
+                $lookup_type = self::resolve_assignment_lookup_type( $object_type );
+                if ( taxonomy_exists( $lookup_type ) ) {
+                    self::translate_assignment_slug_list_for_terms( $values, $lookup_type );
+                } elseif ( post_type_exists( $lookup_type ) ) {
+                    self::translate_assignment_slug_list_for_posts( $values, $lookup_type );
+                }
+            }
+            unset( $values );
+        }
+        unset( $assignments );
+    }
+
+    private static function prune_empty_condition_assignments( array &$view ): void {
+        foreach ( $view as $loc => &$assignments ) {
+            if ( ! is_array( $assignments ) ) {
+                continue;
+            }
+            foreach ( $assignments as $key => $vals ) {
+                if ( is_array( $vals ) && empty( $vals ) ) {
+                    unset( $view[ $loc ][ $key ] );
+                }
+            }
+            if ( empty( $view[ $loc ] ) ) {
+                unset( $view[ $loc ] );
+            }
+        }
+        unset( $assignments );
+    }
+
     private static function is_current_view( array $view ): int {
 
         $q = self::$currentQuery;
@@ -300,15 +539,38 @@ final class Themify_Builder_Display_Conditions {
                                         $parents = get_post_ancestors( $q );
                                         foreach ( $parents as $p ) {
                                             $parent = get_post( $p );
-                                            if ( $parent && in_array( $parent->post_name, (array) $v, true ) ) {
+                                            if ( $parent instanceof WP_Post && self::dc_assignment_matches_post( $parent, (array) $v ) ) {
                                                 return 4;
+                                            }
+                                        }
+                                    }
+                                    /* WPML fallback: a missing translation of an ancestor breaks post_parent on the translated page; resolve to default-language post and check that ancestor chain. */
+                                    if ( has_filter( 'wpml_object_id' ) && is_object( $q ) && isset( $q->ID, $q->post_type ) ) {
+                                        $default_lang = apply_filters( 'wpml_default_language', null );
+                                        if ( is_string( $default_lang ) && $default_lang !== '' ) {
+                                            $canonical_id = (int) apply_filters( 'wpml_object_id', (int) $q->ID, $q->post_type, false, $default_lang );
+                                            if ( $canonical_id > 0 && $canonical_id !== (int) $q->ID ) {
+                                                $canonical_post = get_post( $canonical_id );
+                                                if ( $canonical_post instanceof WP_Post && (int) $canonical_post->post_parent !== 0 ) {
+                                                    if ( $v === 'all' ) {
+                                                        return 3;
+                                                    }
+                                                    foreach ( get_post_ancestors( $canonical_post ) as $p ) {
+                                                        $parent = get_post( $p );
+                                                        if ( $parent instanceof WP_Post && self::dc_assignment_matches_post( $parent, (array) $v ) ) {
+                                                            return 4;
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 } else {
                                     if ( $v === 'all' ) return 3;
-                                    if ( is_object( $q ) && in_array( $q->post_name, (array) $v, true ) ) {
-                                        return 4;
+                                    if ( is_object( $q ) && $q instanceof WP_Post ) {
+                                        if ( in_array( $q->post_name, (array) $v, true ) || in_array( $q->ID, (array) $v, true ) ) {
+                                            return 4;
+                                        }
                                     }
                                 }
                             }
@@ -331,7 +593,11 @@ final class Themify_Builder_Display_Conditions {
                                 } elseif ( $k === 'is_attachment' ) {
                                     if ( self::$is_attachment === true ) {
                                         if ( $v === 'all' ) return 3;
-                                        if ( is_object( $q ) && in_array( $q->post_name, (array) $v, true ) ) return 4;
+                                        if ( is_object( $q ) && $q instanceof WP_Post ) {
+                                            if ( in_array( $q->post_name, (array) $v, true ) || in_array( $q->ID, (array) $v, true ) ) {
+                                                return 4;
+                                            }
+                                        }
                                     }
                                 } elseif ( in_array( $k, [ 'page', 'child_of', 'is_front' ], true ) ) {
                                     if ( self::$is_page === true ) {
@@ -339,8 +605,10 @@ final class Themify_Builder_Display_Conditions {
                                     }
                                 } elseif ( is_singular( $k ) && post_type_exists( $k ) ) {
                                     if ( $v === 'all' ) return 3;
-                                    if ( is_object( $q ) && in_array( $q->post_name, (array) $v, true ) ) {
-                                        return 4;
+                                    if ( is_object( $q ) && $q instanceof WP_Post ) {
+                                        if ( in_array( $q->post_name, (array) $v, true ) || in_array( $q->ID, (array) $v, true ) ) {
+                                            return 4;
+                                        }
                                     }
                                 }
                             } elseif ( $k === 'is_404' ) {
@@ -365,9 +633,9 @@ final class Themify_Builder_Display_Conditions {
                             }
                             if ( isset( self::$taxonomies[ $k ] ) ) {
                                 if ( self::$is_category === true || self::$is_tax === true || self::$is_tag === true ) {
-                                    if ( is_object( $q ) && $k === $q->taxonomy ) {
+                                    if ( is_object( $q ) && $q instanceof WP_Term && $k === $q->taxonomy ) {
                                         if ( $v === 'all' ) return 3;
-                                        if ( in_array( $q->slug, (array) $v, true ) ) {
+                                        if ( self::dc_assignment_matches_term( $q, (array) $v ) ) {
                                             return 4;
                                         }
                                     }
@@ -403,10 +671,10 @@ final class Themify_Builder_Display_Conditions {
                             if ( $v === 'all' ) return 3;
                             if ( isset( self::$taxonomies[ $k ] ) ) {
                                 if ( is_array( $v ) && has_term( $v, $k ) ) return 4;
-                            } elseif (
-                                is_object( $q ) && in_array( $q->post_name, (array) $v, true )
-                            ) {
-                                return 4;
+                            } elseif ( is_object( $q ) && $q instanceof WP_Post ) {
+                                if ( in_array( $q->post_name, (array) $v, true ) || in_array( $q->ID, (array) $v, true ) ) {
+                                    return 4;
+                                }
                             }
                         }
                     }

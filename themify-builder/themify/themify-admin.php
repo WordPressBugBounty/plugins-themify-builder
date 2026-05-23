@@ -93,14 +93,45 @@ function themify_enqueue_scripts($page){
             'memory'=>(int)(wp_convert_hr_to_bytes(WP_MEMORY_LIMIT)*MB_IN_BYTES)
         );
             
-        if(class_exists('Themify_Updater',false)){
-            $themify_updater = Themify_Updater::get_instance();
-            $username=$themify_updater->get_setting('username');
-            $key=$themify_updater->get_setting('key');
-            $admin_vars['license']['username']=!empty($username)?$username:'';
-            $admin_vars['license']['key']=!empty($key)?$key:'';
-            unset($themify_updater,$key,$username);
+        if ( ! class_exists( 'Themify_Updater_utils', false ) ) {
+            $tf_tu_utils = WP_PLUGIN_DIR . '/themify-updater/includes/class.utils.php';
+            if ( is_readable( $tf_tu_utils ) ) {
+                require_once $tf_tu_utils;
+            }
         }
+        $license_username = '';
+        $license_key = '';
+        $license_hide_name = false;
+        $license_hide_key = false;
+        if ( class_exists( 'Themify_Updater', false ) ) {
+            $themify_updater = Themify_Updater::get_instance();
+            $license_username = (string) $themify_updater->get_setting( 'username' );
+            $license_key = (string) $themify_updater->get_setting( 'key' );
+            $license_hide_name = (bool) $themify_updater->get_setting( 'hideName' );
+            $license_hide_key = (bool) $themify_updater->get_setting( 'hideKey' );
+            unset( $themify_updater );
+        } else {
+            $license_opt = get_option( 'themify_updater_licence', '' );
+            if ( is_string( $license_opt ) && $license_opt !== '' ) {
+                $license_dec = json_decode( $license_opt, true );
+                if ( is_array( $license_dec ) ) {
+                    $license_username = isset( $license_dec['username'] ) ? preg_replace( '/[^0-9A-Za-z_-]/', '', (string) $license_dec['username'] ) : '';
+                    $license_key = isset( $license_dec['key'] ) ? preg_replace( '/[^0-9A-Za-z]/', '', (string) $license_dec['key'] ) : '';
+                    $license_hide_name = ! empty( $license_dec['hideName'] );
+                    $license_hide_key = ! empty( $license_dec['hideKey'] );
+                }
+            }
+        }
+        if ( class_exists( 'Themify_Updater_utils', false ) ) {
+            if ( $license_hide_name && $license_username !== '' ) {
+                $license_username = Themify_Updater_utils::preg_replace( $license_username, 'username', '*' );
+            }
+            if ( $license_hide_key && $license_key !== '' ) {
+                $license_key = Themify_Updater_utils::preg_replace( $license_key, 'key', '*' );
+            }
+        }
+        $admin_vars['license']['username'] = $license_username;
+        $admin_vars['license']['key'] = $license_key;
         
         //used icons
         themify_get_icon('info','ti');
@@ -2304,7 +2335,7 @@ if(!function_exists('themify_performance_settings')) {
 
             $output.='<span data-show-if-element="[name$='.$key.']" data-show-if-value="true">';
             
-            $output.='<label for="'.$key.'-concate" class="pushlabel"><input type="checkbox" id="'.$key.'-concate" name="'.$key.'-concate" '. checked(themify_check($key.'-concate',true ),true, false ) .'/> ' . __('Disable Concate CSS', 'themify') . '</label><br/>';
+            $output.='<label for="'.$key.'-concate" class="pushlabel"><input type="checkbox" id="'.$key.'-concate" name="'.$key.'-concate" '. checked(themify_check($key.'-concate',true ),true, false ) .'/> ' . __('Disable Concate CSS in development mode', 'themify') . '</label><br/>';
             
             $output.='<span  class="themify_warning">'.__('Warning: the following will be disabled: Themify cache, menu cache, concate CSS caching, Gzip scripts. Only enable this for development purposes (eg. preview child theme CSS/script changes).','themify').'</span></span>';
     
@@ -2354,9 +2385,10 @@ if(!function_exists('themify_performance_settings')) {
         }
         $webp_quality = (int) themify_get( 'setting-webp-quality', '5', true );
         $output.='</p>';
+        $key='setting-disable-concate-css';
         $output.='<hr><p>
-            <span class="label">' . __( 'Concate CSS', 'themify' ) . '</span>
-            <a href="#" data-action="themify_clear_all_concate" data-send="all" data-clearing-text="'.__('Clearing...','themify').'" data-done-text="'.__('Done','themify').'" data-default-text="'.__('Clear Concate CSS Cache','themify').'" data-default-icon="ti-eraser" class="button button-outline js-clear-cache"><i class="ti-eraser"></i> <span>'.__('Clear Concate CSS Cache','themify').'</span></a>
+            <span class="label">' . __( 'Concate CSS', 'themify' ) . themify_help(__('Concate CSS combines all CSS files to reduce HTTP requests. Do not disable it unless your cache or optimization plugin requires separate files.','themify')) . '</span>
+            <a href="#" data-action="themify_clear_all_concate" data-send="all" data-clearing-text="'.__('Clearing...','themify').'" data-done-text="'.__('Done','themify').'" data-default-text="'.__('Clear Concate & Builder CSS Cache','themify').'" data-default-icon="ti-eraser" class="button button-outline js-clear-cache"><i class="ti-eraser"></i> <span>'.__('Clear Concate & Builder CSS Cache','themify').'</span></a>
         ';
         if(!Themify_Enqueue_Assets::createDir()){
             $output.='<span class="pushlabel themify_warning">'.__('It looks like the WordPress upload folder path is set wrong or have file permission issue. Please check the upload path on WP Settings > Media. Make sure the folder is set correctly and it has correct file permission.','themify').'</span>';
@@ -2364,6 +2396,8 @@ if(!function_exists('themify_performance_settings')) {
                 elseif($isMultiSite){
             $output.='<br/><label class="pushlabel"><input type="checkbox" value="1" id="tmp_cache_concte_network" name="tmp_cache_concte_network"/>'.__('Clear Concate cache in the whole network site','themify').'</label>';
         }
+        $output.='<br/><label for="'.$key.'" class="pushlabel"><input type="checkbox" id="'.$key.'" name="'.$key.'" '. checked(themify_check($key,true),true,false ) .'/> ' . __('Disable Concate CSS', 'themify') . '</label>
+            <small class="pushlabel">'.__('Concate CSS combines all CSS files to reduce HTTP requests. Do not disable it unless your cache or optimization plugin requires separate files. Disabling it may cause a brief styling delay while individual CSS files load.','themify').'</small>';
         $output.='</p>';
         $key='setting-cache-menu';
         $output.='<div '.$menuCache.'><hr><p>
@@ -3290,7 +3324,17 @@ function themify_prompt_message() {
         Themify_Builder_Model::check_plugins_compatible();
     }
     if(!Themify_Enqueue_Assets::createDir()){
-        echo '<div class="notice notice-error"><p><strong>'.__('Themify:','themify').'</strong></p><p>'.__('It looks like the WordPress upload folder path is set wrong or have file permission issue. Please check the upload path on WP Settings > Media. Make sure the folder is set correctly and it has correct file permission.','themify').'</p></div>';
+        if ( class_exists( 'Themify_System_Status', false ) && Themify_System_Status::is_optional_notice_dismissed_for_key( 'updir' ) ) {
+            return;
+        }
+        echo '<div class="notice notice-error"><p><strong>'.__('Themify:','themify').'</strong></p><p>'.__('It looks like the WordPress upload folder path is set wrong or have file permission issue. Please check the upload path on WP Settings > Media. Make sure the folder is set correctly and it has correct file permission.','themify').'</p>';
+        if ( current_user_can( 'manage_options' ) && class_exists( 'Themify_System_Status', false ) ) {
+            $dismiss_url = Themify_System_Status::get_optional_notice_dismiss_url( 'updir' );
+            if ( $dismiss_url ) {
+                echo '<p class="tf-status-notice-dismiss"><a href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss (do not show again)', 'themify' ) . '</a></p>';
+            }
+        }
+        echo '</div>';
     }
 }
 add_action( 'admin_enqueue_scripts', 'themify_enqueue_scripts', 12 );

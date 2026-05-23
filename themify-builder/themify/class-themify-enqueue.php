@@ -821,7 +821,7 @@ class Themify_Enqueue_Assets {
                 $str = PHP_EOL . '/* ' . $theme_name . 'framework ' . THEMIFY_VERSION . ' */' . $str . PHP_EOL;
                 $str = '@charset "UTF-8";' . $str;
                 unset($theme_name);
-                if($isDevMode===true && self::$themeVersion!==null && (self::$concateFile===null || themify_is_concate_disabled())){
+                if(self::$themeVersion!==null && (self::$concateFile===null || themify_is_concate_disabled())){
                     $key='';
                 }
                 foreach (self::$css as $k => $v) {
@@ -1432,17 +1432,6 @@ class Themify_Enqueue_Assets {
                         $wp_scripts->done[] = 'comment-reply';
                     }
                     $wp_scripts->done[] = 'wp-playlist';
-                    if (apply_filters('wp_video_shortcode_library', 'mediaelement') === 'tf_lazy') {
-                        if (!empty($wp_scripts->registered['mediaelement-core'])) {
-                            $wp_scripts->done[] = 'mediaelement-core';
-                            $wp_scripts->done[] = 'mediaelement-migrate';
-                            $wp_scripts->done[] = 'wp-mediaelement';
-                        }
-                        if (!empty($wp_styles->registered['wp-mediaelement'])) {
-                            $wp_styles->done[] = 'wp-mediaelement';
-                            $wp_styles->done[] = 'mediaelement';
-                        }
-                    }
                 }
             }
             self::$localiztion += $args;
@@ -1455,6 +1444,7 @@ class Themify_Enqueue_Assets {
             }
         }
     }
+
 
     public static function remove_emoji_prefetch(array $urls, string $relation_type):array {
         if ($relation_type === 'dns-prefetch') {
@@ -2256,7 +2246,14 @@ class Themify_Enqueue_Assets {
         $globalKey = THEMIFY_VERSION . $wp_version . $object->get('Name');
         $globalKey .= self::$themeVersion !== null ? self::$themeVersion : $object->get('Version');
         if (themify_is_woocommerce_active()) {
-            $globalKey .= WC()->version;
+            if (defined('WC_VERSION')) {
+                $globalKey .= WC_VERSION;
+            } elseif (function_exists('WC')) {
+                $wc = WC();
+                if (is_object($wc) && !empty($wc->version)) {
+                    $globalKey .= $wc->version;
+                }
+            }
         }
         $globalKey = (string) crc32($globalKey);
         return themify_upload_dir('basedir') . '/themify-concate/' . $globalKey . '/';

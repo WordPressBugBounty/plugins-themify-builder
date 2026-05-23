@@ -97,8 +97,8 @@ if(Themify_Builder::$frontedit_active===false){
         <?php if($fields_args['auto_scroll_opt_slider']!=='off'):?>
             data-auto="<?php echo $fields_args['auto_scroll_opt_slider']*1000 ?>"
             data-controller="<?php echo $fields_args['play_pause_control']=== 'yes'?'1':'0' ?>"
-            data-pause_hover="<?php echo $fields_args['pause_on_hover_slider']=== 'resume'?'1':'0' ?>"
         <?php endif;?>
+        data-pause_hover="<?php echo $fields_args['pause_on_hover_slider']=== 'resume'?'1':'0' ?>"
         data-speed="<?php echo $fields_args['speed_opt_slider'] ?>"
         data-wrapvar="<?php echo $fields_args['wrap_slider']!== 'no'?'1':'0' ?>"
         data-slider_nav="<?php echo $fields_args['show_arrow_slider']=== 'yes'?'1':'0' ?>"

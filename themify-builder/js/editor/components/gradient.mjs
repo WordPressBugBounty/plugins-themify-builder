@@ -91,7 +91,7 @@
     $.ThemifyGradient = function (element, options) {
         const defaults = {
             gradient: $.ThemifyGradient.default,
-            width: 173,
+            width: 153,
             height: 15,
             point: 8,
             angle: 180,

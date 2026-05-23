@@ -10,18 +10,32 @@ class Themify_System_Status {
     /**
      * User meta keys (boolean) for non-critical admin notices: "do not show again".
      */
-    const USER_META_DISMISS_MIV  = 'tf_status_dismiss_miv';
-    const USER_META_DISMISS_PHP8 = 'tf_status_dismiss_php82';
+    const USER_META_DISMISS_MIV       = 'tf_status_dismiss_miv';
+    const USER_META_DISMISS_UPLOADS   = 'tf_status_dismiss_uploads';
+    const USER_META_DISMISS_CRITICAL  = 'tf_status_dismiss_critical';
+    /** WordPress upload path / createDir failure (post edit screen notice). */
+    const USER_META_DISMISS_UPLOAD_DIR = 'tf_status_dismiss_upload_dir';
 
     public static function init() {
         add_action( 'admin_init', array( __CLASS__, 'handle_optional_notice_dismiss' ) );
         add_action( 'admin_menu', array( __CLASS__, 'admin_menu' ) );
         add_action( 'admin_notices', array( __CLASS__, 'uploads_not_writable_admin_notice' ), 5 );
         add_action( 'admin_notices', array( __CLASS__, 'critical_requirements_admin_notice' ), 6 );
-        add_action( 'admin_notices', array( __CLASS__, 'low_memory_admin_notice' ), 7 );
-        add_action( 'admin_notices', array( __CLASS__, 'max_input_vars_admin_notice' ), 8 );
-        add_action( 'admin_notices', array( __CLASS__, 'php_version_recommendation_admin_notice' ), 9 );
+        add_action( 'admin_notices', array( __CLASS__, 'max_input_vars_admin_notice' ), 7 );
+        add_action( 'admin_head', array( __CLASS__, 'print_notice_dismiss_styles' ) );
         add_action( 'admin_head', array( __CLASS__, 'print_status_table_styles' ) );
+    }
+
+    /**
+     * @return array<string,string> Short slug => user meta key.
+     */
+    private static function optional_notice_dismiss_meta_map() {
+        return array(
+            'miv'      => self::USER_META_DISMISS_MIV,
+            'uploads'  => self::USER_META_DISMISS_UPLOADS,
+            'critical' => self::USER_META_DISMISS_CRITICAL,
+            'updir'    => self::USER_META_DISMISS_UPLOAD_DIR,
+        );
     }
 
     /**
@@ -32,10 +46,7 @@ class Themify_System_Status {
             return;
         }
         $key = sanitize_key( wp_unslash( $_GET['tf_status_dismiss'] ) );
-        $map = array(
-            'miv'  => self::USER_META_DISMISS_MIV,
-            'php82' => self::USER_META_DISMISS_PHP8,
-        );
+        $map = self::optional_notice_dismiss_meta_map();
         if ( ! isset( $map[ $key ] ) ) {
             return;
         }
@@ -61,15 +72,39 @@ class Themify_System_Status {
     }
 
     /**
-     * @param string $dismiss_key 'miv' or 'php82'.
+     * @param string $dismiss_key Short key from optional_notice_dismiss_meta_map().
      */
-    private static function optional_notice_dismiss_url( $dismiss_key ) {
+    public static function get_optional_notice_dismiss_url( $dismiss_key ) {
+        $map = self::optional_notice_dismiss_meta_map();
+        if ( ! isset( $map[ $dismiss_key ] ) ) {
+            return '';
+        }
         $url = add_query_arg(
             'tf_status_dismiss',
             $dismiss_key,
             self_admin_url( 'index.php' )
         );
         return wp_nonce_url( $url, 'tf_status_dismiss_' . $dismiss_key );
+    }
+
+    /**
+     * Whether this optional notice was dismissed for the current user.
+     *
+     * @param string $dismiss_key Short slug (e.g. updir, uploads).
+     */
+    public static function is_optional_notice_dismissed_for_key( $dismiss_key ) {
+        $map = self::optional_notice_dismiss_meta_map();
+        return isset( $map[ $dismiss_key ] ) && self::is_optional_notice_dismissed( $map[ $dismiss_key ] );
+    }
+
+    /**
+     * Scoped dismiss-link spacing on any admin screen that shows Themify notices.
+     */
+    public static function print_notice_dismiss_styles() {
+        if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+        echo '<style id="tf-status-notice-dismiss">.notice .tf-status-notice-dismiss{margin:.65em 0 0}</style>';
     }
 
     /**
@@ -124,7 +159,7 @@ class Themify_System_Status {
     }
 
     public static function critical_requirements_admin_notice() {
-        if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+        if ( ! is_admin() || ! current_user_can( 'manage_options' ) || self::is_optional_notice_dismissed( self::USER_META_DISMISS_CRITICAL ) ) {
             return;
         }
         $items = array();
@@ -160,7 +195,11 @@ class Themify_System_Status {
                 array( 'a' => array( 'href' => array() ) )
             );
             ?>
-        </p></div>
+        </p>
+        <p class="tf-status-notice-dismiss">
+            <a href="<?php echo esc_url( self::get_optional_notice_dismiss_url( 'critical' ) ); ?>"><?php esc_html_e( 'Dismiss (do not show again)', 'themify' ); ?></a>
+        </p>
+        </div>
         <?php
     }
 
@@ -181,30 +220,7 @@ class Themify_System_Status {
             ?>
         </p>
         <p class="tf-status-notice-dismiss">
-            <a href="<?php echo esc_url( self::optional_notice_dismiss_url( 'miv' ) ); ?>"><?php esc_html_e( 'Dismiss (do not show again)', 'themify' ); ?></a>
-        </p>
-        </div>
-        <?php
-    }
-
-    public static function php_version_recommendation_admin_notice() {
-        if ( ! is_admin() || ! current_user_can( 'manage_options' ) || ! self::is_php_below_82() || self::is_optional_notice_dismissed( self::USER_META_DISMISS_PHP8 ) ) {
-            return;
-        }
-        $url  = admin_url( 'admin.php?page=tf-status' );
-        $link = '<a href="' . esc_url( $url ) . '">' . esc_html__( 'System Status', 'themify' ) . '</a>';
-        ?>
-        <div class="notice notice-warning"><p>
-            <?php
-            echo wp_kses(
-                /* translators: 1: current PHP version, 2: "System Status" page link. */
-                sprintf( __( 'Themify: this site is running PHP %1$s. We recommend PHP 8.2 or higher for better performance and security. See your host or %2$s for details.', 'themify' ), esc_html( PHP_VERSION ), $link ),
-                array( 'a' => array( 'href' => array() ) )
-            );
-            ?>
-        </p>
-        <p class="tf-status-notice-dismiss">
-            <a href="<?php echo esc_url( self::optional_notice_dismiss_url( 'php82' ) ); ?>"><?php esc_html_e( 'Dismiss (do not show again)', 'themify' ); ?></a>
+            <a href="<?php echo esc_url( self::get_optional_notice_dismiss_url( 'miv' ) ); ?>"><?php esc_html_e( 'Dismiss (do not show again)', 'themify' ); ?></a>
         </p>
         </div>
         <?php
@@ -219,12 +235,31 @@ class Themify_System_Status {
         if ( ! class_exists( 'Themify_Enqueue_Assets', false ) || ! class_exists( 'Themify_Filesystem', false ) ) {
             return false;
         }
-        $dir = Themify_Enqueue_Assets::getCurrentVersionFolder();
-        return ! Themify_Filesystem::is_writable( $dir );
+        $dir = trailingslashit( Themify_Enqueue_Assets::getCurrentVersionFolder() );
+        clearstatcache( true, $dir );
+        $concate_parent = trailingslashit( dirname( $dir ) );
+        $basedir = trailingslashit( themify_upload_dir( 'basedir' ) );
+        clearstatcache( true, $concate_parent );
+        clearstatcache( true, $basedir );
+
+        if ( ! function_exists( 'wp_is_writable' ) && defined( 'ABSPATH' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        $writable = static function ( $path ) {
+            return function_exists( 'wp_is_writable' ) ? wp_is_writable( $path ) : Themify_Filesystem::is_writable( $path );
+        };
+        /* Versioned folder is created on demand; is_writable(false) on a missing path is a common false negative. */
+        if ( Themify_Filesystem::is_dir( $dir ) ) {
+            return ! $writable( $dir );
+        }
+        if ( Themify_Filesystem::is_dir( $concate_parent ) ) {
+            return ! $writable( $concate_parent );
+        }
+        return ! $writable( $basedir );
     }
 
     public static function uploads_not_writable_admin_notice() {
-        if ( ! is_admin() || ! current_user_can( 'manage_options' ) || ! self::is_themify_concat_css_dir_unwritable() ) {
+        if ( ! is_admin() || ! current_user_can( 'manage_options' ) || self::is_optional_notice_dismissed( self::USER_META_DISMISS_UPLOADS ) || ! self::is_themify_concat_css_dir_unwritable() ) {
             return;
         }
         $url = admin_url( 'admin.php?page=tf-status' );
@@ -238,7 +273,11 @@ class Themify_System_Status {
                 array( 'a' => array( 'href' => array() ) )
             );
             ?>
-        </p></div>
+        </p>
+        <p class="tf-status-notice-dismiss">
+            <a href="<?php echo esc_url( self::get_optional_notice_dismiss_url( 'uploads' ) ); ?>"><?php esc_html_e( 'Dismiss (do not show again)', 'themify' ); ?></a>
+        </p>
+        </div>
         <?php
     }
 
@@ -253,23 +292,27 @@ class Themify_System_Status {
         return $bytes < 128 * MB_IN_BYTES;
     }
 
-    public static function low_memory_admin_notice() {
-        if ( ! is_admin() || ! current_user_can( 'manage_options' ) || ! self::is_wp_memory_limit_low() ) {
-            return;
-        }
-        $url = admin_url( 'admin.php?page=tf-status' );
-        ?>
-        <div class="notice notice-warning"><p>
-            <?php
-            $link = '<a href="' . esc_url( $url ) . '">' . esc_html__( 'System Status', 'themify' ) . '</a>';
-            echo wp_kses(
-                /* translators: %s: "System Status" link to the Themify status page. */
-                sprintf( __( 'Themify: Your WordPress PHP memory is very low. View %s for more details.', 'themify' ), $link ),
-                array( 'a' => array( 'href' => array() ) )
-            );
-            ?>
-        </p></div>
-        <?php
+    /**
+     * External help article: raising WP_MEMORY_LIMIT.
+     *
+     * @return string Safe HTML (paragraph content).
+     */
+    private static function get_low_wp_memory_learn_more_markup() {
+        $article_url = 'https://themify.me/blog/increase-wordpress-memory-limit';
+        return wp_kses(
+            sprintf(
+                /* translators: %s: HTML anchor linking to Themify article on increasing WordPress memory limit */
+                __( 'Learn how to %s.', 'themify' ),
+                '<a href="' . esc_url( $article_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'increase WP memory', 'themify' ) . '</a>'
+            ),
+            array(
+                'a' => array(
+                    'href'   => true,
+                    'target' => true,
+                    'rel'    => true,
+                ),
+            )
+        );
     }
 
     /**
@@ -525,7 +568,9 @@ class Themify_System_Status {
                         <strong><?php _e( 'PHP Memory Limit', 'themify' ); ?></strong>: <?php echo esc_html( size_format( wp_convert_hr_to_bytes( ini_get( 'memory_limit' ) ) ) ); ?>
                         <?php if ( $tf_wp_mem_low ) : ?>
                         <br>
-                        <mark class="error"><span class="dashicons dashicons-warning"></span><?php echo esc_html__( 'Your WordPress PHP memory is very low. Recommendation: 256mb or higher.', 'themify' ); ?></mark>
+                        <mark class="error"><span class="dashicons dashicons-warning"></span><?php echo esc_html__( 'Your WordPress PHP memory limit is low. If you are experiencing issues, try increasing it to 256 MB or higher.', 'themify' ); ?></mark>
+                        <br>
+                        <?php echo self::get_low_wp_memory_learn_more_markup(); ?>
                         <?php endif; ?>
                     </td>
                 </tr>

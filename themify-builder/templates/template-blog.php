@@ -57,13 +57,18 @@ if (true === $post_filter_enabled && $fields_args['layout_' . $mod_name] !== 'au
 if ( $fields_args['nav_type'] === 'ajax' && $post_filter_enabled ) {
     $ajax_filter_enabled = true;
 }
-$is_ajax_filter = isset($_POST['action']) && $_POST['action'] === 'themify_ajax_load_more';
-if (true === $is_ajax_filter && isset($_POST['tax'])) {
-    $cat =$fields_args['type_query_'.$mod_name];
-    $fields_args[$cat . '_' . $mod_name] = (int)$_POST['tax'];
-} 
-elseif (isset($fields_args['category_' . $mod_name])) {
-    $fields_args['category_' . $mod_name] = self::get_param_value($fields_args['category_' . $mod_name]);
+$is_ajax_filter = isset( $_POST['action'] ) && $_POST['action'] === 'themify_ajax_load_more';
+$ajax_filter_within = $ajax_filter_enabled
+    && isset( $fields_args['ajax_filter_within_results'] )
+    && $fields_args['ajax_filter_within_results'] === 'yes';
+$ajax_filter_taxonomy = '';
+$ajax_filter_term = 0;
+if ( true === $is_ajax_filter ) {
+    $ajax_filter_taxonomy = isset( $_POST['taxonomy'] ) ? sanitize_key( wp_unslash( $_POST['taxonomy'] ) ) : '';
+    $ajax_filter_term = isset( $_POST['tax'] ) ? absint( wp_unslash( $_POST['tax'] ) ) : 0;
+}
+if ( isset( $fields_args['category_' . $mod_name] ) ) {
+    $fields_args['category_' . $mod_name] = self::get_param_value( $fields_args['category_' . $mod_name] );
 }
 if ($fields_args['layout_' . $mod_name] === '') {
     $fields_args['layout_' . $mod_name] = 'grid4';
@@ -86,20 +91,26 @@ $container_props = apply_filters('themify_builder_module_container_props', self:
         'class' => implode(' ', $container_class),
     )), $fields_args, $mod_name, $element_id);
 
-if (true === $is_ajax_filter && isset($_POST['page'])) {
-    $p = (int) $_POST['page'];
+if ( true === $is_ajax_filter && isset( $_POST['page'] ) ) {
+    $p = absint( wp_unslash( $_POST['page'] ) );
 } else {
     $p = self::get_paged_query();
 }
 
-$order = true === $is_ajax_filter && isset($_POST['order']) ? sanitize_text_field($_POST['order']) : $fields_args['order_' . $mod_name];
-$orderby = true === $is_ajax_filter && isset($_POST['orderby']) ? sanitize_text_field($_POST['orderby']) : $fields_args['orderby_' . $mod_name];
+$order = true === $is_ajax_filter && isset( $_POST['order'] ) ? sanitize_text_field( wp_unslash( $_POST['order'] ) ) : $fields_args['order_' . $mod_name];
+$orderby = true === $is_ajax_filter && isset( $_POST['orderby'] ) ? sanitize_text_field( wp_unslash( $_POST['orderby'] ) ) : $fields_args['orderby_' . $mod_name];
 $meta_key = $fields_args['meta_key_' . $mod_name];
 $limit = $fields_args['post_per_page_' . $mod_name];
 if (empty($limit)) {
     $limit = get_option('posts_per_page');
 }
-$mod_name_query = isset($fields_args['term_type']) && $fields_args['term_type'] === 'post_slug' ? $fields_args['term_type'] : $fields_args['type_query_' . $mod_name];
+$mod_name_query = isset( $fields_args['term_type'] ) && $fields_args['term_type'] === 'post_slug' ? $fields_args['term_type'] : $fields_args['type_query_' . $mod_name];
+$base_query_taxonomy = $mod_name !== 'post' ? $mod_name . '-category' : $mod_name_query;
+$filter_taxonomy = ! empty( $fields_args['post_filter_tax'] ) ? sanitize_key( $fields_args['post_filter_tax'] ) : $base_query_taxonomy;
+if ( $ajax_filter_taxonomy === '' || ( $filter_taxonomy !== '' && $ajax_filter_taxonomy !== $filter_taxonomy ) ) {
+    $ajax_filter_taxonomy = $filter_taxonomy;
+}
+$query_taxonomy = $base_query_taxonomy;
 $offset = $fields_args['offset_' . $mod_name];
 $args = array(
     'post_status' => 'publish',
@@ -108,32 +119,29 @@ $args = array(
     'order' => $order,
     'orderby' => $orderby,
     'paged' => $p,
-    'post_type' => $is_ajax_filter ? sanitize_text_field( $_POST['post_type'] ) : $fields_args['post_type_' . $mod_name],
+    'post_type' => $is_ajax_filter && isset( $_POST['post_type'] ) ? sanitize_text_field( wp_unslash( $_POST['post_type'] ) ) : $fields_args['post_type_' . $mod_name],
     'ignore_sticky_posts' => true
 );
 
-if ('all' === $fields_args['term_type']) {
-    if ($fields_args["sticky_{$mod_name}"] === 'yes') {
+if ( 'all' === $fields_args['term_type'] ) {
+    if ( $fields_args["sticky_{$mod_name}"] === 'yes' ) {
         $args['ignore_sticky_posts'] = false;
     }
-    $query_taxonomy = $mod_name !== 'post' ? $mod_name . '-category' : 'category';
-} 
-elseif ('post_slug'!== $fields_args['term_type']) {
-    $terms = $mod_name === 'post' && isset($fields_args["{$mod_name_query}_post"]) ? $fields_args["{$mod_name_query}_post"] : $fields_args['category_' . $mod_name];
-
-    if ( $is_ajax_filter ) {
-        $query_taxonomy = $_POST['taxonomy'];
-    } elseif ( $post_filter_enabled && isset( $fields_args['post_filter_tax'] ) ) {
-        $query_taxonomy = $fields_args['post_filter_tax'];
-    } else {
-        $query_taxonomy = $mod_name !== 'post' ? $mod_name . '-category' : $mod_name_query;
-    }
-    Themify_Builder_Model::parseTermsQuery($args, $terms, $query_taxonomy);
-    $mod_name_query = $query_taxonomy;
-    
 }
- elseif (!empty($fields_args['query_slug_' . $mod_name])) {
-    $args['post__in'] = Themify_Builder_Model::parse_slug_to_ids($fields_args['query_slug_' . $mod_name], $args['post_type']);
+elseif ( 'post_slug' !== $fields_args['term_type'] ) {
+    $terms = $mod_name === 'post' && isset( $fields_args["{$mod_name_query}_post"] ) ? $fields_args["{$mod_name_query}_post"] : $fields_args['category_' . $mod_name];
+
+    if ( ! ( $is_ajax_filter && $ajax_filter_term > 0 && ! $ajax_filter_within ) ) {
+        Themify_Builder_Model::parseTermsQuery( $args, $terms, $base_query_taxonomy );
+    }
+}
+elseif ( ! empty( $fields_args['query_slug_' . $mod_name] ) ) {
+    $args['post__in'] = Themify_Builder_Model::parse_slug_to_ids( $fields_args['query_slug_' . $mod_name], $args['post_type'] );
+}
+
+if ( $is_ajax_filter && $ajax_filter_term > 0 && $ajax_filter_taxonomy !== '' ) {
+    Themify_Builder_Model::merge_tax_query_with_ajax_filter( $args, $ajax_filter_taxonomy, $ajax_filter_term );
+    $query_taxonomy = $ajax_filter_taxonomy;
 }
 
 
@@ -161,15 +169,15 @@ if ($mod_name === 'post' && !isset($args['post__in']) && false !== ($id = get_th
 }
 
 Themify_Builder_Model::parse_query_filter($fields_args, $args);
-if ($ajax_filter_enabled) {
-    /* in Ajax post filters, disable some query args */
-    unset($args['post__in']);
-    set_query_var('tf_ajax_filter', true);
+if ( $ajax_filter_enabled ) {
+    if ( $is_ajax_filter && $ajax_filter_term > 0 && ! $ajax_filter_within ) {
+        unset( $args['post__in'] );
+    }
+    set_query_var( 'tf_ajax_filter', true );
 }
 $args = apply_filters("themify_builder_module_{$mod_name}_query_args", $args, $fields_args);
-if (isset($query_taxonomy)) {
-    set_query_var('tf_query_tax', $query_taxonomy);
-}
+$tf_masonry_terms_taxonomy = true === $post_filter_enabled && $filter_taxonomy !== '' ? $filter_taxonomy : $query_taxonomy;
+set_query_var( 'tf_query_tax', $tf_masonry_terms_taxonomy );
 $the_query = self::query($args);
 $posts = $the_query->posts;
 
@@ -248,7 +256,9 @@ if (isset($themify) && !empty($posts)) {
     }
     if ('post' === $mod_name) {
         $themify->post_module_hook = $mod_name;
-        if (isset($query_taxonomy)) {
+        if ( $tf_masonry_terms_taxonomy !== null ) {
+            $themify->post_module_tax = $tf_masonry_terms_taxonomy;
+        } elseif ( isset( $query_taxonomy ) ) {
             $themify->post_module_tax = $query_taxonomy;
         }
         if (isset($fields_args[$mod_name . '_content_layout'])) {
@@ -257,13 +267,13 @@ if (isset($themify) && !empty($posts)) {
     }
     $themify->lightboxed_permalink = $posts_in_lightbox;
 }
-if (true === $post_filter_enabled && isset($query_taxonomy) && function_exists('themify_masonry_filter')) {
+if ( true === $post_filter_enabled && function_exists( 'themify_masonry_filter' ) ) {
     if (isset($themify)) {
         $themify->post_filter = 'yes';
     }
 
     $filter_args = array(
-        'query_taxonomy' => ! empty( $fields_args['post_filter_tax'] ) ? $fields_args['post_filter_tax'] : $query_taxonomy,
+        'query_taxonomy' => $filter_taxonomy,
         'query_category' => '0',
         'el_id' => $element_id
     );

@@ -195,23 +195,29 @@ export class Row extends BaseStyles {
                                     },
                                     binding: {
                                         'repeat-none': {
-                                            show: ['background_zoom', 'background_position']
+                                            show: ['background_zoom', 'background_position', 'tb_bg_size_fields']
+                                        },
+                                        fullcover: {
+                                            hide: 'tb_bg_size_fields'
+                                        },
+                                        'best-fit-image': {
+                                            hide: 'tb_bg_size_fields'
                                         },
                                         'builder-parallax-scrolling': {
-                                            hide: ['background_attachment', 'background_zoom']
+                                            hide: ['background_attachment', 'background_zoom', 'tb_bg_size_fields']
                                         },
                                         'builder-zoom-scrolling': {
-                                            hide: ['background_attachment', 'background_zoom'],
+                                            hide: ['background_attachment', 'background_zoom', 'tb_bg_size_fields'],
                                             show: 'background_position'
                                         },
                                         'builder-zooming': {
-                                            hide: ['background_attachment', 'background_zoom'],
+                                            hide: ['background_attachment', 'background_zoom', 'tb_bg_size_fields'],
                                             show: 'background_position'
                                         },
                                         select: {
                                             value: 'repeat-none',
                                             hide: 'background_zoom',
-                                            show: ['background_attachment', 'background_position']
+                                            show: ['background_attachment', 'background_position', 'tb_bg_size_fields']
                                         }
                                     }
                                 },
@@ -248,8 +254,84 @@ export class Row extends BaseStyles {
                                     position: true,
                                     prop: 'background-position',
                                     selector: ''
+                                },
+                                {
+                                    type: 'group',
+                                    wrap_class: 'tb_bg_size_fields',
+                                    options: [
+                                        {
+                                            id: 'background_size_w',
+                                            type: 'range',
+                                            label: '',
+                                            after: 'w',
+                                            origId: 'background_image',
+                                            selector: '',
+                                            tb_bg_size: true,
+                                            units: {
+                                                '%': {
+                                                    min: 0,
+                                                    max: 500
+                                                },
+                                                px: {
+                                                    min: 0,
+                                                    max: 10000
+                                                },
+                                                em: {
+                                                    min: 0,
+                                                    max: 500
+                                                },
+                                                vw: {
+                                                    min: 0,
+                                                    max: 500
+                                                },
+                                                vh: {
+                                                    min: 0,
+                                                    max: 500
+                                                }
+                                            }
+                                        },
+                                        {
+                                            id: 'background_size_h',
+                                            type: 'range',
+                                            label: '',
+                                            after: 'ht',
+                                            origId: 'background_image',
+                                            selector: '',
+                                            tb_bg_size: true,
+                                            units: {
+                                                '%': {
+                                                    min: 0,
+                                                    max: 500
+                                                },
+                                                px: {
+                                                    min: 0,
+                                                    max: 10000
+                                                },
+                                                em: {
+                                                    min: 0,
+                                                    max: 500
+                                                },
+                                                vw: {
+                                                    min: 0,
+                                                    max: 500
+                                                },
+                                                vh: {
+                                                    min: 0,
+                                                    max: 500
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             ]
+                        },
+                        {
+                            id: 'additional_backgrounds',
+                            type: 'additional_backgrounds',
+                            wrap_class: 'tb_group_element_image tb_group_element_gradient',
+                            selector: '',
+                            layer_scope: 'main',
+                            pair_with: 'background_image'
                         }
                     ],
                     h: [
@@ -338,6 +420,14 @@ export class Row extends BaseStyles {
                                     selector: ':hover'
                                 }
                             ]
+                        },
+                        {
+                            id: 'additional_backgrounds_h',
+                            type: 'additional_backgrounds',
+                            wrap_class: 'tb_group_element_image tb_group_element_gradient',
+                            selector: ':hover',
+                            layer_scope: 'main_hover',
+                            pair_with: 'bg_i_h'
                         },
                         // Background Color
                         {
@@ -541,6 +631,18 @@ export class Row extends BaseStyles {
                                 fullcover: 'fcover',
                                 'best-fit-image': 'bfit'
                             },
+                            binding: {
+                                fullcover: {
+                                    hide: 'tb_bg_size_inner_fields'
+                                },
+                                'best-fit-image': {
+                                    hide: 'tb_bg_size_inner_fields'
+                                },
+                                select: {
+                                    value: '',
+                                    show: 'tb_bg_size_inner_fields'
+                                }
+                            },
                             wrap_class: 'tb_group_element_image tb_image_inner_options'
                         },
                         // Background attachment
@@ -567,6 +669,83 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_image tb_image_inner_options',
                             prop: 'background-position',
                             selector: inner_selector
+                        },
+                        {
+                            type: 'group',
+                            wrap_class: 'tb_bg_size_inner_fields',
+                            options: [
+                                {
+                                    id: 'background_size_w_inner',
+                                    type: 'range',
+                                    label: '',
+                                    after: 'w',
+                                    origId: 'background_image_inner',
+                                    selector: inner_selector,
+                                    tb_bg_size: true,
+                                    units: {
+                                        '%': {
+                                            min: 0,
+                                            max: 500
+                                        },
+                                        px: {
+                                            min: 0,
+                                            max: 10000
+                                        },
+                                        em: {
+                                            min: 0,
+                                            max: 500
+                                        },
+                                        vw: {
+                                            min: 0,
+                                            max: 500
+                                        },
+                                        vh: {
+                                            min: 0,
+                                            max: 500
+                                        }
+                                    }
+                                },
+                                {
+                                    id: 'background_size_h_inner',
+                                    type: 'range',
+                                    label: '',
+                                    after: 'ht',
+                                    origId: 'background_image_inner',
+                                    selector: inner_selector,
+                                    tb_bg_size: true,
+                                    units: {
+                                        '%': {
+                                            min: 0,
+                                            max: 500
+                                        },
+                                        px: {
+                                            min: 0,
+                                            max: 10000
+                                        },
+                                        em: {
+                                            min: 0,
+                                            max: 500
+                                        },
+                                        vw: {
+                                            min: 0,
+                                            max: 500
+                                        },
+                                        vh: {
+                                            min: 0,
+                                            max: 500
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            id: 'additional_backgrounds_inner',
+                            type: 'additional_backgrounds',
+                            wrap_class: 'tb_group_element_image',
+                            selector: inner_selector,
+                            inner: true,
+                            layer_scope: 'inner',
+                            pair_with: 'background_image_inner'
                         },
                         // Background Color
                         {
@@ -640,6 +819,15 @@ export class Row extends BaseStyles {
                             wrap_class: 'tb_group_element_image tb_image_inner_options',
                             prop: 'background-position',
                             selector: inner_selector_hover
+                        },
+                        {
+                            id: 'additional_backgrounds_inner_h',
+                            type: 'additional_backgrounds',
+                            wrap_class: 'tb_group_element_image',
+                            selector: inner_selector_hover,
+                            inner: true,
+                            layer_scope: 'inner_hover',
+                            pair_with: 'b_i_i_h'
                         },
                         // Background Color
                         {

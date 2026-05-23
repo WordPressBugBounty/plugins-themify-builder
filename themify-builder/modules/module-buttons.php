@@ -25,8 +25,8 @@ class TB_Buttons_Module extends Themify_Builder_Component_Module {
     public static function get_styling_image_fields() : array {
         return [
             'background_image' => '.module',
-            'b_i' => ' .module-buttons-item a',
-            'bic_b_i' => ' .module-buttons-item em'
+            'b_i' => '.module .module-buttons-item a',
+            'bic_b_i' => '.module .module-buttons-item em'
         ];
     }
 

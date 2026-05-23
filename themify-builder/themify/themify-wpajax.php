@@ -426,6 +426,9 @@ function themify_clear_all_concate(){
         $data=null;
         }
     }
+    if ( class_exists( 'Themify_Builder_Stylesheet', false ) ) {
+        Themify_Builder_Stylesheet::regenerate_css_files( 'all' === $type ? 'all' : '' );
+    }
     Themify_Enqueue_Assets::clearConcateCss($type);
     wp_send_json_success();
 }
@@ -724,22 +727,39 @@ function themify_activate_plugin() {
                 $isFree=!empty($plugin_info['wp_hosted']);
                 if($isFree===false){
                     if($plugin==='themify-updater'){
-                        if(!empty( $_FILES['data'] ) && is_file($_FILES['data']['tmp_name'] )){
-                            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-                            $updgrader=new Plugin_Upgrader();
-                            $result=$updgrader->install($_FILES['data']['tmp_name'],array('overwrite_package'=>true));
-                            if($result===true){
-                                $result =activate_plugin($plugin_info['path'],false,false);
-                                if(is_wp_error($result)){
-                                    $err=$result->get_error_message();
-                                }
-                            }
-                            else{
-                                $err= is_wp_error($result)?$result->get_error_message():__('Themify Updater installation failed','themify');
+                        $zip_path = '';
+                        $unlink_zip = false;
+                        if ( ! empty( $_FILES['data'] ) && is_file( $_FILES['data']['tmp_name'] ) ) {
+                            $zip_path = $_FILES['data']['tmp_name'];
+                        } elseif ( $err === '' ) {
+                            require_once ABSPATH . 'wp-admin/includes/file.php';
+                            $updater_zip_url = apply_filters(
+                                'themify_updater_zip_url',
+                                'https://themify.me/files/themify-updater/themify-updater.zip'
+                            );
+                            $tmp_zip = download_url( $updater_zip_url );
+                            if ( is_wp_error( $tmp_zip ) ) {
+                                $err = $tmp_zip->get_error_message();
+                            } else {
+                                $zip_path = $tmp_zip;
+                                $unlink_zip = true;
                             }
                         }
-                        else{
-                            $err=array('install_updater'=>1);
+                        if ( $err === '' && $zip_path !== '' ) {
+                            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+                            $updgrader = new Plugin_Upgrader();
+                            $result = $updgrader->install( $zip_path, array( 'overwrite_package' => true ) );
+                            if ( $unlink_zip && is_string( $zip_path ) && is_file( $zip_path ) ) {
+                                unlink( $zip_path );
+                            }
+                            if ( $result === true ) {
+                                $result = activate_plugin( $plugin_info['path'], false, false );
+                                if ( is_wp_error( $result ) ) {
+                                    $err = $result->get_error_message();
+                                }
+                            } else {
+                                $err = is_wp_error( $result ) ? $result->get_error_message() : __( 'Themify Updater installation failed', 'themify' );
+                            }
                         }
                         }
                         else{
@@ -900,26 +920,144 @@ function themify_upload_json(){
     }
 }
 
+function themify_license_require_updater_utils() {
+    if ( class_exists( 'Themify_Updater_utils', false ) ) {
+        return;
+    }
+    $path = WP_PLUGIN_DIR . '/themify-updater/includes/class.utils.php';
+    if ( is_readable( $path ) ) {
+        require_once $path;
+    }
+}
+
+function themify_license_default_settings_row() {
+    return array(
+        'username'     => '',
+        'key'          => '',
+        'hideKey'      => false,
+        'hideName'     => false,
+        'autoUpdate'   => false,
+        'hideNotice'   => false,
+        'notification' => false,
+        'noticeEmail'  => '',
+    );
+}
+
+function themify_license_sanitize_settings_payload_theme( $settings ) {
+    if ( ! is_array( $settings ) ) {
+        return themify_license_default_settings_row();
+    }
+    return array(
+        'username'     => isset( $settings['username'] ) ? preg_replace( '/[^0-9A-Za-z_-]/', '', (string) $settings['username'] ) : '',
+        'key'          => isset( $settings['key'] ) ? preg_replace( '/[^0-9A-Za-z]/', '', (string) $settings['key'] ) : '',
+        'hideKey'      => ! empty( $settings['hideKey'] ),
+        'hideName'     => ! empty( $settings['hideName'] ),
+        'autoUpdate'   => ! empty( $settings['autoUpdate'] ),
+        'hideNotice'   => ! empty( $settings['hideNotice'] ),
+        'notification' => ! empty( $settings['notification'] ),
+        'noticeEmail'  => isset( $settings['noticeEmail'] ) && is_email( $settings['noticeEmail'] ) ? sanitize_email( $settings['noticeEmail'] ) : '',
+    );
+}
+
+function themify_license_load_stored_settings_row() {
+    $raw = get_option( 'themify_updater_licence', '' );
+    if ( ! is_string( $raw ) || $raw === '' ) {
+        return themify_license_default_settings_row();
+    }
+    $decoded = json_decode( $raw, true );
+
+    return themify_license_sanitize_settings_payload_theme( is_array( $decoded ) ? $decoded : array() );
+}
+
+function themify_license_get_effective_credentials_for_resolve() {
+    if ( class_exists( 'Themify_Updater', false ) && method_exists( 'Themify_Updater', 'get_instance' ) ) {
+        $tu = Themify_Updater::get_instance();
+
+        return array(
+            'username' => (string) $tu->get_setting( 'username' ),
+            'key'      => (string) $tu->get_setting( 'key' ),
+            'hideKey'  => (bool) $tu->get_setting( 'hideKey' ),
+            'hideName' => (bool) $tu->get_setting( 'hideName' ),
+        );
+    }
+    $opt = themify_license_load_stored_settings_row();
+
+    return array(
+        'username' => isset( $opt['username'] ) ? $opt['username'] : '',
+        'key'      => isset( $opt['key'] ) ? $opt['key'] : '',
+        'hideKey'  => ! empty( $opt['hideKey'] ),
+        'hideName' => ! empty( $opt['hideName'] ),
+    );
+}
+
+function themify_license_resolve_posted_credentials( $posted_username, $posted_key ) {
+    themify_license_require_updater_utils();
+    $posted_username = isset( $posted_username ) ? wp_unslash( (string) $posted_username ) : '';
+    $posted_key      = isset( $posted_key ) ? wp_unslash( (string) $posted_key ) : '';
+
+    if ( ! class_exists( 'Themify_Updater_utils', false ) ) {
+        $u = preg_replace( '/[^0-9A-Za-z_-]/', '', $posted_username );
+        $k = preg_replace( '/[^0-9A-Za-z]/', '', $posted_key );
+
+        return array( $u, $k );
+    }
+
+    $stored        = themify_license_get_effective_credentials_for_resolve();
+    $cred_username = $stored['username'];
+    $cred_key      = $stored['key'];
+    $hide_name     = $stored['hideName'];
+    $hide_key      = $stored['hideKey'];
+
+    $temp_username_mask = Themify_Updater_utils::preg_replace( $cred_username, 'username', '*' );
+    $temp_key_mask      = Themify_Updater_utils::preg_replace( $cred_key, 'key', '*' );
+
+    if ( $hide_name ) {
+        $resolved_u = ( $posted_username === $temp_username_mask ) ? $cred_username : Themify_Updater_utils::preg_replace( $posted_username, 'username' );
+    } else {
+        $resolved_u = Themify_Updater_utils::preg_replace( $posted_username, 'username' );
+    }
+
+    if ( $hide_key ) {
+        $resolved_k = ( $posted_key === $temp_key_mask ) ? $cred_key : Themify_Updater_utils::preg_replace( $posted_key, 'key' );
+    } else {
+        $resolved_k = Themify_Updater_utils::preg_replace( $posted_key, 'key' );
+    }
+
+    return array( $resolved_u, $resolved_k );
+}
+
 function themify_update_license() {
     check_ajax_referer( 'tf_nonce', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
     }
-    if ( ! class_exists( 'Themify_Updater', false ) || ! method_exists( 'Themify_Updater', 'get_instance' ) ) {
-        wp_send_json_error( __( 'You need the latest Themify Updater plugin for this feature. Please update your Themify Updater plugin.', 'themify' ) );
+    $posted_username = isset( $_POST['themify_username'] ) ? $_POST['themify_username'] : '';
+    $posted_key      = isset( $_POST['updater_licence'] ) ? $_POST['updater_licence'] : '';
+
+    list( $username, $key ) = themify_license_resolve_posted_credentials( $posted_username, $posted_key );
+
+    if ( $username === '' || $key === '' ) {
+        wp_send_json_error( __( 'Invalid license key. Please enter your Themify username and a valid license key.', 'themify' ) );
     }
-    $themify_updater = Themify_Updater::get_instance();
-    if ( ! method_exists( $themify_updater, 'save_license_credentials_from_themify_theme' ) ) {
-        wp_send_json_error( __( 'You need the latest Themify Updater plugin for this feature. Please update your Themify Updater plugin.', 'themify' ) );
+
+    if ( class_exists( 'Themify_Updater', false ) && method_exists( 'Themify_Updater', 'get_instance' ) ) {
+        $themify_updater = Themify_Updater::get_instance();
+        if ( ! method_exists( $themify_updater, 'save_license_credentials_from_themify_theme' ) ) {
+            wp_send_json_error( __( 'You need the latest Themify Updater plugin for this feature. Please update your Themify Updater plugin.', 'themify' ) );
+        }
+        $saved = $themify_updater->save_license_credentials_from_themify_theme( $username, $key );
+        if ( is_wp_error( $saved ) ) {
+            $msg = 'empty' === $saved->get_error_code()
+                ? __( 'Invalid license key. Please enter your Themify username and a valid license key.', 'themify' )
+                : $saved->get_error_message();
+            wp_send_json_error( $msg );
+        }
+        wp_send_json_success( array() );
     }
-    $username = isset( $_POST['themify_username'] ) ? wp_unslash( $_POST['themify_username'] ) : '';
-    $key      = isset( $_POST['updater_licence'] ) ? wp_unslash( $_POST['updater_licence'] ) : '';
-    $saved    = $themify_updater->save_license_credentials_from_themify_theme( $username, $key );
-    if ( is_wp_error( $saved ) ) {
-        $msg = 'empty' === $saved->get_error_code()
-            ? __( 'Invalid license key. Please enter your Themify username and a valid license key.', 'themify' )
-            : $saved->get_error_message();
-        wp_send_json_error( $msg );
-    }
+
+    $row = themify_license_load_stored_settings_row();
+    $row['username'] = $username;
+    $row['key']      = $key;
+    update_option( 'themify_updater_licence', wp_json_encode( themify_license_sanitize_settings_payload_theme( $row ) ), false );
     wp_send_json_success( array() );
 }

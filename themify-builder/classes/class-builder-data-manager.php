@@ -24,16 +24,11 @@ defined( 'ABSPATH' ) || exit;
  */
 class ThemifyBuilder_Data_Manager {
 
-    /**
-     * Builder Meta Key
-     * 
-     * @access public
-     * @const string META_KEY
-     */
-     
-    private const OLD_META_KEY = '_themify_builder_settings';
-    
+    /** Current Builder data meta key (JSON). */
     const META_KEY = '_themify_builder_settings_json';
+
+    /** Legacy Builder meta (serialized PHP); migrated to JSON on read when possible. */
+    const LEGACY_META_KEY = '_themify_builder_settings';
 
 
 
@@ -74,7 +69,7 @@ class ThemifyBuilder_Data_Manager {
             }
         }
         else{
-            $data = \get_post_meta( $post_id, self::OLD_META_KEY, true);
+            $data = \get_post_meta( $post_id, self::LEGACY_META_KEY, true);
             if(!empty($data)){
                 $res=self::update_builder_meta($post_id,stripslashes_deep(maybe_unserialize( $data )));
                 $data=$plain_return!==true?\json_decode($res['builder_data'],true):$res['builder_data'];
@@ -197,10 +192,10 @@ class ThemifyBuilder_Data_Manager {
     }
     
     /**
-     * Remove unicode sequences back to original character
+     * Encode Builder data for storage (readable Unicode; slashes unescaped for simpler DB/search-replace matching).
      */
-    public static function json_remove_unicode(array $data ):string {
-        return \json_encode( $data, JSON_UNESCAPED_UNICODE );
+    public static function json_remove_unicode( array $data ): string {
+        return \json_encode( $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
     }
 
     /**
@@ -446,7 +441,7 @@ class ThemifyBuilder_Data_Manager {
                 if($mid!==false){
                     if($isRevision===false){
                         //Remove the old data format,Don't use delete_post_meta will remove revision parent builder data
-                        delete_metadata( 'post', $post_id,self::OLD_META_KEY,'',false);
+                        delete_metadata( 'post', $post_id,self::LEGACY_META_KEY,'',false);
                         update_meta_cache('post',$post_id);
                         wp_cache_delete( $post_id, 'posts' );
                         wp_cache_delete( $post_id, 'post_meta' );

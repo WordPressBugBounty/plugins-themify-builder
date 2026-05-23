@@ -1019,6 +1019,30 @@ final class Themify_Builder_Model {
         } 
     }
 
+    /**
+     * Append an Ajax filter taxonomy clause without rewriting the base tax_query.
+     */
+    public static function merge_tax_query_with_ajax_filter( array &$args, string $taxonomy, int $term_id ): void {
+        if ( $taxonomy === '' || $term_id <= 0 ) {
+            return;
+        }
+        $new_clause = array(
+            'taxonomy' => $taxonomy,
+            'field'    => 'term_id',
+            'terms'    => $term_id,
+            'operator' => 'IN',
+        );
+        if ( empty( $args['tax_query'] ) || ! is_array( $args['tax_query'] ) ) {
+            $args['tax_query'] = array( $new_clause );
+            return;
+        }
+        $args['tax_query'] = array(
+            'relation' => 'AND',
+            $args['tax_query'],
+            $new_clause,
+        );
+    }
+
     public static function load_appearance_css(string $data):void {
         static $is=null;
         if ($is===null && $data !== '' && $data != 'bordered' && $data !== 'circle') {

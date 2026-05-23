@@ -58,17 +58,18 @@ if(!empty( $list_categories )){
         Themify_Enqueue_Assets::loadThemeStyleModule( 'post-filter' );
     }
     if(isset( $args['ajax_filter'] )){
+        $ajax_filter_next_page = isset( $args['ajax_filter_paged'] ) ? ( (int) $args['ajax_filter_paged'] + 1 ) : 2;
         $attrs.=' data-id="'.esc_attr( $args['ajax_filter_id'] ).'" data-el="'.esc_attr( $args['el_id'] ).'" data-limit="'.esc_attr( $args['ajax_filter_limit'] ).'" data-ajax="1"';
         if(isset( $args['ajax_sort'] )){
             $attrs.=' data-sort="true"';
         }
-        $attrs.=' data-taxonomy="'.$taxonomy.'"';
+        $attrs.=' data-taxonomy="'.esc_attr( $taxonomy ).'"';
     }
     ?>
     <ul class="post-filter tf_textc tf_opacity"<?php echo $attrs ?> data-post_type="<?php echo esc_attr( isset( $args['post_type'] ) ? $args['post_type'] : 'post' ); ?>">
         <?php echo $list_categories ?>
-        <?php if(isset( $args['ajax_sort'] )): ?>
-            <li data-init="1" data-p="2" class="cat-item cat-item-all active"><?php _e( 'All','themify' ) ?></li>
+        <?php if ( isset( $args['ajax_sort'] ) ) : ?>
+            <li data-init="1" data-p="<?php echo esc_attr( $ajax_filter_next_page ); ?>" class="cat-item cat-item-all active"><?php _e( 'All','themify' ) ?></li>
             <li class="tf_ajax_sort tf_rel">
                 <a href="#" tabindex="-1" class="tf_ajax_sort_icon"><?php echo themify_get_icon( 'menu-alt','ti',false,false,array('aria-label'=>__( 'sort','themify' )) ); ?></a>
                 <div class="tf_ajax_sort_dropdown tf_abs tf_hide tf_box">
@@ -95,6 +96,8 @@ if(!empty( $list_categories )){
                     </ul>
                 </div>
             </li>
+        <?php elseif ( isset( $args['ajax_filter'] ) ) : ?>
+            <li data-init="1" data-p="<?php echo esc_attr( $ajax_filter_next_page ); ?>" class="cat-item cat-item-all active"><?php _e( 'All', 'themify' ); ?></li>
         <?php endif; ?>
     </ul>
     <?php

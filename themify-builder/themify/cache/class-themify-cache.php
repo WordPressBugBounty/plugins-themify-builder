@@ -757,6 +757,9 @@ if (!class_exists('TFCache',false)) {
         public static function check_clear() {
             if (isset($_GET['nonce']) && wp_verify_nonce($_GET['nonce'],'tf_cache') && current_user_can('manage_options')) {
                 if ($_GET['tf-cache'] === '2') {
+                    if ( class_exists( 'Themify_Builder_Stylesheet', false ) ) {
+                        Themify_Builder_Stylesheet::regenerate_css_files( '' );
+                    }
                     Themify_Enqueue_Assets::clearConcateCss();
                     themify_clear_menu_cache();
                 } else {

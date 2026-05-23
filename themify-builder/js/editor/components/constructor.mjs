@@ -3,6 +3,8 @@
 const createTextNode=text=>{
   return doc.createTextNode(text);  
 };
+const tbExtraBgLayerSerialize = new WeakMap();
+
 window.ThemifyConstructor = {
     clicked: null,
     styles:{},
@@ -12,6 +14,13 @@ window.ThemifyConstructor = {
     _radioChange:[],
     _bindings:[],
     _stylesData:{},
+    _abLayerSeq: 0,
+    flushNestedAfterRun(startLen) {
+        for (let i = startLen; i < this.afterRun.length; ++i) {
+            this.afterRun[i].call();
+        }
+        this.afterRun.length = startLen;
+    },
     init() {
         const _this=this,
             font_select=_this.font_select;
@@ -2066,8 +2075,8 @@ window.ThemifyConstructor = {
             }
         }
         container.style.display = 'block';
-        Themify.trigger('tb_builder_tabsactive', [tabId, container]);
         Themify.triggerEvent(container, 'tb_builder_tabsactive', {id: tabId});
+        Themify.trigger('tb_builder_tabsactive', [tabId, container]);
 
     },
     run(options) {
@@ -3132,8 +3141,10 @@ window.ThemifyConstructor = {
                 ranges[i].value = ranges[i].min ??'';
             }
             for (let i = boxes.length - 1; i > -1; --i) {
-                boxes[i].tfTag('input')[0].value = '50,50';
-                boxes[i].tfClass('tb_position_box_handle')[0].removeAttribute('style');
+                const hid = boxes[i].querySelector('input[type="hidden"]');
+                if (hid) {
+                    self.position_box.update(hid.id, '50,50', self);
+                }
             }
             for (let i = sliders.length - 1; i > -1; --i) {
                 let input = sliders[i].querySelector('input[type="hidden"]'),
@@ -6017,7 +6028,7 @@ window.ThemifyConstructor = {
                 wrap = createElement('','themify-gradient-field tf_w tf_rel'),
                     text = createElement('span','',i18n.rotation),
                     gradient = createElement('','tb_gradient_container tf_w'),
-                    input = createElement('input',{type:'hidden',class:'themify-gradient tb_lb_option',id:id+ '-gradient','data-id':id}),
+                    input = createElement('input',{type:'hidden',class:'themify-gradient' + (data.tb_skip_lb_option === true ? '' : ' tb_lb_option'),id:id+ '-gradient','data-id':id}),
                     clear = createElement('button',{type:'button',class:'tb_clear_gradient tf_close'}),
                     select = self.select.render({
                         options: {
@@ -6177,9 +6188,537 @@ window.ThemifyConstructor = {
                 delete extend.repeat;
                 group.options.push(api.Helper.cloneObject(extend));
 
-                imageWrap.parentNode.closest('.tb_field').after(self.create([group]));
+                const fieldHost = imageWrap.parentNode.closest('.tb_field'),
+                    addBgId = 'additional_backgrounds_' + data.id,
+                    addBgField = {
+                        id: addBgId,
+                        type: 'additional_backgrounds',
+                        wrap_class: 'tb_group_element_image tb_group_element_gradient',
+                        selector: data.selector || '',
+                        layer_scope: data.h === true ? 'main_hover' : 'main',
+                        pair_with: data.id
+                    };
+                fieldHost.after(self.create([group, addBgField]));
             });
             data.label??= 'bg';
+            return wrap;
+        }
+    },
+    additional_backgrounds: {
+        repeatOpts() {
+            return {
+                repeat: 'r_all',
+                'repeat-x': 'r_h',
+                'repeat-y': 'r_v',
+                'repeat-none': 'r_no',
+                space: 'r_sp',
+                round: 'r_rn',
+                fullcover: 'fcover',
+                'best-fit-image': 'bfit'
+            };
+        },
+        excludedModes() {
+            return {'builder-parallax-scrolling': 1, 'builder-zoom-scrolling': 1, 'builder-zooming': 1};
+        },
+        layerSizeAllowed(mode) {
+            return mode === 'repeat' || mode === 'repeat-x' || mode === 'repeat-y' || mode === 'repeat-none' || mode === 'space' || mode === 'round';
+        },
+        toggleAddLink(root, data, self) {
+            const link = root.tfClass('tb_bg_add_background')[0],
+                layersWrap = root.tfClass('tb_bg_additional_layers')[0];
+            if (!link && !layersWrap) {
+                return;
+            }
+            let tab = root.closest('.tb_tab');
+            if (tab === null) {
+                const tabsRoot = root.closest('.tb_tabs');
+                if (tabsRoot !== null) {
+                    const panels = tabsRoot.tfClass('tb_tab');
+                    for (let i = panels.length - 1; i > -1; --i) {
+                        if (!panels[i].classList.contains('tf_hide')) {
+                            tab = panels[i];
+                            break;
+                        }
+                    }
+                }
+            }
+            let show = false;
+            if (data.inner === true) {
+                show = true;
+            } else if (tab !== null) {
+                let bgKind,
+                        repeatSel,
+                        zoomWrap,
+                        zoomOn,
+                        respNone;
+                if (data.layer_scope === 'main_hover' && tab.querySelector('#b_t_h')) {
+                    bgKind = tab.querySelector('#b_t_h input:checked')?.value;
+                    repeatSel = tab.querySelector('#b_r_h');
+                    zoomWrap = null;
+                    zoomOn = false;
+                    respNone = false;
+                } else if (tab.querySelector('#background_type')) {
+                    bgKind = tab.querySelector('#background_type input:checked')?.value;
+                    repeatSel = tab.querySelector('#background_repeat');
+                    zoomWrap = tab.querySelector('#background_zoom');
+                    zoomOn = !!(zoomWrap && zoomWrap.tfClass('tb_checkbox')[0]?.checked);
+                    respNone = !!(tab.querySelector('#resp_no_bg input:checked'));
+                } else {
+                    bgKind = tab.querySelector('#background_image-type input:checked')?.value || tab.querySelector('[id$="-type"] input:checked')?.value;
+                    repeatSel = tab.querySelector('#background_repeat') || tab.querySelector('#b_r_h') || tab.querySelector('#background_repeat_h');
+                    zoomWrap = null;
+                    zoomOn = false;
+                    respNone = false;
+                }
+                const mode = repeatSel?.value,
+                        ex = this.excludedModes();
+                show = bgKind === 'gradient' || (bgKind === 'image' && (!mode || !ex[mode]) && respNone !== true && !(mode === 'repeat-none' && zoomOn === true));
+            }
+            if (link) {
+                link.style.display = show ? '' : 'none';
+            }
+            if (layersWrap) {
+                layersWrap.style.display = show ? '' : 'none';
+            }
+        },
+        syncHidden(root, hidden) {
+            const layers = [],
+                    wrap = root.tfClass('tb_bg_additional_layers')[0];
+            if (wrap !== undefined) {
+                for (let i = 0, childs = wrap.children, len = childs.length; i < len; ++i) {
+                    const ser = tbExtraBgLayerSerialize.get(childs[i]);
+                    if (ser) {
+                        layers.push(ser());
+                    }
+                }
+            }
+            hidden.value = layers.length ? JSON.stringify(layers) : '';
+            hidden.dispatchEvent(new Event('change', { bubbles: false }));
+        },
+        createLayer(root, data, self, hidden, saved) {
+            const shell = createElement('', 'tb_bg_extra_layer tf_w tf_rel'),
+                    head = createElement('', 'tb_bg_extra_layer_head tf_rel tf_w tf_box tf_w'),
+                    rm = createElement('button', {type: 'button', class: 'tf_close tb_bg_layer_remove'}),
+                    body = createElement('', 'tb_bg_layer_body tf_w'),
+                    uid = 'tb_ab_' + (++self._abLayerSeq),
+                    lbl = createElement('span', 'tb_label tb_empty_label'),
+                    typeHold = createElement('', 'tb_input tf_overflow tf_w'),
+                    typeGroupName = uid + '_layer_kind',
+                    typeWrap = createElement('', 'tb_radio_wrap tb_bg_layer_type_radios tb_count_2'),
+                    getTypeValue = () => {
+                        const ch = typeWrap.querySelector('input:checked');
+                        return ch ? ch.value : 'image';
+                    };
+
+            rm.appendChild(createElement('span'));
+            for (const opt of [{value: 'image', name: i18n.image || 'image'}, {value: 'gradient', name: i18n.gradient || 'gradient'}]) {
+                const lab = createElement('label'),
+                        ch = createElement('input', {type: 'radio', name: typeGroupName, value: opt.value});
+                lab.appendChild(ch);
+                lab.appendChild(createElement('span', '', opt.name));
+                typeWrap.appendChild(lab);
+            }
+            typeHold.appendChild(typeWrap);
+            head.append(lbl, typeHold, rm);
+            shell.append(head, body);
+
+            let layerWantGrad = false;
+            if (saved && typeof saved === 'object') {
+                const pipeRaw = saved.gradient_pipe != null ? String(saved.gradient_pipe).trim() : '';
+                layerWantGrad = saved.type === 'gradient' || (pipeRaw !== '' && !(saved.background_image && String(saved.background_image).trim() !== ''));
+            }
+            if (saved && typeof saved === 'object' && !layerWantGrad) {
+                if (saved.background_size_w !== undefined && saved.background_size_w !== '') {
+                    self.values[uid + '_bg_size_w'] = saved.background_size_w;
+                }
+                if (saved.background_size_h !== undefined && saved.background_size_h !== '') {
+                    self.values[uid + '_bg_size_h'] = saved.background_size_h;
+                }
+                if (saved.background_size_w_unit) {
+                    self.values[uid + '_bg_size_w_unit'] = saved.background_size_w_unit;
+                }
+                if (saved.background_size_h_unit) {
+                    self.values[uid + '_bg_size_h_unit'] = saved.background_size_h_unit;
+                }
+            }
+
+            const mkSel = (opts, cur) => {
+                        const s = createElement('select', {class: 'tf_scrollbar'});
+                        for (let k in opts) {
+                            if (Object.prototype.hasOwnProperty.call(opts, k)) {
+                                s.appendChild(createElement('option', {value: k}, i18n[opts[k]] || opts[k]));
+                            }
+                        }
+                        if (cur !== undefined && cur !== null && cur !== '') {
+                            s.value = cur;
+                        }
+                        return s;
+                    },
+                    prevRep = self.is_repeat,
+                    imgWrap = createElement('', 'tb_bg_layer_image tf_w'),
+                    imgExt = api.Helper.cloneObject({
+                        id: uid + '_img',
+                        label: 'b_i',
+                        prop: 'background-image',
+                        selector: data.selector || ''
+                    }),
+                    optsWrap = createElement('', 'tb_bg_layer_img_opts tf_w'),
+                    repSel = mkSel(this.repeatOpts(), 'repeat-none'),
+                    attSel = mkSel({scroll: 'scroll', fixed: 'fi'}, 'scroll'),
+                    posEl = self.position_box.render({
+                        id: uid + '_position',
+                        label: '',
+                        type: 'position_box',
+                        position: true,
+                        prop: 'background-position',
+                        wrap_class: 'tb_bg_layer_img_opts tb_group_element_image'
+                    }, self),
+                    posValInput = posEl.querySelector('input.tb_position_box_value'),
+                    zoomRow = createElement('', 'tb_bg_layer_img_opts tb_field tb_checkbox zoom_row_parent tf_hide'),
+                    zoomFrag = (() => {
+                        const pr = self.is_repeat;
+                        self.is_repeat = true;
+                        const fr = self.checkboxGenerate('checkbox', {
+                            id: uid + '_zoom',
+                            options: [{value: 'zoom_h', name: 'zoom'}]
+                        });
+                        self.is_repeat = pr;
+                        return fr;
+                    })(),
+                    bgLayerSizeUnits = {
+                        '%': {min: 0, max: 500},
+                        px: {min: 0, max: 10000},
+                        em: {min: 0, max: 500},
+                        vw: {min: 0, max: 500},
+                        vh: {min: 0, max: 500}
+                    },
+                    sizeWrap = createElement('', 'tb_bg_layer_img_opts tb_bg_layer_size_fields tf_w'),
+                    sizeWWrap = self.range.render({
+                        id: uid + '_bg_size_w',
+                        type: 'range',
+                        units: bgLayerSizeUnits,
+                        control: false,
+                        class: 'tb_bg_layer_size_range',
+                        after: 'w'
+                    }, self),
+                    sizeHWrap = self.range.render({
+                        id: uid + '_bg_size_h',
+                        type: 'range',
+                        units: bgLayerSizeUnits,
+                        control: false,
+                        class: 'tb_bg_layer_size_range',
+                        after: 'ht'
+                    }, self),
+                    gradWrap = createElement('', 'tb_bg_layer_gradient tf_w tf_hide'),
+                    gradData = api.Helper.cloneObject({
+                        id: uid + '_grad',
+                        type: 'gradient',
+                        prop: 'background-image',
+                        selector: data.selector || '',
+                        tb_skip_lb_option: true
+                    }),
+                    zoomEl = () => zoomRow.querySelector('.tb_checkbox'),
+                    gradHid = () => gradWrap.querySelector('.themify-gradient'),
+                    gradTypeSel = () => gradWrap.querySelector('#' + uid + '_grad-gradient-type'),
+                    gradAngleInput = () => {
+                        const el = gradWrap.querySelector('#' + uid + '_grad-gradient-angle');
+                        if (!el) {
+                            return null;
+                        }
+                        return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ? el : el.querySelector('input');
+                    },
+                    circleCb = () => {
+                        const w = gradWrap.querySelector('#' + uid + '_grad-circle-radial');
+                        return w ? w.querySelector('.tb_checkbox') : null;
+                    },
+                    toggleType = () => {
+                        const v = getTypeValue(),
+                                isImg = v === 'image';
+                        imgWrap.style.display = isImg ? '' : 'none';
+                        optsWrap.style.display = isImg ? '' : 'none';
+                        gradWrap.style.display = isImg ? 'none' : '';
+                        gradWrap.classList.toggle('tf_hide', isImg);
+                        self.additional_backgrounds.toggleAddLink(root.closest('.tb_multi_bg'), data, self);
+                    };
+
+            zoomRow.appendChild(zoomFrag);
+            sizeWrap.append(sizeWWrap, sizeHWrap);
+            optsWrap.append(repSel, attSel, zoomRow, posEl, sizeWrap);
+
+            self.is_repeat = true;
+            imgWrap.appendChild(self.mediaFile.render('image', imgExt, self));
+            self.is_repeat = prevRep;
+
+            const __arPrev = self.afterRun.length;
+            gradWrap.appendChild(self.gradient.render(gradData, self));
+            if (layerWantGrad) {
+                const gid = uid + '_grad';
+                self.values[gid + '-gradient'] = saved.gradient_pipe != null ? saved.gradient_pipe : '';
+                if (saved.gradient_type) {
+                    self.values[gid + '-gradient-type'] = saved.gradient_type;
+                }
+                if (saved.gradient_angle !== undefined && saved.gradient_angle !== null && saved.gradient_angle !== '') {
+                    self.values[gid + '-gradient-angle'] = String(saved.gradient_angle).trim();
+                }
+                const circleWrap = gradWrap.querySelector('#' + gid + '-circle-radial');
+                if (circleWrap) {
+                    const cin = circleWrap.querySelector('input[type="checkbox"]');
+                    if (cin) {
+                        cin.checked = !!saved.gradient_circle;
+                    }
+                }
+            }
+            self.flushNestedAfterRun(__arPrev);
+
+            body.append(imgWrap, optsWrap, gradWrap);
+
+            const bindRep = () => {
+                        const rv = repSel.value;
+                        zoomRow.style.display = rv === 'repeat-none' ? '' : 'none';
+                        if (rv !== 'repeat-none') {
+                            const z = zoomEl();
+                            if (z) {
+                                z.checked = false;
+                            }
+                        }
+                        const showSz = self.additional_backgrounds.layerSizeAllowed(rv);
+                        sizeWrap.style.display = showSz ? '' : 'none';
+                        sizeWrap.classList.toggle('tf_hide', !showSz);
+                    },
+                    serialize = () => {
+                        const t = getTypeValue(),
+                            szWE = optsWrap.querySelector('#' + uid + '_bg_size_w'),
+                            szHE = optsWrap.querySelector('#' + uid + '_bg_size_h'),
+                            szWuE = optsWrap.querySelector('#' + uid + '_bg_size_w_unit'),
+                            szHuE = optsWrap.querySelector('#' + uid + '_bg_size_h_unit');
+                        return {
+                            type: t,
+                            background_image: t === 'image' ? imgWrap.tfClass('tb_uploader_input')[0].value.trim() : '',
+                            background_repeat: t === 'image' ? repSel.value : '',
+                            background_attachment: t === 'image' ? attSel.value : '',
+                            background_zoom: t === 'image' && repSel.value === 'repeat-none' ? !!(zoomEl() && zoomEl().checked) : false,
+                            background_position: t === 'image' && posValInput ? posValInput.value.trim() : '',
+                            background_size_w: t === 'image' && szWE ? szWE.value.trim() : '',
+                            background_size_w_unit: t === 'image' && szWuE ? szWuE.value : 'px',
+                            background_size_h: t === 'image' && szHE ? szHE.value.trim() : '',
+                            background_size_h_unit: t === 'image' && szHuE ? szHuE.value : 'px',
+                            gradient_pipe: t === 'gradient' ? gradHid().value.trim() : '',
+                            gradient_type: t === 'gradient' && gradTypeSel() ? gradTypeSel().value : '',
+                            gradient_angle: t === 'gradient' && gradAngleInput() ? gradAngleInput().value.trim() : '',
+                            gradient_circle: t === 'gradient' && circleCb() ? !!circleCb().checked : false
+                        };
+                    };
+
+            tbExtraBgLayerSerialize.set(shell, serialize);
+
+            const onAny = () => {
+                        bindRep();
+                        const wrapRoot = root.closest('.tb_multi_bg');
+                        self.additional_backgrounds.syncHidden(wrapRoot, hidden);
+                        self.additional_backgrounds.toggleAddLink(wrapRoot, data, self);
+                        const ls = api.liveStylingInstance;
+                        if (ls?.refreshCompositeAdditionalBackgrounds) {
+                            ls.refreshCompositeAdditionalBackgrounds(wrapRoot);
+                        }
+                    };
+
+            typeWrap.tfOn('change', () => {
+                toggleType();
+                onAny();
+            }, {passive: true});
+
+            bindRep();
+            repSel.tfOn('change', onAny, {passive: true});
+            imgWrap.tfClass('tb_uploader_input')[0].tfOn('change', onAny, {passive: true});
+            attSel.tfOn('change', onAny, {passive: true});
+            if (posValInput) {
+                posValInput.tfOn('change', onAny, {passive: true});
+            }
+            const z0 = zoomEl();
+            if (z0) {
+                z0.tfOn('change', onAny, {passive: true});
+            }
+            const szW = optsWrap.querySelector('#' + uid + '_bg_size_w'),
+                szH = optsWrap.querySelector('#' + uid + '_bg_size_h'),
+                szWu = optsWrap.querySelector('#' + uid + '_bg_size_w_unit'),
+                szHu = optsWrap.querySelector('#' + uid + '_bg_size_h_unit');
+            if (szW) {
+                szW.tfOn('keyup', onAny, {passive: true});
+                szW.tfOn('change', onAny, {passive: true});
+            }
+            if (szH) {
+                szH.tfOn('keyup', onAny, {passive: true});
+                szH.tfOn('change', onAny, {passive: true});
+            }
+            if (szWu) {
+                szWu.tfOn('change', onAny, {passive: true});
+            }
+            if (szHu) {
+                szHu.tfOn('change', onAny, {passive: true});
+            }
+            const gh = gradHid();
+            if (gh) {
+                gh.tfOn('themify_builder_gradient_change', onAny, {passive: true});
+                gh.tfOn('change', onAny, {passive: true});
+            }
+            rm.tfOn(_CLICK_, e => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                shell.remove();
+                onAny();
+            });
+
+            if (saved && typeof saved === 'object') {
+                const wantGrad = layerWantGrad,
+                        rImg = typeWrap.querySelector('input[value="image"]'),
+                        rGrad = typeWrap.querySelector('input[value="gradient"]');
+                if (rImg) {
+                    rImg.checked = !wantGrad;
+                }
+                if (rGrad) {
+                    rGrad.checked = !!wantGrad;
+                }
+                toggleType();
+                if (!wantGrad) {
+                    const inp = imgWrap.tfClass('tb_uploader_input')[0];
+                    inp.value = saved.background_image || '';
+                    Themify.triggerEvent(inp, 'change');
+                    repSel.value = saved.background_repeat || 'repeat-none';
+                    attSel.value = saved.background_attachment || 'scroll';
+                    if (posValInput) {
+                        posValInput.value = saved.background_position || '0,0';
+                    }
+                    const zz = zoomEl();
+                    if (zz) {
+                        zz.checked = !!saved.background_zoom;
+                    }
+                } else {
+                    const hid = gradHid();
+                    hid.value = saved.gradient_pipe || '';
+                    const gt = gradTypeSel();
+                    if (gt) {
+                        gt.value = saved.gradient_type || 'linear';
+                        Themify.triggerEvent(gt, 'change');
+                    }
+                    const ang = gradAngleInput();
+                    if (ang) {
+                        ang.value = saved.gradient_angle || '180';
+                    }
+                    const cir = circleCb();
+                    if (cir) {
+                        cir.checked = !!saved.gradient_circle;
+                    }
+                    Themify.triggerEvent(hid, 'change');
+                }
+                bindRep();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        if (!wantGrad) {
+                            self.position_box.update(uid + '_position', saved.background_position || '0,0', self);
+                        }
+                    });
+                });
+            } else {
+                const rImg = typeWrap.querySelector('input[value="image"]');
+                if (rImg) {
+                    rImg.checked = true;
+                }
+                toggleType();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        self.position_box.update(uid + '_position', '0,0', self);
+                    });
+                });
+            }
+            return shell;
+        },
+        update(id, v, self) {
+            const hidEl = self.getEl(id),
+                    root = hidEl?.closest('.tb_multi_bg');
+            if (!root || !hidEl) {
+                return;
+            }
+            const layersWrap = root.tfClass('tb_bg_additional_layers')[0];
+            if (!layersWrap) {
+                return;
+            }
+            layersWrap.replaceChildren();
+            let parsed = v;
+            if (parsed === undefined || parsed === null || parsed === '') {
+                parsed = [];
+            } else if (typeof parsed === 'string') {
+                try {
+                    parsed = JSON.parse(parsed);
+                } catch (er) {
+                    parsed = [];
+                }
+            }
+            if (!Array.isArray(parsed)) {
+                parsed = [];
+            }
+            const dataField = {
+                selector: root.dataset.tbBgCompositeSelector || '',
+                inner: root.dataset.tbBgLayersInner === '1',
+                layer_scope: root.dataset.tbBgLayerScope || 'main'
+            };
+            for (let i = 0; i < parsed.length; ++i) {
+                layersWrap.appendChild(this.createLayer(root, dataField, self, hidEl, parsed[i]));
+            }
+            this.syncHidden(root, hidEl);
+            this.toggleAddLink(root, dataField, self);
+            api.liveStylingInstance?.refreshCompositeAdditionalBackgrounds?.(root);
+        },
+        render(data, self) {
+            const wrap = createElement('', 'tb_multi_bg tf_w tf_rel'),
+                    addLink = createElement('a', {href: '#', class: 'tb_bg_add_background'}, i18n.add_additional_bg || '+ Add background'),
+                    layersWrap = createElement('', 'tb_bg_additional_layers tf_w'),
+                    hidden = createElement('input', {type: 'hidden', class: 'tb_lb_option tb_bg_layers_json', id: data.id});
+            if (data.selector !== undefined) {
+                wrap.dataset.tbBgCompositeSelector = data.selector;
+            }
+            if (data.inner === true) {
+                wrap.dataset.tbBgLayersInner = '1';
+            }
+            if (data.layer_scope !== undefined) {
+                wrap.dataset.tbBgLayerScope = data.layer_scope;
+            }
+            wrap.append(layersWrap, addLink, hidden);
+            addLink.tfOn(_CLICK_, e => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                layersWrap.appendChild(self.additional_backgrounds.createLayer(wrap, data, self, hidden, null));
+                self.additional_backgrounds.syncHidden(wrap, hidden);
+                self.additional_backgrounds.toggleAddLink(wrap, data, self);
+                const ls = api.liveStylingInstance;
+                if (ls?.refreshCompositeAdditionalBackgrounds) {
+                    ls.refreshCompositeAdditionalBackgrounds(wrap);
+                }
+            });
+
+            self.afterRun.push(() => {
+                let raw = self.values[data.id];
+                if (typeof raw === 'string' && raw) {
+                    try {
+                        raw = JSON.parse(raw);
+                    } catch (er) {
+                        raw = [];
+                    }
+                }
+                if (Array.isArray(raw)) {
+                    for (let i = 0; i < raw.length; ++i) {
+                        layersWrap.appendChild(self.additional_backgrounds.createLayer(wrap, data, self, hidden, raw[i]));
+                    }
+                    self.additional_backgrounds.syncHidden(wrap, hidden);
+                    api.liveStylingInstance?.refreshCompositeAdditionalBackgrounds?.(wrap);
+                }
+                self.additional_backgrounds.toggleAddLink(wrap, data, self);
+                const tab = wrap.closest('.tb_tab');
+                tab?.tfOn('change', () => {
+                    self.additional_backgrounds.toggleAddLink(wrap, data, self);
+                    api.liveStylingInstance?.refreshAllCompositeAdditionalBackgrounds?.();
+                }, {passive: true});
+            });
+            data.label??= '';
             return wrap;
         }
     },
@@ -8124,23 +8663,130 @@ window.ThemifyConstructor = {
     position_box: {
         w: null,
         h: null,
+        _metricsForWrap(wrapper) {
+            if (!wrapper) {
+                const w = this.w || 0,
+                    h = this.h || 0;
+                return {w: Math.max(1, w), h: Math.max(1, h)};
+            }
+            const box = wrapper.tfClass('tb_position_box')[0];
+            if (!box) {
+                const w = this.w || 0,
+                    h = this.h || 0;
+                return {w: Math.max(1, w), h: Math.max(1, h)};
+            }
+            let w = box.clientWidth,
+                h = box.clientHeight;
+            if (!w || !h) {
+                const css = getComputedStyle(box);
+                w = parseInt(css.getPropertyValue('width'), 10) || this.w || 0;
+                h = parseInt(css.getPropertyValue('height'), 10) || this.h || 0;
+            }
+            return {w: Math.max(1, w), h: Math.max(1, h)};
+        },
+        _syncGridHandlePixels(handler, wrap, xPct, yPct) {
+            if (!handler || !wrap) {
+                return;
+            }
+            const x = parseFloat(xPct) || 0,
+                y = parseFloat(yPct) || 0,
+                {w, h} = this._metricsForWrap(wrap);
+            if (x < 0 || x > 100 || y < 0 || y > 100) {
+                handler.style.visibility = 'hidden';
+                handler.style.pointerEvents = 'none';
+                return;
+            }
+            handler.style.visibility = '';
+            handler.style.pointerEvents = '';
+            handler.style.left = Math.ceil((x * w) / 100) + 'px';
+            handler.style.top = Math.ceil((y * h) / 100) + 'px';
+        },
+        _normalizePositionVal(v) {
+            if (v === undefined || v === null || typeof v === 'object') {
+                return '';
+            }
+            v = v.toString().trim();
+            if (!v) {
+                return '';
+            }
+            const positions = this._getPreDefinedPositions();
+            if (positions[v] !== undefined) {
+                return positions[v];
+            }
+            const k = v.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim(),
+                keywordMap = {
+                    'left top': '0,0',
+                    'top left': '0,0',
+                    'center top': '50,0',
+                    'top center': '50,0',
+                    'right top': '100,0',
+                    'top right': '100,0',
+                    'left center': '0,50',
+                    'center left': '0,50',
+                    'center center': '50,50',
+                    center: '50,50',
+                    'right center': '100,50',
+                    'center right': '100,50',
+                    'left bottom': '0,100',
+                    'bottom left': '0,100',
+                    'center bottom': '50,100',
+                    'bottom center': '50,100',
+                    'right bottom': '100,100',
+                    'bottom right': '100,100'
+                };
+            if (keywordMap[k]) {
+                return keywordMap[k];
+            }
+            if (this._isGridPositionValue(v)) {
+                const p = v.split(',').map(s => parseFloat(String(s).trim()) || 0);
+                return p[0] + ',' + (p[1] !== undefined && !isNaN(p[1]) ? p[1] : p[0]);
+            }
+            const m = v.match(/^(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$/);
+            if (m) {
+                return m[1] + ',' + m[2];
+            }
+            return v;
+        },
         update(id, v, self) {
             const input = self.getEl(id) || api.LightBox.el.querySelector('[data-input-id="' + id + '"]');
             if (input !== null) {
                 const wrap = input.closest('.tb_position_box_wrapper'),
                         handler = wrap.tfClass('tb_position_box_handle')[0],
-                        label = wrap.tfClass('tb_position_box_label')[0],
-                        positions = this._getPreDefinedPositions();
+                        labelTxt = this._tbPosLabelText(wrap),
+                        positions = this._getPreDefinedPositions(),
+                        R = wrap._tbPosRefs;
+                v = this._normalizePositionVal(v);
                 if (!v) {
                     v = '0,0';
                 } else if (positions[v] !== undefined) {
                     v = positions[v];
                 }
                 input.value = v;
-                label.textContent = this._getLabel(v);
-                v = v.split(',');
-                handler.style.left = Math.ceil((v[0] * this.w) / 100) + 'px';
-                handler.style.top = Math.ceil((v[1] * this.h) / 100) + 'px';
+                const applyMode = R ? R.applyMode : null,
+                    isGrid = this._isGridPositionValue(v);
+                if (applyMode) {
+                    applyMode(isGrid ? 'grid' : 'custom');
+                }
+                if (labelTxt) {
+                    if (isGrid) {
+                        labelTxt.textContent = this._getLabel(v);
+                    } else {
+                        labelTxt.textContent = v.length > 52 ? v.slice(0, 49) + '...' : v;
+                    }
+                }
+                if (isGrid) {
+                    v = v.split(',');
+                    this._syncGridHandlePixels(handler, wrap, v[0], v[1]);
+                } else if (R && wrap.dataset.tbPositionUi === 'custom') {
+                    if (!this._parseCustomBgPositionCss(v, R.vRow, R.hRow)) {
+                        R.vRow.edge.value = 'top';
+                        R.vRow.inp.value = '0';
+                        R.vRow.unit.value = '%';
+                        R.hRow.edge.value = 'left';
+                        R.hRow.inp.value = '0';
+                        R.hRow.unit.value = '%';
+                    }
+                }
             }
         },
         _getLabel(val) {
@@ -8194,25 +8840,105 @@ window.ThemifyConstructor = {
                 'center-bottom': '50,100'
             };
         },
+        _isGridPositionValue(v) {
+            return typeof v === 'string' && /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/.test(v);
+        },
+        _splitPosToken(tok) {
+            const t = String(tok == null ? '' : tok).trim();
+            if (!t) {
+                return ['0', 'px'];
+            }
+            const mu = t.match(/^(-?\d+(?:\.\d+)?)(px|em|%|vw|vh)$/i);
+            if (mu) {
+                return [mu[1], mu[2].toLowerCase()];
+            }
+            const mn = t.match(/^(-?\d+(?:\.\d+)?)$/);
+            if (mn) {
+                return [mn[1], '%'];
+            }
+            return [t, 'px'];
+        },
+        _joinPosToken(num, unit) {
+            let n = String(num == null ? '' : num).trim();
+            if (n === '' || n === '-') {
+                n = '0';
+            }
+            if (/^var\s*\(/i.test(n) || n.startsWith('--')) {
+                return n;
+            }
+            if (/px|em|%|vw|vh$/i.test(n)) {
+                return n;
+            }
+            return n + (unit || 'px');
+        },
+        _formatCustomBgPositionCss(hE, hN, hU, vE, vN, vU) {
+            const ht = this._joinPosToken(hN, hU),
+                vt = this._joinPosToken(vN, vU);
+            return (hE + ' ' + ht + ' ' + vE + ' ' + vt).trim();
+        },
+        _parseCustomBgPositionCss(s, vRow, hRow) {
+            const t = String(s == null ? '' : s).trim();
+            if (!t) {
+                return false;
+            }
+            let m = t.match(/^(left|right)\s+(\S+)\s+(top|bottom)\s+(\S+)$/i),
+                hE,
+                hTok,
+                vE,
+                vTok;
+            if (m) {
+                hE = m[1].toLowerCase();
+                hTok = m[2];
+                vE = m[3].toLowerCase();
+                vTok = m[4];
+            } else {
+                m = t.match(/^(top|bottom)\s+(\S+)\s+(left|right)\s+(\S+)$/i);
+                if (!m) {
+                    return false;
+                }
+                vE = m[1].toLowerCase();
+                vTok = m[2];
+                hE = m[3].toLowerCase();
+                hTok = m[4];
+            }
+            const [hN, hU] = this._splitPosToken(hTok),
+                [vN, vU] = this._splitPosToken(vTok);
+            hRow.edge.value = hE;
+            hRow.inp.value = hN;
+            hRow.unit.value = hU || 'px';
+            vRow.edge.value = vE;
+            vRow.inp.value = vN;
+            vRow.unit.value = vU || 'px';
+            return true;
+        },
+        _tbPosLabelText(wrap) {
+            const lw = wrap?.tfClass('tb_position_box_label')[0];
+            return lw ? lw.tfClass('tb_position_box_label_text')[0] : null;
+        },
         _click(e) {
             e.stopPropagation();
             let left,
                     top,
                     el = e.currentTarget.previousElementSibling,
-                    item = e.target.closest('.tb_position_item');
+                    item = e.target.closest('.tb_position_item'),
+                    wrap = e.currentTarget.closest('.tb_position_box_wrapper'),
+                    {w, h} = this._metricsForWrap(wrap);
+            if (wrap && wrap.dataset.tbPositionUi === 'custom') {
+                return;
+            }
             if (item) {
                 const pos = item.dataset.pos.split(',');
                 left = pos[0];
                 top = pos[1];
                 if (left === '50') {
-                    left = this.w / 2;
+                    left = w / 2;
                 } else if (left === '100') {
-                    left = this.w;
+                    left = w;
                 }
                 if (top === '50') {
-                    top = this.h / 2;
+                    top = h / 2;
                 } else if (top === '100') {
-                    top = this.h;
+                    top = h;
                 }
             } else {
                 left = e.offsetX;
@@ -8220,26 +8946,92 @@ window.ThemifyConstructor = {
             }
             el.style.left = left + 'px';
             el.style.top = top + 'px';
-            this._changeUpdate(el, left, top);
+            this._changeUpdate(el, left, top, wrap);
         },
-        _changeUpdate(helper, left, top) {
-            const l = +((left / this.w) * 100).toFixed(2),
-                    t = +((top / this.h) * 100).toFixed(2),
-                    label = helper.closest('.tb_position_box_wrapper').tfClass('tb_position_box_label')[0],
-                    input = label.nextElementSibling;
+        _changeUpdate(helper, left, top, wrap) {
+            if (wrap && wrap.dataset.tbPositionUi === 'custom') {
+                return;
+            }
+            wrap = wrap || helper.closest('.tb_position_box_wrapper');
+            const {w, h} = this._metricsForWrap(wrap),
+                l = Math.round((left / w) * 100),
+                t = Math.round((top / h) * 100),
+                label = wrap.tfClass('tb_position_box_label')[0],
+                labelTxt = this._tbPosLabelText(wrap),
+                input = label?.nextElementSibling;
+            helper.style.visibility = '';
+            helper.style.pointerEvents = '';
             input.value = l + ',' + t;
-            label.textContent = this._getLabel(l + ',' + t);
+            (labelTxt || label).textContent = this._getLabel(l + ',' + t);
+            this._syncGridHandlePixels(helper, wrap, String(l), String(t));
             Themify.triggerEvent(input, 'change');
         },
         render(data, self) {
             const _this = this,
                     positions = this._getPreDefinedPositions(),
-                    v = self.getStyleVal(data.id),
+                    rawVal = self.getStyleVal(data.id);
+            let v = _this._normalizePositionVal(rawVal);
+            if (!v) {
+                v = _this._normalizePositionVal(data.default !== undefined && data.default !== null ? data.default : '') || (data.default !== undefined && data.default !== null ? data.default : '0,0');
+            }
+            if (!v) {
+                v = '0,0';
+            }
+            const posCustUnits = {
+                        '%': {min: -500, max: 500},
+                        px: {min: -50000, max: 50000},
+                        em: {min: -500, max: 500},
+                        vw: {min: -500, max: 500},
+                        vh: {min: -500, max: 500}
+                    },
+                    mkAxisRow = (edgePairs, idSfx) => {
+                        const row = createElement('', 'tf_inline_b tf_vmiddle tf_w tb_position_custom_row'),
+                            edge = createElement('select', 'tf_scrollbar tb_position_custom_edge'),
+                            rangeHost = self.range.render({
+                                id: data.id + idSfx + '_axis',
+                                type: 'range',
+                                units: posCustUnits,
+                                control: false,
+                                live_bind: false,
+                                class: 'tb_position_custom_range'
+                            }, self),
+                            inp = rangeHost.querySelector('.tb_range'),
+                            un = rangeHost.querySelector('select.tb_unit');
+                        if (inp) {
+                            inp.inputMode = 'text';
+                        }
+                        for (let i = 0; i < edgePairs.length; ++i) {
+                            edge.appendChild(createElement('option', {value: edgePairs[i][0]}, edgePairs[i][1]));
+                        }
+                        row.append(edge, rangeHost);
+                        return {row, edge, inp, unit: un};
+                    },
                     wrapper = createElement('','tb_position_box_wrapper'),
-                    boxWrap = createElement('','tb_position_box_container tf_rel tf_inline_b'),
+                    boxWrap = createElement('','tb_position_box_container tf_rel'),
                     box = createElement('', 'tb_position_box tf_rel'),
                     handler = createElement('','tb_position_box_handle'),
-                    input = self.hidden.render(data, self);
+                    customWrap = createElement('', 'tb_position_custom_fields tf_w tf_rel tf_hide'),
+                    customClose = createElement('button', {type: 'button', class: 'tf_close tb_position_custom_clear', 'aria-label': i18n.cancel || 'Close'}),
+                    customInner = createElement('', 'tb_position_custom_inner tf_w'),
+                    vRow = mkAxisRow([['top', i18n.top || 'Top'], ['bottom', i18n.bottom || 'Bottom']], '_tbpcv'),
+                    hRow = mkAxisRow([['left', i18n.left || 'Left'], ['right', i18n.right || 'Right']], '_tbpch'),
+                    input = self.hidden.render(data, self),
+                    labelWrap = createElement('span', 'tb_position_box_label'),
+                    labelTxt = createElement('span', 'tb_position_box_label_text');
+            const pencil = api.Helper.getIcon('ti-pencil');
+            if (pencil) {
+                pencil.classList.add('tf_fa', 'tb_position_box_pencil');
+                labelWrap.append(pencil, createTextNode(' '), labelTxt);
+            } else {
+                labelWrap.appendChild(labelTxt);
+            }
+            input.classList.add('tb_position_box_value');
+            input.value = v;
+            labelWrap.setAttribute('tabindex', '0');
+            labelWrap.setAttribute('role', 'button');
+            customClose.appendChild(createElement('span'));
+            customInner.append(vRow.row, hRow.row);
+            customWrap.append(customClose, customInner);
             for (let i in positions) {
                 let pos = createElement('',{class: 'tb_position_item','data-pos':positions[i]}),
                     tooltip = createElement('span','themify_tooltip'),
@@ -8250,6 +9042,125 @@ window.ThemifyConstructor = {
                 pos.appendChild(tooltip);
                 box.appendChild(pos);
             }
+            const applyMode = mode => {
+                        wrapper.dataset.tbPositionUi = mode;
+                        if (mode === 'custom') {
+                            boxWrap.classList.add('tf_hide');
+                            boxWrap.style.display = 'none';
+                            customWrap.classList.remove('tf_hide');
+                            customWrap.style.display = '';
+                            labelWrap.classList.add('tf_hide');
+                            labelWrap.style.display = 'none';
+                        } else {
+                            customWrap.classList.add('tf_hide');
+                            customWrap.style.display = 'none';
+                            boxWrap.classList.remove('tf_hide');
+                            boxWrap.style.display = '';
+                            labelWrap.classList.remove('tf_hide');
+                            labelWrap.style.display = '';
+                        }
+                    },
+                    exitCustomToGrid = () => {
+                        if (hRow.edge.value === 'left' && vRow.edge.value === 'top' && hRow.unit.value === '%' && vRow.unit.value === '%') {
+                            input.value = (parseFloat(hRow.inp.value) || 0) + ',' + (parseFloat(vRow.inp.value) || 0);
+                        } else {
+                            input.value = _this._formatCustomBgPositionCss(hRow.edge.value, hRow.inp.value.trim(), hRow.unit.value, vRow.edge.value, vRow.inp.value.trim(), vRow.unit.value);
+                            if (!_this._isGridPositionValue(input.value.trim())) {
+                                input.value = '50,50';
+                            }
+                        }
+                        applyMode('grid');
+                        const parts = input.value.split(',');
+                        _this._syncGridHandlePixels(handler, wrapper, parts[0], parts[1]);
+                        if (labelTxt) {
+                            labelTxt.textContent = _this._getLabel(input.value.trim());
+                        }
+                        Themify.triggerEvent(input, 'change');
+                    },
+                    syncCustom = () => {
+                        const css = _this._formatCustomBgPositionCss(hRow.edge.value, hRow.inp.value, hRow.unit.value, vRow.edge.value, vRow.inp.value, vRow.unit.value);
+                        input.value = css;
+                        if (labelTxt) {
+                            labelTxt.textContent = css.length > 52 ? css.slice(0, 49) + '...' : css;
+                        }
+                        Themify.triggerEvent(input, 'change');
+                    },
+                    toggleUi = () => {
+                        const cur = wrapper.dataset.tbPositionUi === 'custom' ? 'custom' : 'grid';
+                        if (cur === 'grid') {
+                            const raw = input.value.trim();
+                            if (_this._isGridPositionValue(raw)) {
+                                const p = raw.split(',');
+                                hRow.edge.value = 'left';
+                                hRow.inp.value = String(parseFloat(p[0]) || 0);
+                                hRow.unit.value = '%';
+                                vRow.edge.value = 'top';
+                                vRow.inp.value = String(parseFloat(p[1]) || 0);
+                                vRow.unit.value = '%';
+                            } else if (!_this._parseCustomBgPositionCss(raw, vRow, hRow)) {
+                                hRow.edge.value = 'left';
+                                hRow.inp.value = '0';
+                                hRow.unit.value = '%';
+                                vRow.edge.value = 'top';
+                                vRow.inp.value = '0';
+                                vRow.unit.value = '%';
+                            }
+                            applyMode('custom');
+                            syncCustom();
+                        } else {
+                            if (hRow.edge.value === 'left' && vRow.edge.value === 'top' && hRow.unit.value === '%' && vRow.unit.value === '%') {
+                                input.value = (parseFloat(hRow.inp.value) || 0) + ',' + (parseFloat(vRow.inp.value) || 0);
+                                applyMode('grid');
+                                const parts2 = input.value.split(',');
+                                _this._syncGridHandlePixels(handler, wrapper, parts2[0], parts2[1]);
+                                if (labelTxt) {
+                                    labelTxt.textContent = _this._getLabel(input.value.trim());
+                                }
+                            } else {
+                                input.value = _this._formatCustomBgPositionCss(hRow.edge.value, hRow.inp.value.trim(), hRow.unit.value, vRow.edge.value, vRow.inp.value.trim(), vRow.unit.value);
+                                applyMode('custom');
+                                if (labelTxt) {
+                                    labelTxt.textContent = input.value.length > 52 ? input.value.slice(0, 49) + '...' : input.value;
+                                }
+                            }
+                            Themify.triggerEvent(input, 'change');
+                        }
+                    };
+            wrapper._tbPosRefs = {
+                boxWrap,
+                customWrap,
+                labelTxt,
+                vRow,
+                hRow,
+                handler,
+                applyMode
+            };
+            [vRow.inp, hRow.inp].forEach(el => {
+                el.tfOn('keyup', syncCustom, {passive: true});
+                el.tfOn('change', syncCustom, {passive: true});
+            });
+            [vRow.edge, hRow.edge, vRow.unit, hRow.unit].forEach(el => {
+                el.tfOn('change', syncCustom, {passive: true});
+            });
+            labelWrap.tfOn(_CLICK_, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleUi();
+            }, {passive: false});
+            labelWrap.tfOn('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleUi();
+                }
+            }, {passive: false});
+            customClose.tfOn(_CLICK_, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (wrapper.dataset.tbPositionUi !== 'custom') {
+                    return;
+                }
+                exitCustomToGrid();
+            }, {passive: false});
             handler.tfOn('pointerdown', function (e) {
                 if (e.button === 0) {
                     e.stopImmediatePropagation();
@@ -8257,7 +9168,7 @@ window.ThemifyConstructor = {
                     const el = this,
                         dragX = this.offsetLeft - e.clientX,
                         dragY = this.offsetTop - e.clientY,
-                        {w:maxW,h:maxH} = _this,
+                        {w:maxW,h:maxH} = _this._metricsForWrap(el.closest('.tb_position_box_wrapper')),
                         _startDrag = () => {
                             topBodyCl.add('tb_start_animate');
                         },
@@ -8304,16 +9215,58 @@ window.ThemifyConstructor = {
             }, {passive: true});
             boxWrap.append(handler, box);
             wrapper.appendChild(boxWrap);
+            wrapper.appendChild(customWrap);
             if (data.after !== undefined) {
                 wrapper.appendChild(self.after(data));
             }
-            wrapper.append(createElement('', 'tb_position_box_label'), input);
+            wrapper.appendChild(labelWrap);
+            wrapper.appendChild(input);
+            {
+                let initV = v;
+                if (positions[initV] !== undefined) {
+                    initV = positions[initV];
+                }
+                const isGridInit = _this._isGridPositionValue(initV);
+                if (isGridInit) {
+                    applyMode('grid');
+                    const parts = initV.split(',');
+                    _this._syncGridHandlePixels(handler, wrapper, parts[0], parts[1]);
+                    if (labelTxt) {
+                        labelTxt.textContent = _this._getLabel(initV);
+                    }
+                } else {
+                    applyMode('custom');
+                    if (!_this._parseCustomBgPositionCss(initV, vRow, hRow)) {
+                        vRow.edge.value = 'top';
+                        vRow.inp.value = '0';
+                        vRow.unit.value = '%';
+                        hRow.edge.value = 'left';
+                        hRow.inp.value = '0';
+                        hRow.unit.value = '%';
+                    }
+                    if (labelTxt) {
+                        labelTxt.textContent = initV.length > 52 ? initV.slice(0, 49) + '...' : initV;
+                    }
+                }
+            }
             self.afterRun.push(() => {
                 setTimeout(() => {
                     const css = getComputedStyle(box);
                     _this.w = parseInt(css.getPropertyValue('width'));
                     _this.h = parseInt(css.getPropertyValue('height'));
-                    _this.update(data.id, v, self);
+                    let fresh = self.getStyleVal(data.id);
+                    const domInp = self.getEl(data.id);
+                    if ((fresh === undefined || fresh === null || fresh === '') && domInp != null) {
+                        fresh = domInp.value;
+                    }
+                    let vv = _this._normalizePositionVal(fresh);
+                    if (!vv) {
+                        vv = _this._normalizePositionVal(data.default !== undefined && data.default !== null ? data.default : '') || (data.default !== undefined && data.default !== null ? data.default : '0,0');
+                    }
+                    if (!vv) {
+                        vv = '0,0';
+                    }
+                    _this.update(data.id, vv, self);
                 }, 700);
             });
             if (data.prop === 'background-position') {
@@ -8792,7 +9745,9 @@ window.ThemifyConstructor = {
                 }, {passive: true});
             }
             ndata.type = 'range';
-            self._initControl(input, ndata);
+            if (data.live_bind !== false) {
+                self._initControl(input, ndata);
+            }
             return wrapper;
         }
     },
@@ -11347,12 +12302,26 @@ window.ThemifyConstructor = {
                                 default:'off',
                                 binding: {
                                     not_checked: {
-                                        hide: 'ajax_filter_cat_wrap'
+                                        hide: ['ajax_filter_cat_wrap', 'ajax_filter_within_wrap']
                                     },
                                     checked: {
-                                        show: 'ajax_filter_cat_wrap'
+                                        show: ['ajax_filter_cat_wrap', 'ajax_filter_within_wrap']
                                     }
                                 }
+                            },
+                            {
+                                type: 'group',
+                                wrap_class: 'ajax_filter_within_wrap tf_w',
+                                options: [
+                                    {
+                                        id: 'ajax_filter_within_results',
+                                        type: 'toggle_switch',
+                                        label: 'ajaxfin',
+                                        options: 'simple',
+                                        default: 'off',
+                                        help: 'ajaxfinh'
+                                    }
+                                ]
                             },
                             {
                                 type: 'group',
