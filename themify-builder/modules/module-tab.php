@@ -62,20 +62,27 @@ class TB_Tab_Module extends Themify_Builder_Component_Module {
     }
 
 	public static function get_translatable_fields( $module, $classname ) : array {
-		$fields = [];
+		$fields = parent::get_translatable_fields( $module, $classname );
+		if ( ! empty( $module['mod_settings']['mod_title_tab'] ) ) {
+			$fields[] = [
+				'id' => 'mod_title_tab',
+				'value' => $module['mod_settings']['mod_title_tab'],
+			];
+		}
 		if ( ! empty( $module['mod_settings']['tab_content_tab'] ) ) {
 			foreach ( $module['mod_settings']['tab_content_tab'] as $row_index => $tab ) {
 				if ( isset( $tab['title_tab'] ) ) {
 					$fields[] = [
 						'id' => 'title_tab-' . $row_index,
-						'value' => $tab['title_tab']
+						'value' => $tab['title_tab'],
 					];
 				}
-
-				if ( isset( $tab['builder_content'] ) ) {
-					foreach ( $tab['builder_content'] as $subrow ) {
-						Themify_Builder_WPML_Integration::recursive_register_row_translatable_fields( $subrow );
-					}
+				if ( isset( $tab['text_tab'] ) ) {
+					$fields[] = [
+						'id' => 'text_tab-' . $row_index,
+						'value' => $tab['text_tab'],
+						'type' => 'VISUAL',
+					];
 				}
 			}
 		}
@@ -84,21 +91,18 @@ class TB_Tab_Module extends Themify_Builder_Component_Module {
 	}
 
 	public static function translate_module( $module_data, $translations ) {
-		/* translate titles */
 		foreach ( $translations as $item_key => $value ) {
-			list( $field, $index ) = explode( '-', $item_key );
+			if ( $item_key === 'mod_title_tab' ) {
+				$module_data['mod_settings']['mod_title_tab'] = $value;
+				continue;
+			}
+			$parts = explode( '-', $item_key, 2 );
+			if ( count( $parts ) !== 2 ) {
+				continue;
+			}
+			list( $field, $index ) = $parts;
 			if ( isset( $module_data['mod_settings']['tab_content_tab'][ $index ][ $field ] ) ) {
 				$module_data['mod_settings']['tab_content_tab'][ $index ][ $field ] = $value;
-			}
-		}
-
-		if ( ! empty( $module_data['mod_settings']['tab_content_tab'] ) ) {
-			foreach ( $module_data['mod_settings']['tab_content_tab'] as $row_index => &$tab ) {
-				if ( isset( $tab['builder_content'] ) ) {
-					foreach ( $tab['builder_content'] as &$subrow ) {
-						$subrow = Themify_Builder_WPML_Integration::recursive_translate_fields( $subrow );
-					}
-				}
 			}
 		}
 

@@ -152,7 +152,7 @@ class ThemifyBuilder_Data_Manager {
     private static function json_escape(array &$arr, bool $kses_filter = false ):array{
         foreach($arr as $k=>&$v){
             if(is_string($v)){
-                if(trim($v)===''){
+                if(trim($v)==='' && !is_numeric($k)){
                     unset($arr[$k]);
                 }
                 elseif(isset($v[0]) && ($v[0]==='{' || $v[0]==='[')){//is json?
@@ -182,13 +182,49 @@ class ThemifyBuilder_Data_Manager {
                 }
             }
             elseif(is_array($v)){
-                $arr[$k]=self::json_escape( $v, $kses_filter );
+                if ($k === 'table_content' && isset($v['head'], $v['body'])) {
+                    $arr[$k] = self::json_escape_table_content($v, $kses_filter);
+                } else {
+                    $arr[$k]=self::json_escape( $v, $kses_filter );
+                }
             }
             elseif($v===null){
                 unset($arr[$k]);
             }
         }
         return $arr;
+    }
+
+    /**
+     * Sanitize table_content without json_escape() removing empty strings at numeric indices.
+     */
+    private static function json_escape_table_content(array $data, bool $kses_filter ):array {
+        if (isset($data['head']) && is_array($data['head'])) {
+            foreach ($data['head'] as $i => $cell) {
+                if (is_string($cell)) {
+                    $data['head'][$i] = $kses_filter ? wp_kses_post($cell) : $cell;
+                }
+            }
+        }
+        if (isset($data['body']) && is_array($data['body'])) {
+            foreach ($data['body'] as $r => $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                foreach ($row as $c => $cell) {
+                    if (is_string($cell)) {
+                        $data['body'][$r][$c] = $kses_filter ? wp_kses_post($cell) : $cell;
+                    }
+                }
+            }
+        }
+        if (isset($data['cols']) && is_array($data['cols'])) {
+            $data['cols'] = self::json_escape($data['cols'], $kses_filter);
+        }
+        if (isset($data['col_count'])) {
+            $data['col_count'] = (int) $data['col_count'];
+        }
+        return $data;
     }
     
     /**

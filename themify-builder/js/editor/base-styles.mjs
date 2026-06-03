@@ -557,6 +557,25 @@ export class BaseStyles {
     }
 
     // CSS Display
+    // Standalone vertical-align select (Top/Middle/Bottom/Baseline/Sub/Text-top).
+    // Unlike get_display, this does not require display=inline-block.
+    static get_vertical_align(selector = '', id = 'va', state = '') {
+        if (state !== '') {
+            id += '_' + state;
+        }
+        const res = {
+            id: id,
+            label: 'valign',
+            type: 'select',
+            prop: 'vertical-align',
+            selector: selector,
+            va_align: true
+        };
+        if (state === 'h' || state === 'hover') {
+            res.h = true;
+        }
+        return res;
+    }
     static  get_display(selector = '', id = 'disp') {
         const va_id = id + '_va';
         return [

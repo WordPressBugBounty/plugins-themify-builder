@@ -42,7 +42,7 @@
                 topWindowDoc.tfOn('keydown auxclick',e=>{
                     this.constructor.keypres(e);
                 });
-                if (api.isFrontend) {
+                if (api.isFrontend || api.isVisual) {
                     doc.tfOn('keydown auxclick',e=>{
                         this.constructor.keypres(e);
                     });
@@ -385,7 +385,7 @@
         }
         static async changes(is_undo) {
             api.ActionBar.clearClicked();
-            if (api.activeModel !== null && (!api.isVisual || (!doc.activeElement.isContentEditable && api.activeModel.el.contains(doc.activeElement)))) {
+            if (api.activeModel !== null && (!api.isVisual || (api.LightBox.el.contains(doc.activeElement) && !doc.activeElement.isContentEditable))) {
                 await api.LightBox.save();
                 return this.changes(is_undo);
             }

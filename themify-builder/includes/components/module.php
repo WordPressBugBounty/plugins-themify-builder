@@ -952,7 +952,7 @@ class Themify_Builder_Component_Module {
                         unset($assets['async']);
                         self::$assets[$slug] = $assets;
                     }
-                    if ($slug === 'feature' || $slug === 'menu' || $slug === 'tab' || $slug === 'accordion') {
+                    if ($slug === 'feature' || $slug === 'menu' || $slug === 'tab' || $slug === 'accordion' || $slug === 'table') {
                         \Themify_Enqueue_Assets::addPrefetchJs(THEMIFY_BUILDER_JS_MODULES . $slug . '.js', $ver);
                     }
                     unset($assets, $ver);

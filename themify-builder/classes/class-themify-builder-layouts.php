@@ -728,7 +728,7 @@ if (!class_exists('Themify_Builder_Layouts',false)) {
                 if (null === $layout) {
                     exit;
                 }
-                $new_id = Themify_Builder_Duplicate_Page::duplicate($layout);
+                $new_id = Themify_Builder_Duplicate_Page::duplicate($layout, 'draft');
                 delete_post_meta($new_id, '_themify_builder_prebuilt_layout');
                 wp_redirect(admin_url('edit.php?post_type=' . get_post_type($postid)));
                 exit;

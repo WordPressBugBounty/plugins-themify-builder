@@ -55,7 +55,7 @@
     foreach (array(THEMIFY_METABOX_URI . 'css/themify.minicolors.css', THEMIFY_BUILDER_URI . '/css/editor/themify-combobox.css',THEMIFY_BUILDER_URI . '/css/editor/components/inline-editor.css') as $css):?>
             <link href="<?php echo $css ?>?ver=<?php echo THEMIFY_VERSION ?>" rel="stylesheet">
         <?php endforeach; ?>
-        <div id="toolbar" class="center tf_abs_t tf_hide tf_opacity">
+        <div id="inline-toolbar" class="center tf_abs_t tf_hide tf_opacity">
             <div id="edit_link" class="center tf_w tf_hide">
                 <button type="button" id="link_btn" class="action tf_rel tf_textl" data-type="link">
                     <span class="tf_maxw tf_overflow tf_inline_b"></span>

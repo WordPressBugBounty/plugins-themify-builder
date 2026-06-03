@@ -3,8 +3,8 @@ Contributors: themifyme
 Plugin Name: Themify Builder
 Tags: builder, drag-and-drop, page-builder, drag-and-drop-builder, visual-builder
 Requires at least: 5.2
-Tested up to: 6.9.4
-Stable tag: 7.7.3
+Tested up to: 7.0.0
+Stable tag: 7.7.4
 License: GPL v2
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 

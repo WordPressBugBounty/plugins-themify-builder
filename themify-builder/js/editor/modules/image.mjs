@@ -1,5 +1,26 @@
 (api => {
     "use strict";
+    if (!api.tbAttachmentMetaForPreview) {
+        api.tbAttachmentMetaForPreview = async function tbAttachmentMetaForPreview(url) {
+            const u = (url || '').trim();
+            if (!u) {
+                return {title: '', caption: '', alt: ''};
+            }
+            api._tbAttachmentMetaCache ??= new Map();
+            const cache = api._tbAttachmentMetaCache;
+            if (cache.has(u)) {
+                return cache.get(u);
+            }
+            const p = api.LocalFetch(
+                {action: 'tb_get_ajax_data', dataset: 'attachment_meta_by_url', val: u},
+                'json'
+            )
+                .then(res => (res && res.success && res.data) ? res.data : {title: '', caption: '', alt: ''})
+                .catch(() => ({title: '', caption: '', alt: ''}));
+            cache.set(u, p);
+            return p;
+        };
+    }
     api.ModuleImage = class extends api.Module {
         constructor(fields) {
             super(fields);
@@ -129,6 +150,36 @@
                 },
               },
               {
+                id: "media_title_attr",
+                type: "checkbox",
+                label: "",
+                options: [
+                  {
+                    name: "yes",
+                    value: "img_mediatitle_attr",
+                  },
+                ],
+              },
+              {
+                id: "auto_title_media",
+                type: "checkbox",
+                label: "",
+                options: [
+                  {
+                    name: "yes",
+                    value: "img_autotitle_media",
+                  },
+                ],
+                binding: {
+                  checked: {
+                    hide: "title_image",
+                  },
+                  not_checked: {
+                    show: "title_image",
+                  },
+                },
+              },
+              {
                 id: "title_tag",
                 type: "select",
                 label: "tht",
@@ -232,6 +283,25 @@
                 },
               },
               {
+                id: "auto_caption_media",
+                type: "checkbox",
+                label: "",
+                options: [
+                  {
+                    name: "yes",
+                    value: "img_autocaption_media",
+                  },
+                ],
+                binding: {
+                  checked: {
+                    hide: "caption_image",
+                  },
+                  not_checked: {
+                    show: "caption_image",
+                  },
+                },
+              },
+              {
                 id: "alt_image",
                 type: "text",
                 label: "alt",
@@ -286,6 +356,15 @@
             }
             if (!settings.lightbox_height) {
                 delete settings.lightbox_height_unit;
+            }
+            if (settings.media_title_attr !== 'yes') {
+                delete settings.media_title_attr;
+            }
+            if (settings.auto_title_media !== 'yes') {
+                delete settings.auto_title_media;
+            }
+            if (settings.auto_caption_media !== 'yes') {
+                delete settings.auto_caption_media;
             }
             for (let bps = api.breakpointsReverse, i = bps.length - 1; i > -1; --i) {
                 let bp = bps[i];
@@ -373,7 +452,17 @@
             }
             return super.getImage(setting);
         }
-        preview(data) {
+        async preview(data) {
+            const urlTrim = (data.url_image || '').trim();
+            let resolvedTitle = '',
+                resolvedCaption = '',
+                resolvedAlt = '';
+            if (urlTrim && (data.auto_title_media === 'yes' || data.auto_caption_media === 'yes' || data.media_title_attr === 'yes')) {
+                const meta = await api.tbAttachmentMetaForPreview(urlTrim);
+                resolvedTitle = meta.title || '';
+                resolvedCaption = meta.caption || '';
+                resolvedAlt = meta.alt || '';
+            }
             let module = createElement(),
                     wrap = createElement('','image-wrap tf_rel tf_mw'),
                     {style_image:imageStyle='image-top',url_image:url} = data,
@@ -398,6 +487,11 @@
                 img = constructor.setEditableImage(createElement('img'),'url_image','width_image','height_image',data);
                 if (data.alt_image) {
                     img.alt = data.alt_image;
+                } else if (resolvedAlt) {
+                    img.alt = resolvedAlt;
+                }
+                if (data.media_title_attr === 'yes' && resolvedTitle) {
+                    img.title = resolvedTitle;
                 }
             }
             if (data.link_image) {
@@ -442,9 +536,11 @@
                 module.appendChild(constructor.getModuleTitle(data.mod_title_image, 'mod_title_image'));
             }
             module.appendChild(wrap);
-            if (data.title_image || data.caption_image) {
+            const hasTitleArea = !!(data.auto_title_media === 'yes' || data.title_image);
+            const hasCaptionArea = !!(data.auto_caption_media === 'yes' || data.caption_image);
+            if (hasTitleArea || hasCaptionArea) {
                 const content = createElement('','image-content'+(imageStyle === 'image-full-overlay'?' tf_overflow':''));
-                if (data.title_image) {
+                if (hasTitleArea) {
                     let titleTag =createElement(data.title_tag || 'h3','image-title'),
                         editTag = titleTag;
                     if (data.link_image) {
@@ -452,11 +548,24 @@
                         titleTag.appendChild(link);
                         editTag = link;
                     }
-                    constructor._setEditableContent(editTag,'title_image',data.title_image);
+                    if (data.auto_title_media !== 'yes') {
+                        constructor._setEditableContent(editTag,'title_image',data.title_image);
+                    } else if (resolvedTitle) {
+                        editTag.textContent = resolvedTitle;
+                    }
                     content.appendChild(titleTag);
                 }
-                if (data.caption_image) {
-                    content.appendChild(constructor._setEditableContent(createElement('','image-caption tb_text_wrap'),'caption_image',data.caption_image));
+                if (hasCaptionArea) {
+                    const captionEl = createElement('', 'image-caption tb_text_wrap');
+                    if (data.auto_caption_media !== 'yes') {
+                        content.appendChild(constructor._setEditableContent(captionEl,'caption_image',data.caption_image));
+                    }
+                    else {
+                        if (resolvedCaption) {
+                            captionEl.innerHTML = api.Helper.sanitizeHTML(resolvedCaption);
+                        }
+                        content.appendChild(captionEl);
+                    }
                 }
                 if (imageStyle === 'image-overlay') {
                     wrap.appendChild(content);

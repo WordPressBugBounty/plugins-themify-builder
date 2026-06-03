@@ -909,6 +909,31 @@ class Themify_Builder_Active{
                 }
                 unset($images);
             }
+            elseif ($dataset === 'attachment_meta_by_url') {
+                $url = isset($_POST['val']) ? esc_url_raw(wp_unslash($_POST['val'])) : '';
+                if ($url === '') {
+                    $result = array(
+                        'title' => '',
+                        'caption' => '',
+                        'alt' => '',
+                    );
+                } else {
+                    $attachment_id = attachment_url_to_postid($url);
+                    if ($attachment_id) {
+                        $result = array(
+                            'title' => get_the_title($attachment_id),
+                            'caption' => (string) wp_get_attachment_caption($attachment_id),
+                            'alt' => (string) get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
+                        );
+                    } else {
+                        $result = array(
+                            'title' => '',
+                            'caption' => '',
+                            'alt' => '',
+                        );
+                    }
+                }
+            }
             elseif ($mode === 'autocomplete') {
                 if (empty($_POST['value'])) {
                     wp_send_json_error();

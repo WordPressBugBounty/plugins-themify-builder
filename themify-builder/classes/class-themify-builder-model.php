@@ -479,6 +479,7 @@ final class Themify_Builder_Model {
             'social-share'=>true,
             'star'=>true,
             'tab'=>true,
+            'table'=>true,
             'testimonial-slider'=>true,
             'text'=>true,
             'toc'=>true,

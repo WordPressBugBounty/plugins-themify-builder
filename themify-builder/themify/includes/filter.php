@@ -66,7 +66,7 @@ if(!empty( $list_categories )){
         $attrs.=' data-taxonomy="'.esc_attr( $taxonomy ).'"';
     }
     ?>
-    <ul class="post-filter tf_textc tf_opacity"<?php echo $attrs ?> data-post_type="<?php echo esc_attr( isset( $args['post_type'] ) ? $args['post_type'] : 'post' ); ?>">
+    <ul class="post-filter tf_textc"<?php echo $attrs ?> data-post_type="<?php echo esc_attr( isset( $args['post_type'] ) ? $args['post_type'] : 'post' ); ?>">
         <?php echo $list_categories ?>
         <?php if ( isset( $args['ajax_sort'] ) ) : ?>
             <li data-init="1" data-p="<?php echo esc_attr( $ajax_filter_next_page ); ?>" class="cat-item cat-item-all active"><?php _e( 'All','themify' ) ?></li>

@@ -68,20 +68,27 @@ class TB_Accordion_Module extends Themify_Builder_Component_Module {
     }
 
 	public static function get_translatable_fields( $module, $classname ) : array {
-		$fields = [];
+		$fields = parent::get_translatable_fields( $module, $classname );
+		if ( ! empty( $module['mod_settings']['mod_title_accordion'] ) ) {
+			$fields[] = [
+				'id' => 'mod_title_accordion',
+				'value' => $module['mod_settings']['mod_title_accordion'],
+			];
+		}
 		if ( ! empty( $module['mod_settings']['content_accordion'] ) ) {
 			foreach ( $module['mod_settings']['content_accordion'] as $row_index => $acc ) {
 				if ( isset( $acc['title_accordion'] ) ) {
 					$fields[] = [
 						'id' => 'title_accordion-' . $row_index,
-						'value' => $acc['title_accordion']
+						'value' => $acc['title_accordion'],
 					];
 				}
-
-				if ( isset( $acc['builder_content'] ) ) {
-					foreach ( $acc['builder_content'] as $subrow ) {
-						Themify_Builder_WPML_Integration::recursive_register_row_translatable_fields( $subrow );
-					}
+				if ( isset( $acc['text_accordion'] ) ) {
+					$fields[] = [
+						'id' => 'text_accordion-' . $row_index,
+						'value' => $acc['text_accordion'],
+						'type' => 'VISUAL',
+					];
 				}
 			}
 		}
@@ -90,21 +97,18 @@ class TB_Accordion_Module extends Themify_Builder_Component_Module {
 	}
 
 	public static function translate_module( $module_data, $translations ) {
-		/* translate titles */
 		foreach ( $translations as $item_key => $value ) {
-			list( $field, $index ) = explode( '-', $item_key );
+			if ( $item_key === 'mod_title_accordion' ) {
+				$module_data['mod_settings']['mod_title_accordion'] = $value;
+				continue;
+			}
+			$parts = explode( '-', $item_key, 2 );
+			if ( count( $parts ) !== 2 ) {
+				continue;
+			}
+			list( $field, $index ) = $parts;
 			if ( isset( $module_data['mod_settings']['content_accordion'][ $index ][ $field ] ) ) {
 				$module_data['mod_settings']['content_accordion'][ $index ][ $field ] = $value;
-			}
-		}
-
-		if ( ! empty( $module_data['mod_settings']['content_accordion'] ) ) {
-			foreach ( $module_data['mod_settings']['content_accordion'] as $row_index => &$acc ) {
-				if ( isset( $acc['builder_content'] ) ) {
-					foreach ( $acc['builder_content'] as &$subrow ) {
-						$subrow = Themify_Builder_WPML_Integration::recursive_translate_fields( $subrow );
-					}
-				}
 			}
 		}
 

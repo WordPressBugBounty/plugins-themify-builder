@@ -35,7 +35,10 @@ $fields_args = $args['mod_settings']+ array(
     'alt_image' => '',
     'caption_image' => '',
     'css_image' => '',
-    'animation_effect' => ''
+    'animation_effect' => '',
+    'media_title_attr' => '',
+    'auto_title_media' => '',
+    'auto_caption_media' => ''
 );
 if (!empty($fields_args['appearance_image'])) {
     $fields_args['appearance_image'] = self::get_checkbox_data($fields_args['appearance_image']);
@@ -72,16 +75,32 @@ if($fields_args['link_image'] !== ''){
         $newtab=$fields_args['param_image'] === 'newtab';
     }
 }
-$image_alt = '' !== $fields_args['alt_image'] ? $fields_args['alt_image'] : wp_strip_all_tags($fields_args['caption_image']);
-$image_title = $fields_args['title_image'];
-if ($image_alt === '') {
-    $image_alt = $image_title;
+$attachment_id = ! empty( $fields_args['url_image'] ) ? attachment_url_to_postid( $fields_args['url_image'] ) : 0;
+$media_alt_text = $attachment_id ? (string) get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ) : '';
+$media_title_text = $attachment_id ? get_the_title( $attachment_id ) : '';
+$media_caption_text = $attachment_id ? (string) wp_get_attachment_caption( $attachment_id ) : '';
+$use_auto_title_media = 'yes' === $fields_args['auto_title_media'];
+$use_auto_caption_media = 'yes' === $fields_args['auto_caption_media'];
+$use_media_title_attr = 'yes' === $fields_args['media_title_attr'];
+$display_title = $use_auto_title_media ? $media_title_text : $fields_args['title_image'];
+$display_caption = $use_auto_caption_media ? $media_caption_text : $fields_args['caption_image'];
+$img_html_title_attr = $use_media_title_attr ? $media_title_text : $fields_args['title_image'];
+
+if ( '' !== $fields_args['alt_image'] ) {
+	$image_alt = $fields_args['alt_image'];
+} elseif ( '' !== $media_alt_text ) {
+	$image_alt = $media_alt_text;
+} else {
+	$image_alt = wp_strip_all_tags( is_string( $display_caption ) ? $display_caption : '' );
+}
+if ( '' === $image_alt ) {
+	$image_alt = $display_title;
 }
 
 $image = '';
 if ( ! empty( $fields_args['url_image'] ) ) {
     $preset = $fields_args['image_size_image'] !== '' ? $fields_args['image_size_image'] : themify_builder_get('setting-global_feature_size', 'image_global_size_field');
-    $param_image=array('src'=>esc_url($fields_args['url_image']),'w'=>$fields_args['width_image'],'h'=>$fields_args['height_image'],'alt'=>$image_alt,'title'=>$image_title,'image_size'=>$preset);
+    $param_image=array('src'=>esc_url($fields_args['url_image']),'w'=>$fields_args['width_image'],'h'=>$fields_args['height_image'],'alt'=>$image_alt,'title'=>$img_html_title_attr,'image_size'=>$preset);
     if ( Themify_Builder::$frontedit_active === true && ! self::$disable_inline_edit ) {
         $param_image['attr']=array('data-w'=>'width_image', 'data-h'=>'height_image','data-name'=>'url_image');
     }
@@ -127,24 +146,24 @@ self::sticky_element_props($container_props, $fields_args);
     <!-- /image-wrap -->
     <?php endif; ?>
 
-    <?php if ($image_title !== '' || $fields_args['caption_image'] !== ''): ?>
+    <?php if ($display_title !== '' || $display_caption !== ''): ?>
     <div class="image-content<?php echo $fields_args['style_image']==='image-full-overlay'?' tf_overflow':'';?>">
-        <?php if ($image_title !== '') :
+        <?php if ($display_title !== '') :
             $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
             ?>
             <<?php echo $fields_args['title_tag'];?> class="image-title">
                 <?php if ($fields_args['link_image'] !== ''): ?>
                     <a href="<?php echo esc_url($fields_args['link_image']); ?>"<?php if (isset($lightbox_data)) : ?> class="lightbox-builder themify_lightbox"<?php echo $lightbox_data; ?><?php endif;if ($newtab===true): ?> rel="noopener" target="_blank"<?php endif; ?>>
-                        <?php echo $image_title; ?>
+                        <?php echo $display_title; ?>
                     </a>
                 <?php else: ?>
-                    <?php echo $image_title; ?>
+                    <?php echo $display_title; ?>
                 <?php endif; ?>
             </<?php echo $fields_args['title_tag'];?>>
         <?php endif; ?>
-        <?php if ($fields_args['caption_image'] !== ''): ?>
+        <?php if ($display_caption !== ''): ?>
         <div class="image-caption tb_text_wrap">
-            <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['caption_image'])); ?>
+            <?php echo wp_kses_post( apply_filters( 'themify_builder_module_content', $display_caption ) ); ?>
         </div>
         <!-- /image-caption -->
         <?php endif; ?>

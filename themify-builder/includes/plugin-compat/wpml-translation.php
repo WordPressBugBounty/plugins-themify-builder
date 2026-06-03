@@ -279,6 +279,17 @@ class Themify_Builder_WPML_Integration {
 								$merged[ $rep_id ][ $row_idx ][ $item_id ] = $tgt_ms[ $rep_id ][ $row_idx ][ $item_id ];
 							}
 						}
+					} elseif ( preg_match( '/^([a-z_]+)-(\d+)$/', $fid, $title_parts ) ) {
+						$rep_key = self::get_repeater_key_for_title_field( $mod_name, $title_parts[1] );
+						if ( $rep_key !== '' && isset( $tgt_ms[ $rep_key ][ (int) $title_parts[2] ][ $title_parts[1] ] ) ) {
+							if ( ! isset( $merged[ $rep_key ] ) || ! is_array( $merged[ $rep_key ] ) ) {
+								$merged[ $rep_key ] = [];
+							}
+							if ( ! isset( $merged[ $rep_key ][ (int) $title_parts[2] ] ) || ! is_array( $merged[ $rep_key ][ (int) $title_parts[2] ] ) ) {
+								$merged[ $rep_key ][ (int) $title_parts[2] ] = [];
+							}
+							$merged[ $rep_key ][ (int) $title_parts[2] ][ $title_parts[1] ] = $tgt_ms[ $rep_key ][ (int) $title_parts[2] ][ $title_parts[1] ];
+						}
 					} elseif ( array_key_exists( $fid, $tgt_ms ) ) {
 						$merged[ $fid ] = $tgt_ms[ $fid ];
 					}
@@ -286,12 +297,7 @@ class Themify_Builder_WPML_Integration {
 			}
 		}
 
-		if ( ! empty( $src_ms['builder_content'] ) && is_array( $src_ms['builder_content'] ) ) {
-			$merged['builder_content'] = self::merge_source_into_translation_builder_data(
-				$src_ms['builder_content'],
-				isset( $tgt_ms['builder_content'] ) && is_array( $tgt_ms['builder_content'] ) ? $tgt_ms['builder_content'] : []
-			);
-		}
+		$merged = self::merge_nested_module_builder_rows( $merged, $src_ms, $tgt_ms, $mod_name );
 
 		foreach ( [ '_tooltip', '_link' ] as $shared_k ) {
 			if ( array_key_exists( $shared_k, $tgt_ms ) ) {
@@ -339,14 +345,7 @@ class Themify_Builder_WPML_Integration {
 								$mod['mod_settings'] = self::translate_shared_fields( $mod['mod_settings'], $mod['element_id'] );
 							}
 						}
-						if ( ! empty( $mod['mod_settings']['builder_content'] ) && is_array( $mod['mod_settings']['builder_content'] ) ) {
-							foreach ( $mod['mod_settings']['builder_content'] as &$subrow ) {
-								if ( is_array( $subrow ) ) {
-									$subrow = self::recursive_translate_fields( $subrow );
-								}
-							}
-							unset( $subrow );
-						}
+						self::translate_nested_module_builder_rows( $mod );
 						$mod = self::recursive_translate_fields( $mod ); // for subrows
 					}
 				}
@@ -378,13 +377,7 @@ class Themify_Builder_WPML_Integration {
 								}
 							}
 						}
-						if ( ! empty( $mod['mod_settings']['builder_content'] ) && is_array( $mod['mod_settings']['builder_content'] ) ) {
-							foreach ( $mod['mod_settings']['builder_content'] as $subrow ) {
-								if ( is_array( $subrow ) ) {
-									self::recursive_register_row_translatable_fields( $subrow );
-								}
-							}
-						}
+						self::register_nested_module_builder_rows( $mod );
 						self::recursive_register_row_translatable_fields( $mod ); // for subrows
 					}
 				}
@@ -427,6 +420,204 @@ class Themify_Builder_WPML_Integration {
 		}
 
 		return $component;
+	}
+
+	private static function get_repeater_key_for_title_field( string $mod_name, string $field_name ) : string {
+		if ( $mod_name === 'accordion' && in_array( $field_name, [ 'title_accordion', 'text_accordion' ], true ) ) {
+			return 'content_accordion';
+		}
+		if ( $mod_name === 'tab' && in_array( $field_name, [ 'title_tab', 'text_tab' ], true ) ) {
+			return 'tab_content_tab';
+		}
+		return '';
+	}
+
+	/**
+	 * Register strings for nested rows inside accordion/tab panels, toggle states, layout parts, etc.
+	 */
+	private static function register_nested_module_builder_rows( array $mod ) : void {
+		if ( empty( $mod['mod_settings'] ) || ! is_array( $mod['mod_settings'] ) ) {
+			return;
+		}
+		foreach ( self::collect_nested_builder_rows( $mod['mod_name'] ?? '', $mod['mod_settings'] ) as $subrow ) {
+			self::recursive_register_row_translatable_fields( $subrow );
+		}
+	}
+
+	/**
+	 * Apply WPML string translations to nested builder rows.
+	 */
+	private static function translate_nested_module_builder_rows( array &$mod ) : void {
+		if ( empty( $mod['mod_settings'] ) || ! is_array( $mod['mod_settings'] ) ) {
+			return;
+		}
+		$mod_name = $mod['mod_name'] ?? '';
+		$ms       = &$mod['mod_settings'];
+
+		if ( ! empty( $ms['builder_content'] ) && is_array( $ms['builder_content'] ) ) {
+			foreach ( $ms['builder_content'] as &$subrow ) {
+				if ( is_array( $subrow ) ) {
+					$subrow = self::recursive_translate_fields( $subrow );
+				}
+			}
+			unset( $subrow );
+		}
+
+		if ( $mod_name === 'accordion' && ! empty( $ms['content_accordion'] ) && is_array( $ms['content_accordion'] ) ) {
+			foreach ( $ms['content_accordion'] as &$item ) {
+				if ( ! empty( $item['builder_content'] ) && is_array( $item['builder_content'] ) ) {
+					foreach ( $item['builder_content'] as &$subrow ) {
+						if ( is_array( $subrow ) ) {
+							$subrow = self::recursive_translate_fields( $subrow );
+						}
+					}
+					unset( $subrow );
+				}
+			}
+			unset( $item );
+		}
+
+		if ( $mod_name === 'tab' && ! empty( $ms['tab_content_tab'] ) && is_array( $ms['tab_content_tab'] ) ) {
+			foreach ( $ms['tab_content_tab'] as &$item ) {
+				if ( ! empty( $item['builder_content'] ) && is_array( $item['builder_content'] ) ) {
+					foreach ( $item['builder_content'] as &$subrow ) {
+						if ( is_array( $subrow ) ) {
+							$subrow = self::recursive_translate_fields( $subrow );
+						}
+					}
+					unset( $subrow );
+				}
+			}
+			unset( $item );
+		}
+
+		if ( $mod_name === 'toggle' ) {
+			foreach ( [ 'toggle1', 'toggle2' ] as $toggle_key ) {
+				if ( ! empty( $ms[ $toggle_key ] ) && is_array( $ms[ $toggle_key ] ) ) {
+					foreach ( $ms[ $toggle_key ] as &$subrow ) {
+						if ( is_array( $subrow ) ) {
+							$subrow = self::recursive_translate_fields( $subrow );
+						}
+					}
+					unset( $subrow );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Merge nested builder rows when syncing layout from the default language post.
+	 */
+	private static function merge_nested_module_builder_rows( array $merged, array $src_ms, array $tgt_ms, string $mod_name ) : array {
+		if ( ! empty( $src_ms['builder_content'] ) && is_array( $src_ms['builder_content'] ) ) {
+			$merged['builder_content'] = self::merge_source_into_translation_builder_data(
+				$src_ms['builder_content'],
+				isset( $tgt_ms['builder_content'] ) && is_array( $tgt_ms['builder_content'] ) ? $tgt_ms['builder_content'] : []
+			);
+		}
+
+		if ( $mod_name === 'accordion' && ! empty( $src_ms['content_accordion'] ) && is_array( $src_ms['content_accordion'] ) ) {
+			$merged['content_accordion'] = self::merge_repeater_panel_builder_content(
+				$src_ms['content_accordion'],
+				isset( $tgt_ms['content_accordion'] ) && is_array( $tgt_ms['content_accordion'] ) ? $tgt_ms['content_accordion'] : [],
+				'builder_content',
+				[ 'title_accordion', 'text_accordion' ]
+			);
+		}
+
+		if ( $mod_name === 'tab' && ! empty( $src_ms['tab_content_tab'] ) && is_array( $src_ms['tab_content_tab'] ) ) {
+			$merged['tab_content_tab'] = self::merge_repeater_panel_builder_content(
+				$src_ms['tab_content_tab'],
+				isset( $tgt_ms['tab_content_tab'] ) && is_array( $tgt_ms['tab_content_tab'] ) ? $tgt_ms['tab_content_tab'] : [],
+				'builder_content',
+				[ 'title_tab', 'text_tab' ]
+			);
+		}
+
+		if ( $mod_name === 'toggle' ) {
+			foreach ( [ 'toggle1', 'toggle2' ] as $toggle_key ) {
+				if ( ! empty( $src_ms[ $toggle_key ] ) && is_array( $src_ms[ $toggle_key ] ) ) {
+					$merged[ $toggle_key ] = self::merge_source_into_translation_builder_data(
+						$src_ms[ $toggle_key ],
+						isset( $tgt_ms[ $toggle_key ] ) && is_array( $tgt_ms[ $toggle_key ] ) ? $tgt_ms[ $toggle_key ] : []
+					);
+				}
+			}
+			foreach ( [ 'on', 'off' ] as $label_key ) {
+				if ( array_key_exists( $label_key, $tgt_ms ) ) {
+					$merged[ $label_key ] = $tgt_ms[ $label_key ];
+				}
+			}
+		}
+
+		return $merged;
+	}
+
+	private static function merge_repeater_panel_builder_content( array $src_items, array $tgt_items, string $content_key, array $text_keys ) : array {
+		$out = [];
+		foreach ( $src_items as $index => $src_item ) {
+			$merged_item = $src_item;
+			$tgt_item    = isset( $tgt_items[ $index ] ) && is_array( $tgt_items[ $index ] ) ? $tgt_items[ $index ] : [];
+			if ( ! empty( $src_item[ $content_key ] ) && is_array( $src_item[ $content_key ] ) ) {
+				$tgt_content = isset( $tgt_item[ $content_key ] ) && is_array( $tgt_item[ $content_key ] ) ? $tgt_item[ $content_key ] : [];
+				$merged_item[ $content_key ] = self::merge_source_into_translation_builder_data( $src_item[ $content_key ], $tgt_content );
+			}
+			foreach ( $text_keys as $text_key ) {
+				if ( isset( $tgt_item[ $text_key ] ) ) {
+					$merged_item[ $text_key ] = $tgt_item[ $text_key ];
+				}
+			}
+			$out[] = $merged_item;
+		}
+		return $out;
+	}
+
+	/**
+	 * @return array<int, array>
+	 */
+	private static function collect_nested_builder_rows( string $mod_name, array $mod_settings ) : array {
+		$rows = [];
+		if ( ! empty( $mod_settings['builder_content'] ) && is_array( $mod_settings['builder_content'] ) ) {
+			foreach ( $mod_settings['builder_content'] as $subrow ) {
+				if ( is_array( $subrow ) ) {
+					$rows[] = $subrow;
+				}
+			}
+		}
+		if ( $mod_name === 'accordion' && ! empty( $mod_settings['content_accordion'] ) && is_array( $mod_settings['content_accordion'] ) ) {
+			foreach ( $mod_settings['content_accordion'] as $item ) {
+				if ( ! empty( $item['builder_content'] ) && is_array( $item['builder_content'] ) ) {
+					foreach ( $item['builder_content'] as $subrow ) {
+						if ( is_array( $subrow ) ) {
+							$rows[] = $subrow;
+						}
+					}
+				}
+			}
+		}
+		if ( $mod_name === 'tab' && ! empty( $mod_settings['tab_content_tab'] ) && is_array( $mod_settings['tab_content_tab'] ) ) {
+			foreach ( $mod_settings['tab_content_tab'] as $item ) {
+				if ( ! empty( $item['builder_content'] ) && is_array( $item['builder_content'] ) ) {
+					foreach ( $item['builder_content'] as $subrow ) {
+						if ( is_array( $subrow ) ) {
+							$rows[] = $subrow;
+						}
+					}
+				}
+			}
+		}
+		if ( $mod_name === 'toggle' ) {
+			foreach ( [ 'toggle1', 'toggle2' ] as $toggle_key ) {
+				if ( ! empty( $mod_settings[ $toggle_key ] ) && is_array( $mod_settings[ $toggle_key ] ) ) {
+					foreach ( $mod_settings[ $toggle_key ] as $subrow ) {
+						if ( is_array( $subrow ) ) {
+							$rows[] = $subrow;
+						}
+					}
+				}
+			}
+		}
+		return apply_filters( 'themify_builder_wpml_nested_builder_rows', $rows, $mod_name, $mod_settings );
 	}
 
 	public static function get_module( $name ) {

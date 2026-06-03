@@ -300,7 +300,13 @@
                         }
                     }
 
-                    //check diff
+                    // Table: run module builderSave before clearEmpty so empty header cells are not stripped from arrays.
+                    if (model.type === 'module' && model.get('mod_name') === 'table') {
+                        const Mod = api.Module.getModuleClassName('table');
+                        if (Mod?.builderSave) {
+                            Mod.builderSave(settings);
+                        }
+                    }
                     api.Base.builderSave(settings, 'empty');
                     api.Base.builderSave(oldSettings, 'empty');
                     if(model.saveLightbox){

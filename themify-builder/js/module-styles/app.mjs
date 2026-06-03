@@ -32,6 +32,7 @@ const modules=[
 			'social-share',
 			'star',
 			'tab',
+			'table',
 			'testimonial-slider',
 			'text',
 			'toc',

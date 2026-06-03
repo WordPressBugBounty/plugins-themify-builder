@@ -326,6 +326,15 @@ window.ThemifyConstructor = {
                         middle : 'mid',
                         bottom : 'bottom'
                     },
+                    va_align:{
+                        '': '',
+                        top: 'top',
+                        middle: 'mid',
+                        bottom: 'bottom',
+                        baseline: 'vabl',
+                        sub: 'vasub',
+                        'text-top': 'vatt'
+                    },
                     img_appearance: [
                         {
                             name: 'rounded',

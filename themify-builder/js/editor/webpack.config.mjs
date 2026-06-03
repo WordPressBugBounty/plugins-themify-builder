@@ -99,6 +99,7 @@ const config= {
                         path.resolve(modulesDIr,'social-share.mjs'),
                         path.resolve(modulesDIr,'star.mjs'),
                         path.resolve(modulesDIr,'tab.mjs'),
+                        path.resolve(modulesDIr,'table.mjs'),
                         path.resolve(modulesDIr,'testimonial-slider.mjs'),
                         path.resolve(modulesDIr,'text.mjs'),
                         path.resolve(modulesDIr,'toc.mjs'),

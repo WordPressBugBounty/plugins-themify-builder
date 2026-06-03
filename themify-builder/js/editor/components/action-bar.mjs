@@ -558,8 +558,11 @@
             if (api.isPreview || this.disable === true || e.target.closest('.tb_disable_sorting,.tb_grid_drag')!==null) {
                 return;
             }
-            const target = e.target,
-                el = target.closest('[data-cid]');
+            const target = e.target;
+            if (doc.body.classList.contains('tb_editor_active') && target.closest('.tb_inline_editing_target')) {
+                return;
+            }
+            const el = target.closest('[data-cid]');
             if(!el || (target.tagName.indexOf('-')!==-1 && !target.closest('.module'))){
                 return;
             }
