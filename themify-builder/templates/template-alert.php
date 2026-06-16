@@ -87,7 +87,7 @@ if ( $fields_args['alert_button_action'] === 'url' ) {
             $lightbox_settings = array();
             $lightbox_settings[] = $fields_args['lightbox_width'] !== '' ? $fields_args['lightbox_width'] . $fields_args['lightbox_width_unit'] : '';
             $lightbox_settings[] = $fields_args['lightbox_height'] !== '' ? $fields_args['lightbox_height'] . $fields_args['lightbox_height_unit'] : '';
-            $button_attr .= sprintf(' data-zoom-config="%s"', implode('|', $lightbox_settings));
+            $button_attr .= sprintf(' data-zoom-config="%s"', esc_attr( implode( '|', $lightbox_settings ) ));
             $lightbox_settings=null;
         }
     }
@@ -129,6 +129,7 @@ if (Themify_Builder::$frontedit_active===false) {
 }
 if ($is_alert_visible===true):
     $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
+    $tb_inline_edit = Themify_Builder::$frontedit_active || Themify_Builder_Model::is_front_builder_activate();
     self::sticky_element_props($container_props,$fields_args);
     ?>
     <!-- module alert -->
@@ -138,17 +139,23 @@ if ($is_alert_visible===true):
         ?>
         <div class="alert-inner">
             <div class="alert-content">
-                <<?php echo esc_attr($fields_args['title_tag']);?> class="alert-heading"><?php echo wp_kses_post($fields_args['heading_alert']); ?></<?php echo esc_attr($fields_args['title_tag']);?>>
+                <<?php echo esc_attr($fields_args['title_tag']);?> class="alert-heading"<?php echo $tb_inline_edit ? ' data-name="heading_alert" contenteditable="false"' : ''; ?>><?php echo wp_kses_post($fields_args['heading_alert']); ?></<?php echo esc_attr($fields_args['title_tag']);?>>
                 <div class="tb_text_wrap">
                     <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['text_alert']));?>
                 </div>
             </div>
             <!-- /alert-content -->
-            <?php if ($fields_args['action_btn_text_alert']) : ?>
+            <?php if ($fields_args['action_btn_text_alert'] || $tb_inline_edit) : ?>
                 <div class="alert-button">
+                    <?php if ($tb_inline_edit === true) : ?>
+                    <a class="<?php echo esc_attr(implode(' ', $ui_class)); ?>" href="#">
+                        <span class="tb_alert_text" data-name="action_btn_text_alert" contenteditable="false"><?php echo wp_kses_post($fields_args['action_btn_text_alert'] ?: ''); ?></span>
+                    </a>
+                    <?php else : ?>
                     <a href="<?php echo $url; ?>" class="<?php echo esc_attr(implode(' ', $ui_class)); ?>"<?php echo esc_attr($button_attr); ?>>
                         <span class="tb_alert_text"><?php echo wp_kses_post($fields_args['action_btn_text_alert']); ?></span>
                     </a>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
         </div>

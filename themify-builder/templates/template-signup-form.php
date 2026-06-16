@@ -107,52 +107,52 @@ $builder_id = $args['builder_id'];
                 <input type="hidden" name="nonce" value="<?php echo wp_create_nonce( 'tf_nonce' ); ?>">
                 <div class="tb_signup_messages tb_signup_errors"></div>
                 <?php if ( 'm' === $fields_args['success_action'] && !empty( $fields_args['msg_success'] ) ): ?>
-                    <div class="tf_hide tb_signup_messages tb_signup_success"><?php echo esc_html( $fields_args['msg_success'] ) ?></div>
+                    <div class="tf_hide tb_signup_messages tb_signup_success"><?php echo wp_kses_post( $fields_args['msg_success'] ) ?></div>
                 <?php endif; ?>
                 <div>
                     <label>
-                        <span class="tb_signup_label"><?php if ( $fields_args['i_name'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_name'] ); ?></em><?php endif; ?><?php echo esc_html( $fields_args['l_name'] ) ?></span>
+                        <span class="tb_signup_label"><?php if ( $fields_args['i_name'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_name'] ); ?></em><?php endif; ?><?php echo wp_kses_post( $fields_args['l_name'] ) ?></span>
                     </label>
                     <div class="tb_sp_name_wrapper">
                         <div>
                             <label>
                                 <input type="text" name="first_n">
-                                <span><?php if ( $fields_args['i_firstname'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_firstname'] ); ?></em><?php endif; ?> <?php echo esc_html( $fields_args['l_firstname'] ) ?></span>
+                                <span><?php if ( $fields_args['i_firstname'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_firstname'] ); ?></em><?php endif; ?> <?php echo wp_kses_post( $fields_args['l_firstname'] ) ?></span>
                             </label>
                         </div>
                         <div>
                             <label>
                                 <input type="text" name="last_n">
-                                <span><?php if ( $fields_args['i_lastname'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_lastname'] ); ?></em><?php endif; ?><?php echo esc_html( $fields_args['l_lastname'] ) ?></span>
+                                <span><?php if ( $fields_args['i_lastname'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_lastname'] ); ?></em><?php endif; ?><?php echo wp_kses_post( $fields_args['l_lastname'] ) ?></span>
                             </label>
                         </div>
                     </div>
                 </div>
                 <div>
                     <label>
-                        <span class="tb_signup_label" data-required="yes"><?php if ( $fields_args['i_username'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_username'] ); ?></em><?php endif; ?> <?php echo esc_html( $fields_args['l_username'] ) ?></span>
+                        <span class="tb_signup_label" data-required="yes"><?php if ( $fields_args['i_username'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_username'] ); ?></em><?php endif; ?> <?php echo wp_kses_post( $fields_args['l_username'] ) ?></span>
                         <input type="text" name="user_login" autocapitalize="none" autocomplete="username" required="required">
                     </label>
                 </div>
                 <div>
                     <label>
-                        <span class="tb_signup_label" data-required="yes"><?php if ( $fields_args['i_email'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_email'] ); ?></em><?php endif; ?> <?php echo esc_html( $fields_args['l_email'] ) ?></span>
+                        <span class="tb_signup_label" data-required="yes"><?php if ( $fields_args['i_email'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_email'] ); ?></em><?php endif; ?> <?php echo wp_kses_post( $fields_args['l_email'] ) ?></span>
                         <input type="email" name="user_email" autocomplete="email" required="required">
                     </label>
                 </div>
                 <div>
                     <label>
-                        <span class="tb_signup_label" data-required="yes"><?php if ( $fields_args['i_password'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_password'] ); ?></em><?php endif; ?> <?php echo esc_html( $fields_args['l_password'] ) ?></span>
+                        <span class="tb_signup_label" data-required="yes"><?php if ( $fields_args['i_password'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_password'] ); ?></em><?php endif; ?> <?php echo wp_kses_post( $fields_args['l_password'] ) ?></span>
                         <input type="password" name="pwd" autocomplete="current-password">
                     </label>
                 </div>
                 <div>
                     <label>
-                        <span class="tb_signup_label"><?php if ( $fields_args['i_bio'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_bio'] ); ?></em><?php endif; ?> <?php echo esc_html( $fields_args['l_bio'] ) ?></span>
+                        <span class="tb_signup_label"><?php if ( $fields_args['i_bio'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_bio'] ); ?></em><?php endif; ?> <?php echo wp_kses_post( $fields_args['l_bio'] ) ?></span>
                         <textarea name="bio"></textarea>
                     </label>
                     <?php if ( $fields_args['desc'] !== '' ): ?>
-                        <p><?php if ( $fields_args['i_desc'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_desc'] ); ?></em><?php endif; ?> <?php echo esc_html( $fields_args['desc'] ) ?></p>
+                        <p><?php if ( $fields_args['i_desc'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_desc'] ); ?></em><?php endif; ?> <?php echo wp_kses_post( $fields_args['desc'] ) ?></p>
                     <?php endif; ?>
                 </div>
 
@@ -175,7 +175,7 @@ $builder_id = $args['builder_id'];
                                 unset($optin_instance);
                                 ?>
                                 <input type="checkbox" name="optin" value="1"> 
-                                <span class="tb_signup_optin"><?php esc_html_e( $fields_args['optin_label'] ) ?></span>
+                                <span class="tb_signup_optin"><?php echo wp_kses_post( $fields_args['optin_label'] ) ?></span>
                             </label>
                         </div>
                     <?php endif; ?>
@@ -185,7 +185,7 @@ $builder_id = $args['builder_id'];
                     <div>
                         <label>
                             <input type="checkbox" name="gdpr" required="required"> 
-                            <span class="tb_signup_gdpr"><?php esc_html_e( $fields_args['gdpr_label'] ); ?></span>
+                            <span class="tb_signup_gdpr"><?php echo wp_kses_post( $fields_args['gdpr_label'] ); ?></span>
                         </label>
                     </div>
                 <?php endif; ?>
@@ -195,7 +195,7 @@ $builder_id = $args['builder_id'];
                 }
                 ?>
 
-                <button name="tb_submit"><span class="tf_loader"></span> <?php if ( $fields_args['i_submit'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_submit'] ); ?></em><?php endif; ?> <?php echo esc_html( $fields_args['l_submit'] ) ?></button>
+                <button name="tb_submit"><span class="tf_loader"></span> <?php if ( $fields_args['i_submit'] !== '' ) : ?><em><?php echo themify_get_icon( $fields_args['i_submit'] ); ?></em><?php endif; ?> <?php echo wp_kses_post( $fields_args['l_submit'] ) ?></button>
                 <input type="hidden" name="tb_post_id" value="<?php echo esc_attr( $builder_id ); ?>">
                 <input type="hidden" name="tb_element_id" value="<?php echo esc_attr( str_replace( 'tb_', '', $element_id ) ); ?>">
             </form>

@@ -32,7 +32,7 @@ class Themify_Icon_Fontello extends Themify_Icon_Font {
      * @return bool
      */
     function is_valid_icon( $name ) {
-        return self::$isvalid===true && (substr( $name, 0, 9) === 'fontello-' || substr( $name, 0, 5 ) === 'icon-' || substr( $name, 0, 12 ) === 'tf_fontello-' );
+        return self::$isvalid === true && is_string( $name ) && preg_match( '/^(?:fontello-|icon-|tf_fontello-)[a-zA-Z0-9_-]+$/', $name );
     }
 
     function get_classname( $icon, $lazy = null, $data_only = false,$attrs=array() ) {

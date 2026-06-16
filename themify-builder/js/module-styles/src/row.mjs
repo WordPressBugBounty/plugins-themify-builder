@@ -11,20 +11,18 @@ export class Row extends BaseStyles {
         inner_selector,
         inner_selector_hover;
 
-        if (type === 'row' || type === 'column') {
+        if (type === 'row') {
             margin_fields.margin_top = this.get_margin_top_bottom_opposity('', 'margin-top', 'margin-bottom');
             margin_hover_fields.margin_top = this.get_margin_top_bottom_opposity('', 'm_t', 'm_b', 'h');
-
-            if (type === 'row') {
-                overlay = 'rov';
-                inner_selector = '>div.row_inner';
-                inner_selector_hover ='>div.row_inner:hover';
-
-            } else {
-                overlay = 'cov';
-            }
+            overlay = 'rov';
+            inner_selector = '>div.row_inner';
+            inner_selector_hover ='>div.row_inner:hover';
             delete margin_fields.margin;
             delete margin_hover_fields.margin;
+        } else if (type === 'column') {
+            overlay = 'cov';
+            margin_fields.margin = this.get_margin_column_opposity('');
+            margin_hover_fields.margin = this.get_margin_column_opposity('', 'h');
         }
 
         const options = [

@@ -31,9 +31,7 @@ class Themify_Icon_FontAwesome extends Themify_Icon_Font {
      * @return bool
      */
     public function is_valid_icon($name) {
-        return
-            strpos($name, 'fa-') === 0 // FA v4
-            || strpos($name, 'fa ') === 0 || in_array(substr($name, 0, 4), ['fas ', 'far ', 'fab '], true); // FA v5
+        return is_string( $name ) && preg_match( '/^(?:fa-|fa |fas |far |fab )[a-zA-Z0-9][a-zA-Z0-9 _.-]*$/', $name );
     }
 
     private static function findIcon($ic, $type = 'fab') {

@@ -303,7 +303,8 @@
                 description_service_menu: i18n.desc,
                 price_service_menu: '$200',
                 image_service_menu: 'https://themify.org/img/menu-pizza.png',
-                width_service_menu: 100
+                width_service_menu: 100,
+                highlight_color_service_menu: 'accent-color'
             };
         }
         getExcerpt(data) {

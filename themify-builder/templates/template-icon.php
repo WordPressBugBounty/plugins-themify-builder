@@ -104,8 +104,8 @@ self::sticky_element_props( $container_props, $fields_args );
 		$link_lightbox_class = $content['link_options'] === 'lightbox' ? ' class="lightbox-builder themify_lightbox"' : '';
 		$lightbox_data       = ! empty( $content['lightbox_width'] ) || ! empty( $content['lightbox_height'] ) ? sprintf(
 			' data-zoom-config="%s|%s"',
-			$content['lightbox_width'] . $content['lightbox_width_unit'],
-			$content['lightbox_height'] . $content['lightbox_height_unit']
+			esc_attr( themify_sanitize_css_size( $content['lightbox_width'], $content['lightbox_width_unit'] ) ),
+			esc_attr( themify_sanitize_css_size( $content['lightbox_height'], $content['lightbox_height_unit'] ) )
 		) : false;
 		?>
 		<div class="module-icon-item">

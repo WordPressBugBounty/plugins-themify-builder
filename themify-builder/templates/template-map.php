@@ -118,13 +118,13 @@ self::sticky_element_props($container_props, $fields_args);
             <link rel="preconnect" href="https://maps.googleapis.com" crossorigin/>
         <?php endif;?>
         <div<?php if(Themify_Builder::$frontedit_active===false):?> data-lazy="1" <?php endif;?>
-            data-map-provider="<?php echo $fields_args['map_provider'] ?>"
+            data-map-provider="<?php echo esc_attr( $fields_args['map_provider'] ); ?>"
             <?php if ( $fields_args['map_provider'] === 'google' ) : ?>
                 data-mapid="<?php echo esc_attr( $fields_args['gmap_id'] ); ?>"
             <?php endif; ?> 
-            data-address="<?php esc_attr_e( $fields_args['address_map'] !== '' ? $fields_args['address_map'] : $fields_args['latlong_map'] ) ?>"
-            data-zoom="<?php echo $fields_args['zoom_map']; ?>"
-            data-type="<?php echo $fields_args['map_provider'] === 'google' ? $fields_args['type_map'] : $fields_args[ $fields_args['map_provider'] . '_type_map' ]; ?>"
+            data-address="<?php echo esc_attr( $fields_args['address_map'] !== '' ? $fields_args['address_map'] : $fields_args['latlong_map'] ); ?>"
+            data-zoom="<?php echo esc_attr( $fields_args['zoom_map'] ); ?>"
+            data-type="<?php echo esc_attr( $fields_args['map_provider'] === 'google' ? $fields_args['type_map'] : $fields_args[ $fields_args['map_provider'] . '_type_map' ] ); ?>"
             data-scroll="<?php echo $fields_args['scrollwheel_map'] === 'enable'; ?>"
             data-drag="<?php echo $fields_args['draggable_map'] === 'enable'; ?>"
             data-mdrag="<?php echo $fields_args['draggable_disable_mobile_map'] === 'yes'; ?>"

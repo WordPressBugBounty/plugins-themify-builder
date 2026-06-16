@@ -46,12 +46,12 @@ foreach ($arr as $mode) :
         <div class="tf_swiper-container tf_carousel themify_builder_slider<?php if ($is_slider === false): ?> <?php echo $element_id ?> tf_swiper-thumbs<?php endif; ?> tf_rel tf_overflow"
              <?php if (Themify_Builder::$frontedit_active === false): ?> data-lazy="1"<?php endif; ?>
                 data-pager="<?php echo ($is_slider === false ||$showThumbs===false) && $settings['show_nav_slider'] === 'yes' ? 1 : 0 ?>"
-                data-speed="<?php echo $settings['speed_opt_slider']; ?>"
+                data-speed="<?php echo esc_attr( $settings['speed_opt_slider'] ); ?>"
                 data-slider_nav="<?php echo $hasNav ?>"
                 data-wrapvar="<?php echo $settings['wrap_slider'] === 'yes' ? 1 : 0 ?>"
                 data-height="<?php echo isset($settings['horizontal']) && $settings['horizontal'] === 'yes' ? 'variable' : $settings['height_slider'] ?>"
                 <?php if($is_slider===true ):?>
-                    data-effect="<?php echo $settings['effect_slider'] ?>"
+                    data-effect="<?php echo esc_attr( $settings['effect_slider'] ); ?>"
                     <?php if ( $settings['effect_slider'] === 'continuously' && ! empty( $settings['continuous_dir'] ) ) : ?>
                         data-auto-reverse="true"
                     <?php endif; ?>
@@ -73,10 +73,10 @@ foreach ($arr as $mode) :
                 <?php endif;?>
              <?php if($is_slider === false ||$showThumbs===false):?>
                 data-visible="<?php echo $thumbLimit ?>" 
-                data-tab-visible="<?php echo $settings['tab_visible_opt_slider'] ?>"
-                data-mob-visible="<?php echo $settings['mob_visible_opt_slider'] ?>"
-                data-scroll="<?php echo $settings['scroll_opt_slider']; ?>"
-                <?php if (!empty($settings['touch_swipe'])) : ?>data-touch_swipe="<?php echo $settings['touch_swipe']; ?>" <?php endif; ?>
+                data-tab-visible="<?php echo esc_attr( $settings['tab_visible_opt_slider'] ); ?>"
+                data-mob-visible="<?php echo esc_attr( $settings['mob_visible_opt_slider'] ); ?>"
+                data-scroll="<?php echo esc_attr( $settings['scroll_opt_slider'] ); ?>"
+                <?php if (!empty($settings['touch_swipe'])) : ?>data-touch_swipe="<?php echo esc_attr( $settings['touch_swipe'] ); ?>" <?php endif; ?>
              <?php endif;?>
             >
             <div class="tf_swiper-wrapper tf_lazy tf_rel tf_w tf_h tf_textc">

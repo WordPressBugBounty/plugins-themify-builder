@@ -212,7 +212,8 @@
         }
         static default() {
             return {
-                allow_menu_fallback: 'allow_fallback'
+                allow_menu_fallback: 'allow_fallback',
+                color_menu: 'accent-color'
             };
         }
         getExcerpt(data) {

@@ -42,6 +42,31 @@ class Themify_Builder_Plugin_Compat_WooCommerce {
          * self::wc_builder_shop_page() handles this
          */
         add_action( 'woocommerce_before_main_content', array( __CLASS__, 'woocommerce_before_main_content' ) );
+        if ( self::use_single_ajax_cart() ) {
+            add_filter( 'wc_add_to_cart_message_html', array( __CLASS__, 'add_to_cart_message' ) );
+            add_filter( 'woocommerce_notice_types', array( __CLASS__, 'add_to_cart_message' ) );
+            add_filter( 'woocommerce_add_to_cart_quantity', array( __CLASS__, 'add_to_cart_message' ) );
+            add_action( 'wc_ajax_theme_add_to_cart', array( __CLASS__, 'ajax_add_to_cart_refresh' ) );
+            add_action( 'wc_ajax_nopriv_theme_add_to_cart', array( __CLASS__, 'ajax_add_to_cart_refresh' ) );
+            add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_single_ajax_cart' ), 20 );
+        }
+    }
+
+    /**
+     * Shoppe and Ultra handle single-product AJAX add to cart in theme Themify_WC.
+     */
+    private static function use_single_ajax_cart(): bool {
+        return ! in_array( get_template(), array( 'themify-shoppe', 'themify-ultra' ), true );
+    }
+
+    public static function enqueue_single_ajax_cart(): void {
+        if ( is_product() ) {
+            if ( class_exists( 'Themify_Enqueue_Assets', false ) ) {
+                Themify_Enqueue_Assets::loadMainScript();
+            }
+            wp_enqueue_script( 'wc-cart-fragments' );
+            themify_enque_script( 'tb-single-ajax-cart', THEMIFY_BUILDER_JS_MODULES . 'single-ajax-cart.js', THEMIFY_VERSION, array( 'jquery', 'themify-main-script', 'wc-cart-fragments' ) );
+        }
     }
 
     /*
@@ -178,5 +203,40 @@ class Themify_Builder_Plugin_Compat_WooCommerce {
         $q->set( 'tax_query', Iconic_WSSV_Query::update_tax_query( (array) $q->get( 'tax_query' ) ) );
 
         return $q;
+    }
+
+    /**
+     * Hook theme_add_to_cart ajax when the single-product form is submitted via AJAX.
+     *
+     * @param mixed $message
+     * @return mixed
+     */
+    public static function add_to_cart_message( $message = '' ) {
+        if ( isset( $_REQUEST['wc-ajax'] ) && 'theme_add_to_cart' === $_REQUEST['wc-ajax'] ) {
+            add_filter( 'woocommerce_add_to_cart_redirect', array( __CLASS__, 'ajax_add_to_cart_refresh' ), 1, 100 );
+            if ( current_filter() !== 'woocommerce_add_to_cart_quantity' ) {
+                $message = '';
+            }
+        }
+        return $message;
+    }
+
+    /**
+     * Return refreshed cart fragments after single-product AJAX add to cart.
+     */
+    public static function ajax_add_to_cart_refresh() {
+        remove_filter( 'woocommerce_add_to_cart_redirect', array( __CLASS__, 'ajax_add_to_cart_refresh' ), 1, 100 );
+        remove_action( 'wc_ajax_nopriv_theme_add_to_cart', array( __CLASS__, 'ajax_add_to_cart_refresh' ) );
+        remove_action( 'wc_ajax_theme_add_to_cart', array( __CLASS__, 'ajax_add_to_cart_refresh' ) );
+        $errors = wc_get_notices( 'error' );
+        wc_clear_notices();
+        if ( ! empty( $errors ) ) {
+            $data = array();
+            foreach ( $errors as $e ) {
+                $data[] = $e['notice'];
+            }
+            wp_send_json_error( $data );
+        }
+        WC_AJAX::get_refreshed_fragments();
     }
 }

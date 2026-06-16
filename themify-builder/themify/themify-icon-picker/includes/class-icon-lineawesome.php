@@ -30,7 +30,7 @@ class Themify_Icon_LineAwesome extends Themify_Icon_Font {
      * @return bool
      */
     public function is_valid_icon($name) {
-    return strpos($name, 'la-') === 0;
+        return is_string( $name ) && preg_match( '/^la-[a-zA-Z0-9_-]+$/', $name );
     }
 
     function get_classname($icon, $lazy = null, $data_only = false, $attrs = array()) {

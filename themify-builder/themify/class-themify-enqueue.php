@@ -632,14 +632,14 @@ class Themify_Enqueue_Assets {
     public static function wp_footer() {
         if (!empty(self::$css['in_footer'])) {
             foreach (self::$css['in_footer'] as $k => $v) {
-                $m = isset($v['m']) ? ' media="' . $v['m'] . '"' : '';
-                $href = $v['s'];
+                $m = isset($v['m']) ? ' media="' . esc_attr( $v['m'] ) . '"' : '';
+                $href = esc_url( $v['s'] );
                 if (!empty($v['v'])) {
                     $href .= strpos($href, '?') === false ? '?' : '&';
-                    $href .= 'ver=' . $v['v'];
+                    $href .= 'ver=' . rawurlencode( $v['v'] );
                 }
                 ?>
-                <link rel="preload" href="<?php echo $href ?>" as="style"<?php echo $m ?>><link id="<?php echo $k ?>-css" rel="stylesheet" href="<?php echo $href ?>"<?php echo $m ?>>
+                <link rel="preload" href="<?php echo $href; ?>" as="style"<?php echo $m; ?>><link id="<?php echo esc_attr( $k ); ?>-css" rel="stylesheet" href="<?php echo $href; ?>"<?php echo $m; ?>>
                 <?php
             }
         }
@@ -781,7 +781,9 @@ class Themify_Enqueue_Assets {
                 self::addPreLoadMedia(dirname(self::$css['woocommerce-general']['s'],2) . '/fonts/star.woff', 'preload', 'font', null, null, 'high');
             }
             $isDevMode=themify_is_dev_mode() && (!class_exists('Themify_Builder_Model',false) || !Themify_Builder_Model::is_front_builder_activate());
-            if(self::$concateFile===null){
+            $isConcateDisabled = themify_is_concate_disabled();
+            $regenerate = false;
+            if(self::$concateFile===null || $isConcateDisabled===true){
                 $isDevMode=true;
                 $exist=false;
                 $key='';
@@ -791,7 +793,6 @@ class Themify_Enqueue_Assets {
                 $key = crc32($key);
                 self::$concateFile .= 'themify-' . $key . '.css';
                 $exist = Themify_Filesystem::is_file(self::$concateFile);
-                $regenerate = false;
                 if ($exist === true) {
                     $regenerate = !apply_filters('themify_concate_css', !$isDevMode, self::$concateFile); //opposite logic for backward compatibility
                     $isDeleted = Themify_Filesystem::is_file(self::$concateFile . 'del');
@@ -821,7 +822,7 @@ class Themify_Enqueue_Assets {
                 $str = PHP_EOL . '/* ' . $theme_name . 'framework ' . THEMIFY_VERSION . ' */' . $str . PHP_EOL;
                 $str = '@charset "UTF-8";' . $str;
                 unset($theme_name);
-                if(self::$themeVersion!==null && (self::$concateFile===null || themify_is_concate_disabled())){
+                if(self::$themeVersion!==null && (self::$concateFile===null || $isConcateDisabled===true)){
                     $key='';
                 }
                 foreach (self::$css as $k => $v) {

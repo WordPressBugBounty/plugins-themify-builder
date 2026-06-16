@@ -25,7 +25,7 @@ if (!empty($settings['tab_content_testimonial'])):
     foreach ($settings['tab_content_testimonial'] as $i => $content):
         ?>
         <?php if ( ! $isSlider || $i % $settings['items_per_slide'] === 0 ) : ?><div class="post<?php echo $isSlider === true ? ' tf_swiper-slide' : '' ?>"<?php if( $isSlider && $i >= $limit ) : ?> style="content-visibility:hidden"<?php endif;?>><?php endif;?>
-            <div class="testimonial-item"<?php if ($settings['margin'] !== ''): ?> style="<?php echo $settings['margin']; ?>"<?php endif; ?>>
+            <div class="testimonial-item"<?php if ($settings['margin'] !== ''): ?> style="<?php echo esc_attr( themify_sanitize_inline_css( $settings['margin'] ) ); ?>"<?php endif; ?>>
                 <?php
                 $image = '';
                 if (!empty($content['person_picture_testimonial'])) {
@@ -43,7 +43,7 @@ if (!empty($settings['tab_content_testimonial'])):
                 ?>
                 <div class="testimonial-content">
                     <?php if (!empty($content['title_testimonial'])): ?>
-                        <h3 class="testimonial-title"><?php echo $content['title_testimonial'] ?></h3>
+                        <h3 class="testimonial-title"><?php echo wp_kses_post( $content['title_testimonial'] ); ?></h3>
                     <?php endif; ?>
                     <?php
                     if (!empty($content['ic'])) {
@@ -92,17 +92,17 @@ if (!empty($settings['tab_content_testimonial'])):
                     <?php if (!empty($content['person_name_testimonial']) || !empty($content['person_position_testimonial']) || !empty($content['company_testimonial'])): ?>
                         <div class="testimonial-author">
                             <?php if (!empty($content['person_name_testimonial'])): ?>
-                                <div class="person-name"><?php echo $content['person_name_testimonial'] ?></div>
+                                <div class="person-name"><?php echo wp_kses_post( $content['person_name_testimonial'] ); ?></div>
                             <?php endif; ?>
                             <?php if (!empty($content['person_position_testimonial'])): ?>
-                                <span class="person-position"><?php echo $content['person_position_testimonial'] ?></span>
+                                <span class="person-position"><?php echo wp_kses_post( $content['person_position_testimonial'] ); ?></span>
                             <?php endif; ?>
                             <?php if (!empty($content['company_testimonial'])): ?>
                                 <div class="person-company">
                                     <?php if (!empty($content['company_website_testimonial'])): ?>
-                                        <a href="<?php echo esc_url( $content['company_website_testimonial'] ) ?>"><?php echo esc_html( $content['company_testimonial'] ) ?></a>
+                                        <a href="<?php echo esc_url( $content['company_website_testimonial'] ) ?>"><?php echo wp_kses_post( $content['company_testimonial'] ) ?></a>
                                     <?php else: ?>
-                                        <?php echo esc_html( $content['company_testimonial'] ) ?>
+                                        <?php echo wp_kses_post( $content['company_testimonial'] ) ?>
                                     <?php endif; ?>
                                 </div>
                             <?php endif; ?>

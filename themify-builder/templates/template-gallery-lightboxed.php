@@ -33,7 +33,7 @@ foreach ($settings['gallery_images'] as $key => $image):
         $caption = $is_thumbnail===true && $t_post!==null? $t_post->post_excerpt : $image->post_excerpt;
         if ( ! empty( $link ) ) : ?>
             <dt class="gallery-icon">
-                <a data-title="<?php esc_attr_e($settings['lightbox_title']) ?>" href="<?php echo esc_url($link) ?>" title="<?php esc_attr_e($title) ?>" data-rel="<?php echo $args['module_ID']; ?>" class="themify_lightbox"<?php echo ($is_thumbnail===true && $t_post!==null)?' data-t="'.$image->post_title.'"':''; ?>>
+                <a data-title="<?php echo esc_attr( $settings['lightbox_title'] ); ?>" href="<?php echo esc_url($link) ?>" title="<?php echo esc_attr( $title ); ?>" data-rel="<?php echo esc_attr( $args['module_ID'] ); ?>" class="themify_lightbox"<?php echo ($is_thumbnail===true && $t_post!==null)?' data-t="'. esc_attr( $image->post_title ) .'"':''; ?>>
         <?php endif; ?>
 
                 <?php echo $key === 0 ? $thumbnail : wp_get_attachment_image_src($image->ID, 'full')[1]; ?>
@@ -45,10 +45,10 @@ foreach ($settings['gallery_images'] as $key => $image):
         <?php if (($settings['gallery_image_title'] === 'yes' && $title!=='' ) || ( $settings['gallery_exclude_caption'] !== 'yes' && $caption!=='' )) : ?> 
             <dd lass="wp-caption-text gallery-caption">
                 <?php if ($settings['gallery_image_title'] === 'yes' && $title!==''): ?>
-                    <strong class="themify_image_title tf_block"><?php echo $title; ?></strong>
+                    <strong class="themify_image_title tf_block"><?php echo wp_kses_post( $title ); ?></strong>
                 <?php endif; ?>
                 <?php if ($settings['gallery_exclude_caption'] !== 'yes' && $caption!==''): ?>
-                    <span class="themify_image_caption"><?php echo $caption; ?></span>
+                    <span class="themify_image_caption"><?php echo wp_kses_post( $caption ); ?></span>
                 <?php endif ?>
             </dd>
         <?php endif ?>

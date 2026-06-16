@@ -26,7 +26,7 @@ class Themify_Icon_Themify extends Themify_Icon_Font {
      * @return bool
      */
     function is_valid_icon($name) {
-        return strpos($name, 'ti-') === 0;
+        return is_string( $name ) && preg_match( '/^ti-[a-zA-Z0-9_-]+$/', $name );
     }
 
     function get_classname($icon, $lazy = false, $data_only = false, $attrs = array()) {

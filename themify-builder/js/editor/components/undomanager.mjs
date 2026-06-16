@@ -19,13 +19,17 @@
             this.btnRedo = btnRedo;
             this.compactBtn = compactBtn;
             if(isEmpty && toolbarEl.contains(btnUndo)){
+                this.constructor.main=this;
                 toolbarEl.tfClass('menu_undo')[0].tfOn(_CLICK_,e=>{
                     if(e.target!==this.compactBtn){
                         e.preventDefault();
                         e.stopPropagation();
+                        if (this.constructor.isInlineEditing()) {
+                            return;
+                        }
                         const target=e.target.closest('.undo_redo');
                         if(target!==null && !target.classList.contains('disabled')){
-                            this.constructor.doChange(target.classList.contains('undo'));
+                            this.constructor.doChange(target.classList.contains('undo'),this);
                         }
                     }
                 });	
@@ -33,18 +37,21 @@
                 for(let items=[btnUndo,btnRedo],i=items.length-1;i>-1;--i){
                     items[i].tfOn(_CLICK_,e=>{
                         e.stopPropagation();
-                        this.constructor.doChange(e.target.classList.contains('undo')); 
+                        if (this.constructor.isInlineEditing()) {
+                            return;
+                        }
+                        this.constructor.doChange(e.target.classList.contains('undo'),this); 
                     });
                 }
             }
             
             if (isEmpty && !Themify.isTouch && !themifyBuilder.disableShortcuts) {
                 topWindowDoc.tfOn('keydown auxclick',e=>{
-                    this.constructor.keypres(e);
+                    this.constructor.keypres(e,this);
                 });
                 if (api.isFrontend || api.isVisual) {
                     doc.tfOn('keydown auxclick',e=>{
-                        this.constructor.keypres(e);
+                        this.constructor.keypres(e,this);
                     });
                 }
             }
@@ -66,9 +73,21 @@
             this.stack=this.state=this.btnUndo=this.btnRedo=this.compactBtn=null;
             this.constructor.updateUndoBtns();
         }
+        static isInlineEditing(){
+            return !!doc.tfId('tb_inline_editor_root')?.classList.contains('tb_editor_active');
+        }
         static get(index){
+            if(index && typeof index==='object'){
+                return index;
+            }
             index??= this.#items.length-1;
             return this.#items[index];
+        }
+        static getMain(){
+            return this.main || this.#items[0];
+        }
+        static getByType(type){
+            return type?.indexOf('inline')===0 ? (this.getMain() || this.get()) : this.get();
         }
         static setActive(undoItem){
             for(let items=this.#items,len=items.length-1,i=len;i>-1;--i){
@@ -78,9 +97,9 @@
                 }
             }
         }
-        static start(type,cid){
-            const _this = this.get();
-            if(this.has(type)===true){
+        static start(type,cid,undoItem){
+            const _this = undoItem ? this.get(undoItem) : this.getByType(type);
+            if(this.has(type,_this)===true){
                 console.warn('UndoManager:'+type+' is already started');
                 return false;
             }
@@ -88,24 +107,77 @@
             _this.#cid=cid;
             _this.state.set(type,this.getCurrentState(type,cid));
         }
-        static end(type){
-            const _this = this.get();
+        static end(type,undoItem){
+            const _this = undoItem ? this.get(undoItem) : this.getByType(type);
             type??=_this.#type;
-            if(this.has(type)===false){
+            if(this.has(type,_this)===false){
                 console.warn('UndoManager:'+type+' isn`t started');
                 return false;
             }
             Themify.trigger('tb_undo_add',type);
-            const diff=this.getDiff(type,this.getState(type),this.getCurrentState(type,_this.#cid));
+            const oldState=this.getState(type,_this),
+                diff=this.getDiff(type,oldState,this.getCurrentState(type,_this.#cid,oldState?.builder));
             if(Object.keys(diff).length>0){
-                this.push(diff);
+                if(type?.indexOf('inline')===0 && _this.#cid){
+                    diff.cid=_this.#cid;
+                }
+                this.push(diff,_this);
             }
             _this.state.delete(type);
             _this.#type=_this.#cid=null;
         }
-        static getCurrentState(type){
+        static syncInlineStateFromRegistry(builder,cid){
+            if (!cid) {
+                return builder;
+            }
+            const sync = items => {
+                if (!Array.isArray(items)) {
+                    return false;
+                }
+                for (let i = items.length - 1; i > -1; --i) {
+                    const item = items[i];
+                    if (!item) {
+                        continue;
+                    }
+                    if (item.mod_name && item.element_id === cid) {
+                        const model = api.Registry.get(item.element_id),
+                            settings = model?.el?.isConnected !== false && model?.get?.('mod_settings');
+                        if (settings) {
+                            item.mod_settings = api.Helper.cloneObject(settings);
+                        }
+                        return true;
+                    }
+                    const settings = item.mod_settings || item.styling;
+                    if (settings) {
+                        for (const key of api.Helper.getNestedBuilderKeys()) {
+                            const repeats = settings[key];
+                            if (Array.isArray(repeats)) {
+                                for (let j = repeats.length - 1; j > -1; --j) {
+                                    if (sync(repeats[j]?.builder_content)) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        for (const key of api.Helper.getNestedRowsKeys()) {
+                            if (sync(settings[key])) {
+                                return true;
+                            }
+                        }
+                    }
+                    if (sync(item.cols) || sync(item.modules)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+            sync(builder);
+            return builder;
+        }
+        static getCurrentState(type,cid,previousBuilder){
             const styles={},
-                result={builder:api.Helper.cloneObject(api.Builder.get().toJSON(false))},
+                builder=api.Helper.cloneObject(api.Builder.get().toJSON(false)),
+                result={builder:api.Helper.preserveNestedBuilderContent(type?.indexOf('inline')===0?this.syncInlineStateFromRegistry(builder,cid):builder,previousBuilder,type?.indexOf('inline')!==0)},
                 breakpoints=api.breakpointsReverse;
                 for(let i=breakpoints.length-1;i>-1;--i){
                     let bp=breakpoints[i],
@@ -122,50 +194,50 @@
             result.style=styles;  
             return result;
         }
-        static getState(type){
-            return this.get().state.get(type);
+        static getState(type,undoItem){
+            return (undoItem ? this.get(undoItem) : this.getByType(type)).state.get(type);
         }
-        static has(type){
-            return !!this.get().state.has(type);
+        static has(type,undoItem){
+            return !!(undoItem ? this.get(undoItem) : this.getByType(type)).state.has(type);
         }
-        static clear(type){
-            const _this = this.get();
+        static clear(type,undoItem){
+            const _this = undoItem ? this.get(undoItem) : this.getByType(type);
             if(type===_this.#type){
                 _this.#type=null;
             }
             _this.state.delete(type);
             _this.#cid=null;
         }
-        static hasRedo() {
-            return this.get().hasRedo();
+        static hasRedo(undoItem) {
+            return (undoItem ? this.get(undoItem) : this.get()).hasRedo();
         }
-        static hasUndo() {
-            return this.get().hasUndo();
+        static hasUndo(undoItem) {
+            return (undoItem ? this.get(undoItem) : this.get()).hasUndo();
         }
-        static disable() {
-            const _this = this.get();
+        static disable(undoItem) {
+            const _this = undoItem ? this.get(undoItem) : this.get();
             _this.isDisabled=true;
             _this.btnUndo.classList.add('disabled');
             _this.btnRedo.classList.add('disabled');
             _this.compactBtn?.classList.add('disabled');
         }
-        static enable() {
-            const _this = this.get();
+        static enable(undoItem) {
+            const _this = undoItem ? this.get(undoItem) : this.get();
             _this.isDisabled=false;
-            this.updateUndoBtns();
+            this.updateUndoBtns(_this);
         }
-        static update(is_undo){
-            const _this = this.get();
+        static update(is_undo,undoItem){
+            const _this = undoItem ? this.get(undoItem) : this.get();
             if (is_undo===true) {
                 --_this.index;
             } else {
                 ++_this.index;
             }
-            this.updateUndoBtns();
+            this.updateUndoBtns(_this);
             api.ModulePageBreak.countModules();
         }
-        static updateUndoBtns() {
-            const _this = this.get();
+        static updateUndoBtns(undoItem) {
+            const _this = undoItem ? this.get(undoItem) : this.get();
             if(_this.isDisabled!==true){
                 const undo = _this.hasUndo(),
                         redo = _this.hasRedo();
@@ -181,20 +253,140 @@
             _this.index = -1;
             this.updateUndoBtns();
         }
-        static push(data) {
-            const _this = this.get();
+        static collectModules(item,map=new Map()) {
+            if (!item || typeof item !== 'object') {
+                return map;
+            }
+            if (item.mod_name && item.element_id) {
+                map.set(item.element_id,item);
+            }
+            const settings = item.mod_settings || item.styling;
+            if (settings) {
+                for (const key of api.Helper.getNestedBuilderKeys()) {
+                    const repeats = settings[key];
+                    if (Array.isArray(repeats)) {
+                        for (let i = repeats.length - 1; i > -1; --i) {
+                            this.collectModules(repeats[i]?.builder_content,map);
+                        }
+                    }
+                }
+                for (const key of api.Helper.getNestedRowsKeys()) {
+                    this.collectModules(settings[key],map);
+                }
+            }
+            this.collectModules(item.cols,map);
+            this.collectModules(item.modules,map);
+            if (Array.isArray(item)) {
+                for (let i = item.length - 1; i > -1; --i) {
+                    this.collectModules(item[i],map);
+                }
+            }
+            return map;
+        }
+        static getChangedInlineModules(oldRow,newRow,cid) {
+            const oldModules = this.collectModules(oldRow),
+                newModules = this.collectModules(newRow),
+                changed = new Map();
+            if (cid) {
+                const oldModule = oldModules.get(cid),
+                    newModule = newModules.get(cid);
+                if (oldModule && newModule && api.Helper.compareObject(oldModule,newModule)) {
+                    changed.set(cid,{old:api.Helper.cloneObject(oldModule),new:api.Helper.cloneObject(newModule)});
+                }
+                return changed;
+            }
+            for (let [id,newModule] of newModules) {
+                const oldModule = oldModules.get(id);
+                if (oldModule && api.Helper.compareObject(oldModule,newModule)) {
+                    changed.set(id,{old:api.Helper.cloneObject(oldModule),new:api.Helper.cloneObject(newModule)});
+                }
+            }
+            return changed;
+        }
+        static mergeInlineModule(baseModule,changedModule) {
+            let module = api.Helper.cloneObject(changedModule);
+            return api.Helper.preserveNestedBuilderContent([module],[baseModule],false)?.[0] || module;
+        }
+        static applyInlineModulesToRow(item,changes,mode) {
+            if (!item || typeof item !== 'object' || !changes || changes.size===0) {
+                return item;
+            }
+            if (Array.isArray(item)) {
+                for (let i = item.length - 1; i > -1; --i) {
+                    const child = item[i];
+                    if (child?.mod_name && child.element_id && changes.has(child.element_id)) {
+                        const vals = changes.get(child.element_id),
+                            module = vals?.[mode];
+                        if (module) {
+                            item[i] = this.mergeInlineModule(child,module);
+                        }
+                    }
+                    else {
+                        this.applyInlineModulesToRow(child,changes,mode);
+                    }
+                }
+                return item;
+            }
+            const settings = item.mod_settings || item.styling;
+            if (settings) {
+                for (const key of api.Helper.getNestedBuilderKeys()) {
+                    const repeats = settings[key];
+                    if (Array.isArray(repeats)) {
+                        for (let i = repeats.length - 1; i > -1; --i) {
+                            this.applyInlineModulesToRow(repeats[i]?.builder_content,changes,mode);
+                        }
+                    }
+                }
+                for (const key of api.Helper.getNestedRowsKeys()) {
+                    this.applyInlineModulesToRow(settings[key],changes,mode);
+                }
+            }
+            this.applyInlineModulesToRow(item.cols,changes,mode);
+            this.applyInlineModulesToRow(item.modules,changes,mode);
+            return item;
+        }
+        static getCurrentBuilderRow(id) {
+            const rows = api.Builder.get().toJSON(false);
+            if (!Array.isArray(rows)) {
+                return null;
+            }
+            for (let i = rows.length - 1; i > -1; --i) {
+                if (rows[i]?.element_id === id) {
+                    return api.Helper.cloneObject(rows[i]);
+                }
+            }
+            return null;
+        }
+        static normalizeInlinePushData(data) {
+            if (!data?.html || data.type?.indexOf('inline') !== 0) {
+                return data;
+            }
+            for (let [,vals] of data.html) {
+                if (!vals?.old || !vals?.new) {
+                    continue;
+                }
+                const changed = this.getChangedInlineModules(vals.old,vals.new,data.cid);
+                if (changed.size>0) {
+                    vals.inlineModules = changed;
+                }
+            }
+            return data;
+        }
+        static push(data,undoItem) {
+            const _this = undoItem ? this.get(undoItem) : this.get();
+            data = this.normalizeInlinePushData(data,_this);
             _this.stack.splice(_this.index + 1, _this.stack.length - _this.index);
             _this.stack.push(data);
             _this.index = _this.stack.length - 1;
-            this.updateUndoBtns();
+            this.updateUndoBtns(_this);
             Themify.trigger('add_undo');
             api.Builder.get().isSaved=false;
         }
-        static async doChange(is_undo) {
-            const _this = this.get();
+        static async doChange(is_undo,undoItem) {
+            const _this = undoItem ? this.get(undoItem) : this.get();
             if (_this.isWorking === false && _this.isDisabled===false) {
                 _this.isWorking = true;
-                await this.changes(is_undo);
+                await this.changes(is_undo,_this);
                 _this.isWorking = false;
             }
         }
@@ -363,34 +555,57 @@
             }
             return data;
         }
-        static keypres(e) {
-            const _this = this.get();
+        static keypres(e,undoItem) {
+            const _this = undoItem ? this.get(undoItem) : this.get();
+            if (this.isInlineEditing()) {
+                return;
+            }
             if (_this.isWorking === false && _this.isDisabled===false && (e.button===3 || e.button===4 || true === e.ctrlKey || true === e.metaKey)){
                 const activeTag = doc.activeElement.tagName,
                         topActiveTag = topWindowDoc.activeElement.tagName,
                         key = e.code;
                 if (activeTag !== 'INPUT' && activeTag !== 'TEXTAREA' && topActiveTag !== 'INPUT' && topActiveTag !== 'TEXTAREA' && !api.LightBox.el.contains(e.target)) {
                     if ('KeyY' === key || e.button===4 || ('KeyZ' === key && true === e.shiftKey)) {// Redo
-                        if (this.hasRedo()) {
+                        if (this.hasRedo(_this)) {
                             e.preventDefault();
-                            this.changes(false);
+                            this.doChange(false,_this);
                         }
                     } 
-                    else if (('KeyZ' === key || e.button===3) && this.hasUndo()) { // UNDO
+                    else if (('KeyZ' === key || e.button===3) && this.hasUndo(_this)) { // UNDO
                         e.preventDefault();
-                        this.changes(true);
+                        this.doChange(true,_this);
                     }
                 }
             }
         }
-        static async changes(is_undo) {
-            api.ActionBar.clearClicked();
-            if (api.activeModel !== null && (!api.isVisual || (api.LightBox.el.contains(doc.activeElement) && !doc.activeElement.isContentEditable))) {
-                await api.LightBox.save();
-                return this.changes(is_undo);
+        static isLightBoxOpen(){
+            return !!(api.LightBox?.el && !api.LightBox.el.classList.contains('tf_hide'));
+        }
+        static async prepareMainUndoRedo() {
+            if (api.activeModel === null || !this.isLightBoxOpen()) {
+                return true;
             }
-            const _this = this.get(),
-                index = is_undo===true ? 0 : 1,
+            try {
+                await api.LightBox.save();
+            }
+            catch(e) {
+                if (e !== 'invalid') {
+                    console.log(e);
+                }
+                return false;
+            }
+            if (api.activeModel !== null && this.isLightBoxOpen()) {
+                api.LightBox.close();
+            }
+            return true;
+        }
+        static async changes(is_undo,undoItem) {
+            api.ActionBar.clearClicked();
+            const _this = undoItem ? this.get(undoItem) : this.get();
+            if (await this.prepareMainUndoRedo() === false) {
+                return;
+            }
+            const index = is_undo===true ? 0 : 1,
                 stack = _this.stack[_this.index + index];
             if (stack !== undefined) {
                 const type=is_undo===true?'old':'new';
@@ -400,7 +615,7 @@
                 if(stack.styles){
                     this.styleChanges(stack.styles,type,!stack.html);
                 }
-                this.update(is_undo);
+                this.update(is_undo,_this);
             }
         }
         
@@ -459,7 +674,7 @@
                     rows=new Set,
                     Registry=api.Registry,
                     sort=changes.get('sort')?.[mode],
-                    model=api.activeModel,
+                    model=type?.indexOf('inline')===0 ? null : api.activeModel,
                     rowSizes,
                     cid=model?.id,
                     componentType=model?.type,
@@ -518,17 +733,32 @@
             }
             for(let [id,vals] of changes){
                 if(id!=='sort'){
-                    let item=vals[mode];
+                    let item=vals[mode],
+                        previousRow=vals[mode==='old'?'new':'old'];
+                    if(type?.indexOf('inline')===0 && vals?.inlineModules){
+                        item=previousRow ? api.Helper.cloneObject(previousRow) : (item ? api.Helper.cloneObject(item) : item);
+                        if(item){
+                            this.applyInlineModulesToRow(item,vals.inlineModules,mode);
+                        }
+                        previousRow=undefined;
+                    }
                     if(item!==undefined){
-                        let row=item;
+                        previousRow=type?.indexOf('inline')===0 ? undefined : (previousRow ? [previousRow] : undefined);
+                        let row=api.Helper.preserveNestedBuilderContent([api.Helper.cloneObject(item)], previousRow, type?.indexOf('inline')!==0)[0];
                     //    register.remove(id,true);
                         if(cid){
-                            row=api.Helper.cloneObject(row);
                             loop([row]);
                         }
                         let index=vals.index,
                             oldEl=Registry.get(id)?.el,
-                            r = new api.Row(row);
+                            r,
+                            restoreFlag=api.isUndoRedoRestore;
+                            api.isUndoRedoRestore=true;
+                            try{
+                                r = new api.Row(row);
+                            }finally{
+                                api.isUndoRedoRestore=restoreFlag;
+                            }
                             ids.add(id);
                             for(let cids=r.el.querySelectorAll('[data-cid]'),i=cids.length-1;i>-1;--i){
                                 ids.add(cids[i].dataset.cid);

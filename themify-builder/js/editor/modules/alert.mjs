@@ -93,7 +93,7 @@
                             label: 'actbtn',
                             class: 'medium',
                             control: {
-                                selector: '.tb_alert_text'
+                                selector: '.alert-button a, .alert-button .tb_alert_text'
                             }
                         },
                         {
@@ -326,7 +326,8 @@
                 action_btn_text_alert: i18n.actbtn,
                 action_btn_link_alert: 'https://themify.me/',
                 alert_auto_close_delay: 5,
-                action_btn_color_alert: 'blue'
+                color_alert: 'default',
+                action_btn_color_alert: 'accent-color'
             };
         }
         static builderSave(settings){
@@ -408,15 +409,20 @@
             );
             inner.appendChild(content);
 
-            if (data.action_btn_text_alert) {
+            if (data.action_btn_text_alert || api.isVisual) {
                 const btnColor = data.action_btn_color_alert && data.action_btn_color_alert !== 'default' ? data.action_btn_color_alert : 'tb_default_color',
                     button = createElement('', 'alert-button'),
-                    link = createElement('a',{class:'ui builder_button ' + btnColor,href:data.action_btn_link_alert || '#'});
+                    link = createElement('a',{class:'ui builder_button ' + btnColor,href:'#'}),
+                    label = createElement('span','tb_alert_text');
 
                 if (data.action_btn_appearance_alert) {
                     link.className += ' ' + data.action_btn_appearance_alert.split('|').join(' ');
                 }
-                link.appendChild(constructor._setEditableContent(createElement('span','tb_alert_text'),'action_btn_text_alert',data.action_btn_text_alert));
+                if (data.alert_button_action !== 'url') {
+                    link.classList.add('alert-close');
+                }
+                constructor._setEditableContent(label,'action_btn_text_alert',data.action_btn_text_alert || i18n.actbtn);
+                link.appendChild(label);
                 button.appendChild(link);
                 inner.appendChild(button);
             }

@@ -42,7 +42,8 @@
         }
         static default() {
             return {
-                content_box:'<p>'+i18n.bcont+'</p>'
+                content_box:'<p>'+i18n.bcont+'</p>',
+                color_box: 'default'
             };
         }
         getExcerpt(data) {

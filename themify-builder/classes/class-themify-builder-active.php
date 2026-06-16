@@ -298,7 +298,18 @@ class Themify_Builder_Active{
             return $attr;
         }
 
+        private static function can_edit_builder_post( $post_id = 0 ): bool {
+            if ( ! current_user_can( 'edit_posts' ) ) {
+                return false;
+            }
+            $post_id = (int) $post_id;
+            return $post_id > 0 ? current_user_can( 'edit_post', $post_id ) : true;
+        }
+
         public static function load_editor() {
+            if ( ! self::can_edit_builder_post() ) {
+                wp_die( -1, 403 );
+            }
             global $wp_scripts, $wp_styles, $concatenate_scripts, $wp_actions;
             if (!defined('CONCATENATE_SCRIPTS')) {
                 define('CONCATENATE_SCRIPTS', false);
@@ -386,9 +397,12 @@ class Themify_Builder_Active{
          */
         public static function load_module_partial_ajaxify() {
             check_ajax_referer('tf_nonce', 'nonce');
+            if ( ! self::can_edit_builder_post( $_POST['bid'] ?? 0 ) ) {
+                wp_die( -1, 403 );
+            }
             themify_disable_other_lazy();
             Themify_Builder::$frontedit_active = true;
-            Themify_Builder::$builder_active_id = $_POST['bid'];
+            Themify_Builder::$builder_active_id = (int) $_POST['bid'];
             $new_modules = apply_filters('themify_builder_load_module_partial', array(
                 'mod_name' => $_POST['tb_module_slug'],
                 'mod_settings' => json_decode(stripslashes($_POST['tb_module_data']), true),
@@ -405,12 +419,15 @@ class Themify_Builder_Active{
 
         public static function render_element_ajaxify() {
             check_ajax_referer('tf_nonce', 'nonce');
+            if ( ! self::can_edit_builder_post( $_POST['bid'] ?? 0 ) ) {
+                wp_die( -1, 403 );
+            }
             themify_disable_other_lazy();
             $response = array();
             $batch = json_decode(stripslashes($_POST['batch']), true);
             Themify_Builder::$frontedit_active = true;
             $batch = apply_filters('themify_builder_load_module_partial', $batch);
-            Themify_Builder::$builder_active_id =$activeId= $_POST['bid'];
+            Themify_Builder::$builder_active_id = $activeId = (int) $_POST['bid'];
             if (!empty($_POST['tmpGS'])) {
                 Themify_Global_Styles::$used_styles[$activeId] = Themify_Global_Styles::addGS($activeId, json_decode(stripslashes($_POST['tmpGS']), true));
             }
@@ -475,6 +492,9 @@ class Themify_Builder_Active{
 
         public static function render_element_shortcode_ajaxify() {
             check_ajax_referer('tf_nonce', 'nonce');
+            if ( ! self::can_edit_builder_post( $_POST['bid'] ?? 0 ) ) {
+                wp_die( -1, 403 );
+            }
             $shortcodes = $styles = array();
             $shortcode_data = json_decode(stripslashes_deep($_POST['shortcode_data']), true);
     
@@ -642,6 +662,9 @@ class Themify_Builder_Active{
             check_ajax_referer('tf_nonce', 'nonce');
             Themify_Builder::$frontedit_active = true;
             if (!empty($_POST['bid'])) {
+                if ( ! self::can_edit_builder_post( $_POST['bid'] ) ) {
+                    wp_die( -1, 403 );
+                }
                 if (!empty($_POST['count'])) {
                     global $wp_roles;
                     $roles = $wp_roles->get_names();
@@ -847,6 +870,9 @@ class Themify_Builder_Active{
          */
         public static function get_ajax_data() {
             check_ajax_referer('tf_nonce', 'nonce');
+            if ( ! self::can_edit_builder_post( $_POST['bid'] ?? 0 ) ) {
+                wp_send_json_error();
+            }
             if (empty($_POST['dataset']) && empty($_POST['mode'])) {
                 wp_send_json_error();
             }
@@ -1103,7 +1129,7 @@ class Themify_Builder_Active{
 					while ( $query->have_posts() ) {
 						$query->the_post();
 						$post_type_object = get_post_type_object( get_post_type() );
-						$data .= '<li><a href="#" data-id="' . get_the_ID() . '" data-permalink="' . get_permalink( get_the_ID() ) . '">' . get_the_title() . '<span>' . $post_type_object->labels->singular_name . '</span></a></li>';
+						$data .= '<li><a href="#" data-id="' . esc_attr( get_the_ID() ) . '" data-permalink="' . esc_url( get_permalink( get_the_ID() ) ) . '">' . esc_html( get_the_title() ) . '<span>' . esc_html( $post_type_object->labels->singular_name ) . '</span></a></li>';
 					}
 					$data .= '</ul>';
 					$data .= '<div class="tb_pagination tf_textc">' . paginate_links( array(

@@ -12,13 +12,11 @@ final class Themify_Builder_Stylesheet {
      * @param object Themify_Builder $builder 
      */
     public static function init() {
-        if (themify_is_ajax()) {
-            add_action('wp_ajax_tb_slider_live_styling', array(__CLASS__, 'slider_live_styling'), 10);
-            add_action('wp_ajax_nopriv_tb_generate_on_fly', array(__CLASS__, 'save_builder_css'), 10);
-            add_action('wp_ajax_tb_generate_on_fly', array(__CLASS__, 'save_builder_css'), 10);
-            // Regenerate CSS Files
-            add_action('wp_ajax_themify_regenerate_css_files_ajax', array(__CLASS__, 'regenerate_css_files_ajax'));
-        } elseif (defined('THEMIFY_BUILDER_REGENERATE_CSS') && THEMIFY_BUILDER_REGENERATE_CSS !== false && current_user_can('manage_options')) {
+        add_action('wp_ajax_tb_slider_live_styling', array(__CLASS__, 'slider_live_styling'), 10);
+        add_action('wp_ajax_nopriv_tb_generate_on_fly', array(__CLASS__, 'save_builder_css'), 10);
+        add_action('wp_ajax_tb_generate_on_fly', array(__CLASS__, 'save_builder_css'), 10);
+        add_action('wp_ajax_themify_regenerate_css_files_ajax', array(__CLASS__, 'regenerate_css_files_ajax'));
+        if (defined('THEMIFY_BUILDER_REGENERATE_CSS') && THEMIFY_BUILDER_REGENERATE_CSS !== false && current_user_can('manage_options')) {
             add_action('admin_head', array(__CLASS__, 'auto_regenerate_css'));
         }
         if (!is_admin()) {
@@ -161,77 +159,77 @@ final class Themify_Builder_Stylesheet {
      */
     public static function save_builder_css(bool $echo = false) {
         check_ajax_referer('tf_nonce', 'nonce');
-        if (!empty($_POST['bid'])) {
-            $id = (int) $_POST['bid'];
+        if (empty($_POST['bid'])) {
+            wp_send_json_error();
+        }
+        $id = (int) $_POST['bid'];
 
-            // Security: non-logged-in visitors may only write CSS for posts that
-            // are published, publicly queryable, and not password-protected.
-            // This prevents anonymous actors from writing CSS files for arbitrary,
-            // draft, or private posts even though they hold a valid nonce.
-            if ( ! is_user_logged_in() ) {
-                $post = get_post( $id );
-                if ( ! $post ) {
-                    wp_die();
-                }
-                $post_type_obj = get_post_type_object( $post->post_type );
-                if (
-                    $post->post_status !== 'publish'
-                    || post_password_required( $post )
-                    || empty( $post_type_obj->public )
-                ) {
-                    wp_die();
-                }
+        // Security: non-logged-in visitors may only write CSS for posts that
+        // are published, publicly queryable, and not password-protected.
+        // This prevents anonymous actors from writing CSS files for arbitrary,
+        // draft, or private posts even though they hold a valid nonce.
+        if ( ! is_user_logged_in() ) {
+            $post = get_post( $id );
+            if ( ! $post ) {
+                wp_send_json_error();
             }
-            if (!empty($_FILES['css'])) {
-                $data = file_get_contents($_FILES['css']['tmp_name']);
-            } 
-            elseif (isset($_POST['css'])) {//don`t use empty
-                if (isset($_POST['mode']) && $_POST['mode'] === 'gzip') {
-                    if (!function_exists('gzdecode')) {
-                        wp_send_json_error(__('gzdecode is disabled', 'themify'));
-                    }
-                    $data = function_exists( 'themify_safe_gzbase64_decode' ) ? themify_safe_gzbase64_decode( $_POST['css'] ) : @gzdecode( base64_decode( $_POST['css'] ) );
-					if ( $data === false ) {
-						wp_send_json_error( __( 'Invalid CSS data.', 'themify' ) );
-					}
-                } 
-                else {
-                    $data = !empty($_POST['css']) ? stripslashes_deep($_POST['css']) : array();
-                }
-            }
-            if (isset($data)) {
-                if (is_string($data)) {
-                    $data = json_decode($data, true);
-                } elseif (!is_array($data)) {
-                    $data = array();
-                }
-                $res = self::write_stylesheet($id, $data, !empty($_POST['custom_css']) ? stripcslashes($_POST['custom_css']) : '');
-                $stylesheet_path = self::get_stylesheet('basedir', $id)['url'];
-                $tmpFile=self::getTmpPath($stylesheet_path);
-                if (!empty($res['css_file'])) {
-                    Themify_Filesystem::delete($tmpFile, 'f');
-                }
-                elseif (!Themify_Filesystem::is_file($stylesheet_path)) {
-                    Themify_Filesystem::put_contents($tmpFile, 'done');
-                }
-                echo json_encode($echo === true?$res:['success'=>1]);
-
-                if (!empty($_POST['images']) && is_user_logged_in()) {
-                    $images = json_decode(stripslashes_deep($_POST['images']), true);
-                    if (!empty($images) && is_array($images)) {
-                        foreach ($images as $img) {
-                            $ext=strtolower(strtok(pathinfo($img,PATHINFO_EXTENSION ),'?'));
-                            if($ext==='png' || $ext==='jpg' || $ext==='jpeg' || $ext==='webp' || $ext==='gif' ||$ext==='bmp' ){
-                                themify_get_image_size($img);
-                                themify_create_webp($img);
-                            }
-                        }
-                    }
-                    unset($images);
-                }
+            $post_type_obj = get_post_type_object( $post->post_type );
+            if (
+                $post->post_status !== 'publish'
+                || post_password_required( $post )
+                || empty( $post_type_obj->public )
+            ) {
+                wp_send_json_error();
             }
         }
-        wp_die();
+        if (!empty($_FILES['css'])) {
+            $data = file_get_contents($_FILES['css']['tmp_name']);
+        } 
+        elseif (isset($_POST['css'])) {//don`t use empty
+            if (isset($_POST['mode']) && $_POST['mode'] === 'gzip') {
+                if (!function_exists('gzdecode')) {
+                    wp_send_json_error(__('gzdecode is disabled', 'themify'));
+                }
+                $data = function_exists( 'themify_safe_gzbase64_decode' ) ? themify_safe_gzbase64_decode( $_POST['css'] ) : @gzdecode( base64_decode( $_POST['css'] ) );
+                if ( $data === false ) {
+                    wp_send_json_error( __( 'Invalid CSS data.', 'themify' ) );
+                }
+            } 
+            else {
+                $data = !empty($_POST['css']) ? stripslashes_deep($_POST['css']) : array();
+            }
+        }
+        if (isset($data)) {
+            if (is_string($data)) {
+                $data = json_decode($data, true);
+            } elseif (!is_array($data)) {
+                $data = array();
+            }
+            $res = self::write_stylesheet($id, $data, !empty($_POST['custom_css']) ? themify_sanitize_builder_custom_css( stripcslashes( $_POST['custom_css'] ) ) : '');
+            $stylesheet_path = self::get_stylesheet('basedir', $id)['url'];
+            $tmpFile=self::getTmpPath($stylesheet_path);
+            if (!empty($res['css_file'])) {
+                Themify_Filesystem::delete($tmpFile, 'f');
+            }
+            elseif (!Themify_Filesystem::is_file($stylesheet_path)) {
+                Themify_Filesystem::put_contents($tmpFile, 'done');
+            }
+            if (!empty($_POST['images']) && is_user_logged_in()) {
+                $images = json_decode(stripslashes_deep($_POST['images']), true);
+                if (!empty($images) && is_array($images)) {
+                    foreach ($images as $img) {
+                        $ext=strtolower(strtok(pathinfo($img,PATHINFO_EXTENSION ),'?'));
+                        if($ext==='png' || $ext==='jpg' || $ext==='jpeg' || $ext==='webp' || $ext==='gif' ||$ext==='bmp' ){
+                            themify_get_image_size($img);
+                            themify_create_webp($img);
+                        }
+                    }
+                }
+                unset($images);
+            }
+            wp_send_json($echo === true ? $res : array('success' => 1));
+        }
+        wp_send_json_error();
     }
 
     /* Return tmp path of original file */

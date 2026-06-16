@@ -15,7 +15,7 @@ if (!empty($settings['text_content_slider'])) :
     $limit=$settings['visible_opt_slider'];
     foreach ($settings['text_content_slider'] as $index => $content): ?>
          <?php if ( $index % $settings['items_per_slide'] === 0 ) : ?><div class="tf_swiper-slide"<?php if($index>=$limit):?> style="content-visibility:hidden"<?php endif;?>><?php endif; ?>
-            <div class="slide-inner-wrap"<?php if ($settings['margin'] !== ''): ?> style="<?php echo $settings['margin']; ?>"<?php endif; ?>>
+            <div class="slide-inner-wrap"<?php if ($settings['margin'] !== ''): ?> style="<?php echo esc_attr( themify_sanitize_inline_css( $settings['margin'] ) ); ?>"<?php endif; ?>>
                 <div class="slide-content tb_text_wrap">
                     <?php
                     if (isset($content['text_caption_slider'])) {

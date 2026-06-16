@@ -27,7 +27,7 @@ if (!empty($settings['img_content_slider'])):
         }
     ?>
          <?php if ( $index % $settings['items_per_slide'] === 0 ) : ?><div class="tf_swiper-slide"<?php if($index>=$limit):?> style="content-visibility:hidden"<?php endif;?>><?php endif; ?>
-            <div class="slide-inner-wrap"<?php if ($settings['margin'] !== ''): ?> style="<?php echo $settings['margin']; ?>"<?php endif; ?>>
+            <div class="slide-inner-wrap"<?php if ($settings['margin'] !== ''): ?> style="<?php echo esc_attr( themify_sanitize_inline_css( $settings['margin'] ) ); ?>"<?php endif; ?>>
                 <?php if ( ! empty( $content['img_url_slider'] ) ) : ?>
                     <div class="tf_rel tf_lazy slide-image">
                         <?php

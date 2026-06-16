@@ -148,10 +148,13 @@ self::sticky_element_props($container_props, $fields_args);
             , wp_list_pages( $args ) );
         
     }
-    if ( $fields_args['mobile_menu_style'] === 'slide') { ?>
+    if ( $fields_args['mobile_menu_style'] === 'slide') {
+        $menu_slide_direction = in_array( $fields_args['menu_slide_direction'], array( 'left', 'right', 'top', 'bottom' ), true ) ? $fields_args['menu_slide_direction'] : 'left';
+        $menu_slide_offset = themify_sanitize_css_size( $fields_args['wh_m_m_ct'], $fields_args['wh_m_m_ct_unit'] );
+        ?>
         <style>
-            .mobile-menu-module[data-module="<?php echo $element_id; ?>"]{
-                <?php echo $fields_args['menu_slide_direction']; ?>:-<?php echo $fields_args['wh_m_m_ct'], $fields_args['wh_m_m_ct_unit']; ?>
+            .mobile-menu-module[data-module="<?php echo esc_attr( $element_id ); ?>"]{
+                <?php echo esc_html( $menu_slide_direction ); ?>:-<?php echo esc_html( $menu_slide_offset ); ?>
             }
         </style>
     <?php }

@@ -1068,7 +1068,7 @@ final class Themify_Builder_Model {
 
     public static function load_color_css(string $color) {
         static $is=null;
-        if ($is===null && $color != '' && $color !== 'tb_default_color' && $color !== 'default' && $color !== 'transparent'  && $color !== 'white' && $color !== 'outline' && Themify_Builder::$frontedit_active === false) {
+        if ($is===null && $color != '' && $color !== 'tb_default_color' && $color !== 'default' && $color !== 'transparent' && $color !== 'outline' && Themify_Builder::$frontedit_active === false) {
             $is=true;
             self::loadCssModules('color',THEMIFY_BUILDER_CSS_MODULES.'colors.css');
         }

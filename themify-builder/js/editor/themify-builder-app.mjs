@@ -180,6 +180,202 @@
         }
         return rows;
       },
+      isBuilderPanelHidden(panelEl) {
+        if (!panelEl) {
+          return false;
+        }
+        if (panelEl.classList.contains("tab-content")) {
+          return panelEl.getAttribute("aria-hidden") === "true";
+        }
+        if (panelEl.classList.contains("accordion-content")) {
+          return (
+            panelEl.classList.contains("tf_hide") ||
+            panelEl.getAttribute("aria-hidden") === "true"
+          );
+        }
+        return false;
+      },
+      getNestedBuilderKeys() {
+        return ["content_accordion", "tab_content_tab"];
+      },
+      getNestedRowsKeys() {
+        return ["toggle1", "toggle2"];
+      },
+      getNestedFallbackText(key) {
+        return key === "content_accordion" ? themifyBuilder.i18n.label.acccont : themifyBuilder.i18n.label.tabc;
+      },
+      normalizeNestedText(text) {
+        return (text ?? "").toString().replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").replace(/\s+/g, " ").trim().toLowerCase();
+      },
+      isDefaultNestedBuilderContent(rows, fallbackText) {
+        if (fallbackText === undefined || fallbackText === null) {
+          return false;
+        }
+        rows = Array.isArray(rows) ? rows : [];
+        if (rows.length !== 1) {
+          return false;
+        }
+        const cols = rows[0]?.cols,
+          modules = Array.isArray(cols) && cols.length === 1 ? cols[0]?.modules : null,
+          mod = Array.isArray(modules) && modules.length === 1 ? modules[0] : null,
+          text = this.normalizeNestedText(mod?.mod_settings?.content_text),
+          fallback = this.normalizeNestedText(fallbackText);
+        return fallback !== "" && mod?.mod_name === "text" && text === fallback;
+      },
+      hasRealNestedBuilderContent(rows, fallbackText) {
+        return Array.isArray(rows) && rows.length > 0 && !this.isDefaultNestedBuilderContent(rows, fallbackText);
+      },
+      getNestedBuilderCache() {
+        this._nestedBuilderContentCache ??= new Map();
+        return this._nestedBuilderContentCache;
+      },
+      getNestedBuilderCacheKey(cid, key, index) {
+        return cid + "::" + key + "::" + index;
+      },
+      indexNestedBuilderItems(rows, map = new Map()) {
+        const walk = items => {
+          if (!Array.isArray(items)) {
+            return;
+          }
+          for (let i = items.length - 1; i > -1; --i) {
+            const item = items[i];
+            if (!item) {
+              continue;
+            }
+            if (item.element_id) {
+              map.set(item.element_id, item);
+            }
+            const settings = item.mod_settings || item.styling;
+            if (settings) {
+              for (const key of this.getNestedBuilderKeys()) {
+                const rows = settings[key];
+                if (Array.isArray(rows)) {
+                  for (let j = rows.length - 1; j > -1; --j) {
+                    walk(rows[j]?.builder_content);
+                  }
+                }
+              }
+              for (const key of this.getNestedRowsKeys()) {
+                walk(settings[key]);
+              }
+            }
+            walk(item.cols);
+            walk(item.modules);
+          }
+        };
+        walk(rows);
+        return map;
+      },
+      mergeNestedBuilderRows(currentRows, previousRows, fallbackText, useLive = true) {
+        const current = Array.isArray(currentRows) ? currentRows : [],
+          previous = Array.isArray(previousRows) ? previousRows : [];
+        if (previous.length > 0) {
+          if (current.length === 0) {
+            return this.cloneObject(previous);
+          }
+          if (this.isDefaultNestedBuilderContent(current, fallbackText) && !this.isDefaultNestedBuilderContent(previous, fallbackText)) {
+            return this.cloneObject(previous);
+          }
+          return this.preserveNestedBuilderContent(current, previous, useLive);
+        }
+        return current;
+      },
+      mergeBuilderContentFromDom(stored, scraped, panelEl, saving, fallbackText) {
+        const storedArr = Array.isArray(stored) ? stored : [],
+          scrapedArr = Array.isArray(scraped) ? scraped : [];
+        if (storedArr.length > 0) {
+          if (scrapedArr.length === 0 && (saving !== true || this.isBuilderPanelHidden(panelEl))) {
+            return this.cloneObject(storedArr);
+          }
+          if (this.isDefaultNestedBuilderContent(scrapedArr, fallbackText) && !this.isDefaultNestedBuilderContent(storedArr, fallbackText)) {
+            return this.cloneObject(storedArr);
+          }
+          return this.preserveNestedBuilderContent(scrapedArr, storedArr);
+        }
+        return this.preserveNestedBuilderContent(scrapedArr);
+      },
+      preserveNestedBuilderContent(rows, previousRows, useLive = true) {
+        const previousMap = this.indexNestedBuilderItems(previousRows),
+          cache = this.getNestedBuilderCache(),
+          hydrate = items => {
+            if (!Array.isArray(items)) {
+              return;
+            }
+            for (let i = items.length - 1; i > -1; --i) {
+              const item = items[i];
+              if (!item) {
+                continue;
+              }
+              const settings = item.mod_settings || item.styling;
+              if (settings) {
+                const previousItem = item.element_id ? previousMap.get(item.element_id) : null,
+                  previousSettings = previousItem?.mod_settings || previousItem?.styling,
+                  liveSettings = useLive && item.element_id ? Registry.get(item.element_id)?.get?.("mod_settings") : null;
+                for (const key of this.getNestedBuilderKeys()) {
+                  const currentRows = settings[key],
+                    previousRowsByKey = previousSettings?.[key],
+                    liveRows = liveSettings?.[key],
+                    fallbackText = this.getNestedFallbackText(key);
+                  if (Array.isArray(currentRows)) {
+                    for (let j = currentRows.length - 1; j > -1; --j) {
+                      const row = currentRows[j];
+                      if (!row) {
+                        continue;
+                      }
+                      let builderContent = Array.isArray(row.builder_content) ? row.builder_content : [],
+                        source = previousRowsByKey?.[j]?.builder_content,
+                        cacheKey = null;
+                      if (item.element_id) {
+                        cacheKey = this.getNestedBuilderCacheKey(item.element_id, key, j);
+                        if (!this.hasRealNestedBuilderContent(source, fallbackText)) {
+                          source = cache.get(cacheKey);
+                        }
+                      }
+                      if (!this.hasRealNestedBuilderContent(source, fallbackText)) {
+                        source = liveRows?.[j]?.builder_content;
+                      }
+                      if (Array.isArray(source) && source.length > 0) {
+                        row.builder_content = this.mergeNestedBuilderRows(builderContent, source, fallbackText, useLive);
+                      } else if (Array.isArray(row.builder_content)) {
+                        row.builder_content = this.preserveNestedBuilderContent(row.builder_content, undefined, useLive);
+                      }
+                      builderContent = row.builder_content;
+                      if (cacheKey && this.hasRealNestedBuilderContent(builderContent, fallbackText)) {
+                        cache.set(cacheKey, this.cloneObject(builderContent));
+                      }
+                      hydrate(builderContent);
+                    }
+                  }
+                }
+                for (const key of this.getNestedRowsKeys()) {
+                  const currentRows = settings[key];
+                  if (Array.isArray(currentRows)) {
+                    let source = previousSettings?.[key],
+                      cacheKey = null;
+                    if (item.element_id) {
+                      cacheKey = this.getNestedBuilderCacheKey(item.element_id, key, 0);
+                      if (!Array.isArray(source) || source.length === 0) {
+                        source = cache.get(cacheKey);
+                      }
+                    }
+                    if ((!Array.isArray(source) || source.length === 0) && Array.isArray(liveSettings?.[key])) {
+                      source = liveSettings[key];
+                    }
+                    settings[key] = Array.isArray(source) && source.length > 0 ? this.mergeNestedBuilderRows(currentRows, source, undefined, useLive) : this.preserveNestedBuilderContent(currentRows, undefined, useLive);
+                    if (cacheKey && Array.isArray(settings[key]) && settings[key].length > 0) {
+                      cache.set(cacheKey, this.cloneObject(settings[key]));
+                    }
+                    hydrate(settings[key]);
+                  }
+                }
+              }
+              hydrate(item.cols);
+              hydrate(item.modules);
+            }
+          };
+        hydrate(rows);
+        return rows;
+      },
       cloneDom(el, remove) {
         if (el === null) {
           return el;
@@ -621,11 +817,15 @@
               }
             }
             /* Toggle module */
-            if (opt.toggle1) {
-              this.clearElementId(opt.toggle1, true);
-            }
-            if (opt.toggle2) {
-              this.clearElementId(opt.toggle1, true);
+            for (const toggleKey of ["toggle1", "toggle2"]) {
+              let builder = opt[toggleKey];
+              if (builder) {
+                if (typeof builder === "string") {
+                  builder = JSON.parse(builder);
+                }
+                this.clearElementId(builder, true);
+                opt[toggleKey] = builder;
+              }
             }
           }
           if (item.cols !== undefined) {
@@ -847,7 +1047,7 @@
                     points = api.breakpointsReverse,
                     bpLength = points.length,
                     cols = [],
-                    colPaddingsIds=['padding_top','padding_bottom','padding_left','padding_right','margin-bottom','margin-top'],
+                    colPaddingsIds=['padding_top','padding_bottom','padding_left','padding_right','margin-bottom','margin-top','margin-left','margin-right'],
                     paddingLen=colPaddingsIds.length;
 
                 // cols

@@ -121,7 +121,7 @@ $builder_id = $args['builder_id'];
                 <div class="tb_optin_gdpr">
                     <label class="tb_optin_gdpr_text">
                         <input type="checkbox" name="tb_optin_gdpr" required="required">
-                        <?php echo $fields_args['gdpr_label']; ?>
+                        <?php echo wp_kses_post( $fields_args['gdpr_label'] ); ?>
                     </label>
                 </div>
             <?php endif; ?>
@@ -139,10 +139,10 @@ $builder_id = $args['builder_id'];
             </div>
         </form>
         <div class="tb_optin_error_message tb_text_wrap" style="display:none">
-            <?php echo $fields_args['errmsg'] !== '' ? apply_filters( 'themify_builder_module_content', $fields_args['errmsg'] ) : ''; ?>
+            <?php echo $fields_args['errmsg'] !== '' ? wp_kses_post( apply_filters( 'themify_builder_module_content', $fields_args['errmsg'] ) ) : ''; ?>
         </div>
         <div class="tb_optin_success_message tb_text_wrap" style="display:none">
-            <?php echo $fields_args['message']!==''?apply_filters( 'themify_builder_module_content', $fields_args['message'] ):''; ?>
+            <?php echo $fields_args['message']!=='' ? apply_filters( 'themify_builder_module_content', $fields_args['message'] ) : ''; ?>
         </div>
     <?php endif; ?>
     <?php endif; ?>

@@ -312,7 +312,7 @@ final class Themify_Builder_Import_Export {
                 while ( $query->have_posts() ) {
                     $query->the_post();
                     $post_type_object = get_post_type_object( get_post_type() );
-                    $data .= '<li><a href="#" data-id="' . get_the_ID() . '">' . get_the_title() . '<span>' . $post_type_object->labels->singular_name . '</span></a></li>';
+                    $data .= '<li><a href="#" data-id="' . esc_attr( get_the_ID() ) . '">' . esc_html( get_the_title() ) . '<span>' . esc_html( $post_type_object->labels->singular_name ) . '</span></a></li>';
                 }
                 $data .= '</ul>';
                 $data .= '<div class="tb_pagination tf_textc">' . paginate_links( array(

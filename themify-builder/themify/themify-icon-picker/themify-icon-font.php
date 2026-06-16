@@ -123,40 +123,64 @@ class Themify_Icon_Font {
      * @since 1.0
      */
     public static function tf_ajax_get_icon() {
-        if ( isset( $_GET['tf_icon'] ) ) {
-            echo themify_get_icon( $_GET['tf_icon'] );
+        check_ajax_referer( 'tf_nonce', 'nonce' );
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_die( -1, 403 );
         }
-        die;
+        if ( isset( $_GET['tf_icon'] ) ) {
+            $icon = themify_get_icon( sanitize_text_field( wp_unslash( $_GET['tf_icon'] ) ) );
+            if ( $icon ) {
+                echo $icon;
+            }
+        }
+        wp_die();
     }
     
     
     
+    public static function sanitize_icon_name( $name ) {
+        $name = sanitize_text_field( wp_unslash( (string) $name ) );
+        if ( $name === '' || ! preg_match( '/^[a-zA-Z0-9][a-zA-Z0-9 _.-]*$/', $name ) ) {
+            return false;
+        }
+        return $name;
+    }
+
     public static function load_icons(){
-        if(!empty($_POST['icons'])){
-            $icons=json_decode(str_replace('\\','',$_POST['icons']));
-            $res=array();
-            foreach($icons as $ic){
-                $r=themify_get_icon(trim($ic),false,false,true);
-                if($r){
-                    $res[$ic]=$r;
+        if ( ! empty( $_POST['icons'] ) ) {
+            $icons = json_decode( str_replace( '\\', '', wp_unslash( $_POST['icons'] ) ) );
+            $res = array();
+            if ( is_array( $icons ) ) {
+                foreach ( $icons as $ic ) {
+                    $ic = self::sanitize_icon_name( $ic );
+                    if ( $ic === false ) {
+                        continue;
+                    }
+                    $r = themify_get_icon( $ic, false, false, true );
+                    if ( $r ) {
+                        $res[ $ic ] = $r;
+                    }
                 }
             }
-            wp_send_json($res);
+            wp_send_json( $res );
         }
-        die;
+        wp_die();
     }
     
     public static function get_ajax_by_type(){
-        if(!empty($_POST['type'])){
-            $type = $_POST['type'];
-            $cat = !empty($_POST['cat'])?$_POST['cat']:'';
+        if ( ! current_user_can( 'edit_posts' ) ) {
+            wp_die( -1, 403 );
+        }
+        if ( ! empty( $_POST['type'] ) ) {
+            $type = sanitize_key( $_POST['type'] );
+            $cat = ! empty( $_POST['cat'] ) ? sanitize_key( $_POST['cat'] ) : '';
             $types = self::get_types();
-            if(isset($types[$type])){       
+            if ( isset( $types[ $type ] ) ) {
                 header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) );
-                echo json_encode(array('icons'=>$types[$type]->get_icons_by_category($cat),'cats'=>$types[$type]->get_categories()));
+                echo wp_json_encode( array( 'icons' => $types[ $type ]->get_icons_by_category( $cat ), 'cats' => $types[ $type ]->get_categories() ) );
             }
         }
-        die;
+        wp_die();
     }
 
     protected static function svg_attributes($attrs){
@@ -169,7 +193,16 @@ class Themify_Icon_Font {
         return themify_get_element_attributes($attrs);
     }
     
+    protected static function sanitize_svg_id( $id ) {
+        $id = preg_replace( '/[^a-zA-Z0-9_-]/', '', (string) $id );
+        return $id !== '' ? $id : false;
+    }
+
     protected static function get_svg($id,array $attrs=array()){
+    $id = self::sanitize_svg_id( $id );
+    if ( $id === false ) {
+        return '';
+    }
     $cl='tf_fa tf-'.$id;
     if(isset($attrs['class'])){
         $cl.=' '.$attrs['class'];
@@ -180,7 +213,7 @@ class Themify_Icon_Font {
 	if(!isset($attrs['xmlns:xlink'])){
 		$attrs['xmlns:xlink'] = 'http://www.w3.org/1999/xlink';
 	}
-	$ref = '#tf-' . $id;
+	$ref = esc_attr( '#tf-' . $id );
 	return '<svg '.self::svg_attributes($attrs).'><use href="' . $ref . '" xlink:href="' . $ref . '"></use></svg>';
     }
 }

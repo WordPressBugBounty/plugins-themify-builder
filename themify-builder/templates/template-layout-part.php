@@ -36,7 +36,7 @@ self::sticky_element_props($container_props, $fields_args);
     $container_props=$container_class=$args=null;
     $isLoop = Themify_Builder::$is_loop;
     Themify_Builder::$is_loop = true;
-    $layoutPart=$fields_args['selected_layout_part']!==''?do_shortcode('[themify_layout_part slug="' . $fields_args['selected_layout_part'] . '"]'):'';
+    $layoutPart=$fields_args['selected_layout_part']!==''?do_shortcode('[themify_layout_part slug="' . esc_attr( $fields_args['selected_layout_part'] ) . '"]'):'';
     Themify_Builder::$is_loop = $isLoop;
     if($layoutPart!==''){
     echo Themify_Builder_Component_Module::get_module_title($fields_args,'mod_title_layout_part'),$layoutPart; 

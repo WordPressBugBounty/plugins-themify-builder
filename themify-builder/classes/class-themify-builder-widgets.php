@@ -49,7 +49,7 @@ class Themify_Layout_Part extends WP_Widget {
             echo $args['before_title'] , $title , $args['after_title'];
         }
 
-        echo do_shortcode('[themify_layout_part slug=' . $layout_part . ']'),$args['after_widget'];
+        echo do_shortcode('[themify_layout_part slug="' . esc_attr( $layout_part ) . '"]'),$args['after_widget'];
     }
 
     ///////////////////////////////////////////

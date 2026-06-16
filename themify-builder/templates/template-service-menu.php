@@ -90,7 +90,7 @@ if ($newtab === false && $fields_args['link_options'] === 'lightbox') {
         $lightbox_settings = array();
         $lightbox_settings[] = $fields_args['lightbox_width'] !== '' ? $fields_args['lightbox_width'] . $units[$fields_args['lightbox_size_unit_width']] : '';
         $lightbox_settings[] = $fields_args['lightbox_height'] !== '' ? $fields_args['lightbox_height'] . $units[$fields_args['lightbox_size_unit_height']] : '';
-        $link_attr = sprintf('data-zoom-config="%s"', implode('|', $lightbox_settings));
+        $link_attr = sprintf('data-zoom-config="%s"', esc_attr( implode( '|', $lightbox_settings ) ));
         $lightbox_settings = $units = null;
     }
 }
@@ -125,7 +125,7 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h
     <?php if ($highlight === true && $fields_args['highlight_text_service_menu'] !== '') : ?>
         <?php Themify_Builder_Model::load_module_self_style($mod_name, 'highlight'); ?>
         <div class="tb-highlight-text">
-            <?php echo $fields_args['highlight_text_service_menu']; ?>
+            <?php echo wp_kses_post( $fields_args['highlight_text_service_menu'] ); ?>
         </div>
     <?php endif; ?>
     <?php if (!empty($image)) : ?>

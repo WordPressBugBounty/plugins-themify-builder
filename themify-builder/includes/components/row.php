@@ -219,8 +219,12 @@ class Themify_Builder_Component_Row{
                         '_link_lw_unit' => 'px',
                         '_link_lh_unit' => 'px'
                     ];
-                    if ( $settings['_link_lw'] !== '' || $settings['_link_lw'] !== '' ) {
-                        $attr['data-zoom-config'] = $settings['_link_lw'] . $settings['_link_lw_unit'] . '|' . $settings['_link_lh'] . $settings['_link_lh_unit'];
+                    if ( $settings['_link_lw'] !== '' || $settings['_link_lh'] !== '' ) {
+                        $attr['data-zoom-config'] = esc_attr(
+                            themify_sanitize_css_size( $settings['_link_lw'], $settings['_link_lw_unit'] )
+                            . '|'
+                            . themify_sanitize_css_size( $settings['_link_lh'], $settings['_link_lh_unit'] )
+                        );
                     }
                 }
             }
@@ -404,7 +408,7 @@ class Themify_Builder_Component_Row{
             $class_fields = array('custom_css_row', 'row_height');
             foreach ($class_fields as $field) {
                 if (!empty($row['styling'][$field])) {
-                    $row_classes[] = $row['styling'][$field];
+                    $row_classes[] = themify_sanitize_css_classes( $row['styling'][$field] );
                 }
             }
             unset($class_fields);
@@ -441,9 +445,12 @@ class Themify_Builder_Component_Row{
             }
             // Class for Scroll Highlight
             if (!empty($row['styling']['row_anchor']) && $row['styling']['row_anchor'] !== '#') {
-                $row_classes[] = 'tb_has_section';
-                $row_classes[] = 'tb_section-' . $row['styling']['row_anchor'];
-                $row_attributes['data-anchor'] = $row['styling']['row_anchor'];
+                $anchor = preg_replace( '/[^a-zA-Z0-9_-]/', '', $row['styling']['row_anchor'] );
+                if ( $anchor !== '' ) {
+                    $row_classes[] = 'tb_has_section';
+                    $row_classes[] = 'tb_section-' . $anchor;
+                    $row_attributes['data-anchor'] = $anchor;
+                }
             }
             // Disable change hashtag in URL
             if (!empty($row['styling']['hide_anchor'])) {

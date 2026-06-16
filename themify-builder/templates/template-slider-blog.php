@@ -99,7 +99,7 @@ if (!empty($posts)):
 
         <?php if ( $index % $fields_args['items_per_slide'] === 0 ) : ?><div class="tf_swiper-slide"<?php if($index>=$limit):?> style="content-visibility:hidden"<?php endif;?>><?php endif; ?>
 
-            <div class="slide-inner-wrap"<?php if ($fields_args['margin'] !== ''): ?> style="<?php echo $fields_args['margin']; ?>"<?php endif; ?>>
+            <div class="slide-inner-wrap"<?php if ($fields_args['margin'] !== ''): ?> style="<?php echo esc_attr( themify_sanitize_inline_css( $fields_args['margin'] ) ); ?>"<?php endif; ?>>
                 <?php
                 if (($ext_link = themify_builder_get('external_link',false,false))) {
                     $ext_link_type = 'external';

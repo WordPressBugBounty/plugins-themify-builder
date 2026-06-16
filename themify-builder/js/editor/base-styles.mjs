@@ -330,6 +330,32 @@ export class BaseStyles {
         return res;
     }
 
+    static get_margin_column_opposity(selector = '', state = '') {
+        let topId = 'margin-top',
+            bottomId = 'margin-bottom',
+            leftId = 'margin-left',
+            rightId = 'margin-right';
+        if (state === 'h' || state === 'hover') {
+            topId = 'm_t_h';
+            bottomId = 'm_b_h';
+            leftId = 'm_l_h';
+            rightId = 'm_r_h';
+        }
+        const res = {
+            topId: topId,
+            bottomId: bottomId,
+            leftId: leftId,
+            rightId: rightId,
+            type: 'margin_opposity',
+            prop: '',
+            selector: selector
+        };
+        if (state === 'h' || state === 'hover') {
+            res.h = true;
+        }
+        return res;
+    }
+
     static  get_border(selector = '', id = 'border', state = '') {
         if (state !== '') {
             id += '_' + state;

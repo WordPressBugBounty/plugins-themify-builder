@@ -242,7 +242,7 @@ class Themify_Builder_WPML_Integration {
 		return $out;
 	}
 
-	/* Take mod_settings from source, then overlay translated fields (per module's get_translatable_fields) from target. */
+	/* English layout/structure with translated text from the target post (same path as translate_module). */
 	private static function merge_wpml_module_settings( array $src_module, array $tgt_module ): array {
 		$src_ms = isset( $src_module['mod_settings'] ) && is_array( $src_module['mod_settings'] ) ? $src_module['mod_settings'] : [];
 		$tgt_ms = isset( $tgt_module['mod_settings'] ) && is_array( $tgt_module['mod_settings'] ) ? $tgt_module['mod_settings'] : [];
@@ -254,49 +254,26 @@ class Themify_Builder_WPML_Integration {
 			return $src_ms;
 		}
 
-		$merged = $src_ms;
-		$mod_name = isset( $src_module['mod_name'] ) ? $src_module['mod_name'] : '';
-		if ( $mod_name !== '' ) {
-			$module_class = self::get_module( $mod_name );
-			if ( $module_class ) {
-				$translatable = $module_class::get_translatable_fields( $tgt_module, $module_class );
-				foreach ( $translatable as $field ) {
-					if ( empty( $field['id'] ) ) {
-						continue;
-					}
-					$fid = $field['id'];
-					if ( strpos( $fid, '::' ) !== false ) {
-						$parts = explode( '::', $fid, 3 );
-						if ( count( $parts ) === 3 ) {
-							list( $rep_id, $row_idx, $item_id ) = $parts;
-							if ( isset( $tgt_ms[ $rep_id ][ $row_idx ][ $item_id ] ) ) {
-								if ( ! isset( $merged[ $rep_id ] ) || ! is_array( $merged[ $rep_id ] ) ) {
-									$merged[ $rep_id ] = [];
-								}
-								if ( ! isset( $merged[ $rep_id ][ $row_idx ] ) || ! is_array( $merged[ $rep_id ][ $row_idx ] ) ) {
-									$merged[ $rep_id ][ $row_idx ] = [];
-								}
-								$merged[ $rep_id ][ $row_idx ][ $item_id ] = $tgt_ms[ $rep_id ][ $row_idx ][ $item_id ];
-							}
-						}
-					} elseif ( preg_match( '/^([a-z_]+)-(\d+)$/', $fid, $title_parts ) ) {
-						$rep_key = self::get_repeater_key_for_title_field( $mod_name, $title_parts[1] );
-						if ( $rep_key !== '' && isset( $tgt_ms[ $rep_key ][ (int) $title_parts[2] ][ $title_parts[1] ] ) ) {
-							if ( ! isset( $merged[ $rep_key ] ) || ! is_array( $merged[ $rep_key ] ) ) {
-								$merged[ $rep_key ] = [];
-							}
-							if ( ! isset( $merged[ $rep_key ][ (int) $title_parts[2] ] ) || ! is_array( $merged[ $rep_key ][ (int) $title_parts[2] ] ) ) {
-								$merged[ $rep_key ][ (int) $title_parts[2] ] = [];
-							}
-							$merged[ $rep_key ][ (int) $title_parts[2] ][ $title_parts[1] ] = $tgt_ms[ $rep_key ][ (int) $title_parts[2] ][ $title_parts[1] ];
-						}
-					} elseif ( array_key_exists( $fid, $tgt_ms ) ) {
-						$merged[ $fid ] = $tgt_ms[ $fid ];
-					}
+		$mod_name      = isset( $src_module['mod_name'] ) ? $src_module['mod_name'] : '';
+		$module_class  = $mod_name !== '' ? self::get_module( $mod_name ) : null;
+		$merged_module = $src_module;
+		$merged_module['mod_settings'] = $src_ms;
+
+		if ( $module_class && method_exists( $module_class, 'get_translatable_fields' ) && method_exists( $module_class, 'translate_module' ) ) {
+			$translatable  = $module_class::get_translatable_fields( $tgt_module, $module_class );
+			$translations  = [];
+			foreach ( $translatable as $field ) {
+				if ( ! empty( $field['id'] ) && array_key_exists( 'value', $field ) ) {
+					$translations[ $field['id'] ] = $field['value'];
 				}
+			}
+			if ( ! empty( $translations ) ) {
+				$merged_module = self::prepare_module_for_wpml_translate( $merged_module );
+				$merged_module = $module_class::translate_module( $merged_module, $translations );
 			}
 		}
 
+		$merged = isset( $merged_module['mod_settings'] ) && is_array( $merged_module['mod_settings'] ) ? $merged_module['mod_settings'] : $src_ms;
 		$merged = self::merge_nested_module_builder_rows( $merged, $src_ms, $tgt_ms, $mod_name );
 
 		foreach ( [ '_tooltip', '_link' ] as $shared_k ) {
@@ -306,6 +283,21 @@ class Themify_Builder_WPML_Integration {
 		}
 
 		return $merged;
+	}
+
+	/**
+	 * Decode JSON-backed mod_settings before translate_module runs during layout sync.
+	 */
+	private static function prepare_module_for_wpml_translate( array $module ): array {
+		$mod_name = $module['mod_name'] ?? '';
+		$ms       = $module['mod_settings'] ?? [];
+		if ( $mod_name === 'contact' && ! empty( $ms['field_extra'] ) && is_string( $ms['field_extra'] ) ) {
+			$decoded = json_decode( $ms['field_extra'], true );
+			if ( is_array( $decoded ) ) {
+				$module['mod_settings']['field_extra'] = $decoded;
+			}
+		}
+		return $module;
 	}
 
 	private static function group_string_translation_by_elementid( $string_translations, $lang ) {
@@ -420,16 +412,6 @@ class Themify_Builder_WPML_Integration {
 		}
 
 		return $component;
-	}
-
-	private static function get_repeater_key_for_title_field( string $mod_name, string $field_name ) : string {
-		if ( $mod_name === 'accordion' && in_array( $field_name, [ 'title_accordion', 'text_accordion' ], true ) ) {
-			return 'content_accordion';
-		}
-		if ( $mod_name === 'tab' && in_array( $field_name, [ 'title_tab', 'text_tab' ], true ) ) {
-			return 'tab_content_tab';
-		}
-		return '';
 	}
 
 	/**

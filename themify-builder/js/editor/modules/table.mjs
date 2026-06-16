@@ -70,6 +70,24 @@
         return { col_count: width, head, body, cols };
     };
 
+    const setColumnCount = data => {
+        if (!data || typeof data !== 'object' || !Array.isArray(data.head)) {
+            return data;
+        }
+        const width = data.head.length || 1;
+        data.col_count = width;
+        data.head = toDenseRow(data.head, width, '');
+        data.body = Array.isArray(data.body) ? data.body.map(row => toDenseRow(Array.isArray(row) ? row : [], width, '')) : [Array(width).fill('')];
+        if (!data.body.length) {
+            data.body.push(Array(width).fill(''));
+        }
+        data.cols = Array.isArray(data.cols) ? data.cols.slice(0, width) : [];
+        while (data.cols.length < width) {
+            data.cols.push({ stack: true, width: '' });
+        }
+        return data;
+    };
+
     api.ModuleTable = class extends api.Module {
 
         static withDefaults(data) {
@@ -133,11 +151,16 @@
                 try {
                     const text = await file.text();
                     const data = api.ModuleTable.normalizeTableContent(rowsToData(parseCSV(text)));
-                    model.set('table_content', data);
-                    const lb = api.LightBox?.el;
-                    const hidden = lb?.querySelector('#table_content');
-                    if (hidden) {
-                        hidden.value = JSON.stringify(data);
+                    if (typeof model._commit === 'function') {
+                        model._commit(data);
+                    } else {
+                        model.set('table_content', data);
+                        model.set('mod_settings', { ...(model.get('mod_settings') || {}), table_content: data });
+                        const lb = api.LightBox?.el;
+                        const hidden = lb?.querySelector('#table_content');
+                        if (hidden) {
+                            hidden.value = JSON.stringify(data);
+                        }
                     }
                     if (typeof model._rerender === 'function') {
                         model._rerender();
@@ -211,7 +234,7 @@
         }
 
         static getOptions() {
-            return [
+            const options = [
                 {
                     id: 'mod_title_table',
                     type: 'title'
@@ -251,6 +274,18 @@
                     custom_css: 'css_table'
                 }
             ];
+            if (!api.isFrontend) {
+                const freezeIdx = options.findIndex(item => item.id === 'freeze_table');
+                options.splice(freezeIdx + 1, 0, {
+                    id: 'tbl_frontend_edit',
+                    type: 'message',
+                    label: '',
+                    comment: '',
+                    wrap_class: 'tb_table_backend_notice_wrap',
+                    control: false
+                });
+            }
+            return options;
         }
 
         static default() {
@@ -272,10 +307,84 @@
             };
         }
 
-        static builderSave(settings) {
-            if (settings.freeze_table !== 'yes') {
-                delete settings.freeze_table;
+        static getFrontendBuilderUrl() {
+            const link = api.ToolBar?.el?.querySelector('#frontend.switch, a.switch#frontend');
+            return link?.getAttribute('href') || '';
+        }
+
+        static bindFrontendSwitchLink(notice) {
+            if (!notice || notice._tblSwitchBound) {
+                return;
             }
+            notice._tblSwitchBound = true;
+            notice.tfOn(_CLICK_, e => {
+                const a = e.target.closest('.tb_table_switch_frontend');
+                if (!a) {
+                    return;
+                }
+                e.preventDefault();
+                const href = a.getAttribute('href');
+                if (!href || href === '#') {
+                    return;
+                }
+                const switchBtn = api.ToolBar?.el?.querySelector('#frontend.switch, a.switch#frontend');
+                if (!api.isFrontend && switchBtn) {
+                    api.ToolBar.switchTo({ item: switchBtn });
+                    return;
+                }
+                if (api.isFrontend) {
+                    api.ToolBar.save().then(() => {
+                        topWindow.location.href = href;
+                    });
+                    return;
+                }
+                Themify.trigger('tb_switch_frontend', [href]);
+            });
+        }
+
+        static buildBackendNotice() {
+            const notice = createElement('', 'tb_table_backend_notice');
+            const url = api.ModuleTable.getFrontendBuilderUrl();
+            notice.append(
+                createElement('a', {
+                    href: url || '#',
+                    class: 'tb_table_switch_frontend'
+                }, i18n.tbl_switch_frontend),
+                doc.createTextNode(' ' + i18n.tbl_backend_edit_suffix)
+            );
+            api.ModuleTable.bindFrontendSwitchLink(notice);
+            return notice;
+        }
+
+        static bindBackendNotice(lb) {
+            if (!lb || api.isFrontend) {
+                return;
+            }
+            const field = lb.querySelector('.tbl_frontend_edit');
+            if (!field) {
+                return;
+            }
+            const input = field.querySelector('.tb_input');
+            if (!input) {
+                return;
+            }
+            let notice = input.querySelector('.tb_table_backend_notice');
+            if (!notice) {
+                notice = api.ModuleTable.buildBackendNotice();
+                input.textContent = '';
+                input.appendChild(notice);
+            } else {
+                const link = notice.querySelector('.tb_table_switch_frontend');
+                const url = api.ModuleTable.getFrontendBuilderUrl();
+                if (link && url) {
+                    link.setAttribute('href', url);
+                }
+                api.ModuleTable.bindFrontendSwitchLink(notice);
+            }
+        }
+
+        static builderSave(settings) {
+            settings.freeze_table = settings.freeze_table === 'yes' ? 'yes' : 'no';
             settings.first_row_header = settings.first_row_header === 'no' ? 'no' : 'yes';
             delete settings.tbl_upload_csv;
             delete settings.import_file;
@@ -329,8 +438,9 @@
         }
 
         _commit(data) {
-            data = sanitizeData(data);
+            data = sanitizeData(setColumnCount(data));
             this.set('table_content', data);
+            this.set('mod_settings', { ...(this.get('mod_settings') || {}), table_content: data });
             const lb = api.LightBox?.el;
             if (lb && api.activeModel?.id === this.id) {
                 const hidden = lb.querySelector('#table_content');
@@ -550,6 +660,53 @@
             this._rerender();
         }
 
+        _buildReadOnlyPreview(data, hasHead = true) {
+            data = sanitizeData(data);
+            const colCount = data.head.length;
+            const wrap = createElement('', 'tb_table_wrap tb_table_readonly');
+            const hscroll = createElement('', 'tb_table_hscroll');
+            const table = createElement('table', 'tb_table');
+            const colgroup = createElement('colgroup');
+            for (let c = 0; c < colCount; ++c) {
+                const col = createElement('col');
+                const w = data.cols[c] && data.cols[c].width;
+                if (w) {
+                    col.style.width = w;
+                }
+                colgroup.appendChild(col);
+            }
+            table.appendChild(colgroup);
+            const appendCells = (rowEl, row, tag) => {
+                for (let c = 0; c < colCount; ++c) {
+                    const cell = createElement(tag, 'tb_grid_cell');
+                    cell.innerHTML = this._formatCellHtml(row[c] != null ? row[c] : '');
+                    rowEl.appendChild(cell);
+                }
+            };
+            if (hasHead) {
+                const thead = createElement('thead');
+                const headTr = createElement('tr');
+                appendCells(headTr, data.head, 'th');
+                thead.appendChild(headTr);
+                table.appendChild(thead);
+            }
+            const tbody = createElement('tbody');
+            if (!hasHead) {
+                const headTr = createElement('tr');
+                appendCells(headTr, data.head, 'td');
+                tbody.appendChild(headTr);
+            }
+            for (let r = 0; r < data.body.length; ++r) {
+                const tr = createElement('tr');
+                appendCells(tr, data.body[r], 'td');
+                tbody.appendChild(tr);
+            }
+            table.appendChild(tbody);
+            hscroll.appendChild(table);
+            wrap.appendChild(hscroll);
+            return wrap;
+        }
+
         _buildEditor(data, hasHead = true) {
             data = sanitizeData(data);
             const colCount = data.head.length;
@@ -620,7 +777,7 @@
                 const refTr = createElement('tr', { class: 'tb_grid_row tb_grid_ref_row', 'data-row': -1 });
                 for (let c = 0; c < colCount; ++c) {
                     const td = createElement('td', {
-                        class: 'tb_grid_col tb_grid_body_cell' + (c === 0 ? ' tb_grid_first_cell' : ''),
+                        class: 'tb_grid_col tb_grid_body_cell',
                         'data-col': c
                     });
                     td.append(
@@ -826,8 +983,14 @@
                     setSortHandlesDraggable(false);
                     await api.plaintextInline.start(cell, mod, {
                         getContent: target => {
-                            if (target !== cell || target.dataset.tbEditSession !== String(token)) {
-                                return target?.dataset?.tbRaw || '';
+                            if (!target) {
+                                return '';
+                            }
+                            if (target.dataset.tbRawEdit === '1' || doc.activeElement === target) {
+                                return self._cellRawFromEdit(target);
+                            }
+                            if (target.dataset.tbRaw != null) {
+                                return self._normalizeCellRaw(target.dataset.tbRaw);
                             }
                             return self._getCellRawFromData(target);
                         },
@@ -1057,7 +1220,8 @@
                 Themify.loadCss(cssBase + 'table.css', 'tb_table', ver);
                 Themify.loadCss(cssBase + 'table-admin.css', 'tb_table_admin', ver);
             }
-            const module = createElement('', 'module module-table tb_grid_editor_module' + (data.css_table ? ' ' + data.css_table : ''));
+            const isBackend = !api.isFrontend;
+            const module = createElement('', 'module module-table' + (isBackend ? ' tb_table_backend' : ' tb_grid_editor_module') + (data.css_table ? ' ' + data.css_table : ''));
             if (api.ModuleTable.isFreezeEnabled(data)) {
                 module.classList.add('tb_freeze_table');
             }
@@ -1065,13 +1229,18 @@
                 module.appendChild(this.constructor.getModuleTitle(data.mod_title_table, 'mod_title_table'));
             }
             const hasHead = api.ModuleTable.hasHeader(data);
-            module.appendChild(this._buildEditor(data.table_content || defaultData(), hasHead));
-            Promise.resolve().then(() => {
-                this._bindOnce();
-                if (api.ModuleTable.isFreezeEnabled(data)) {
-                    api.ModuleTable.loadFrontJs(module);
-                }
-            });
+            const tableData = data.table_content || defaultData();
+            if (isBackend) {
+                module.appendChild(this._buildReadOnlyPreview(tableData, hasHead));
+            } else {
+                module.appendChild(this._buildEditor(tableData, hasHead));
+                Promise.resolve().then(() => {
+                    this._bindOnce();
+                    if (api.ModuleTable.isFreezeEnabled(data)) {
+                        api.ModuleTable.loadFrontJs(module);
+                    }
+                });
+            }
             return module;
         }
 
@@ -1100,6 +1269,7 @@
         if (api.activeModel?.get('mod_name') !== 'table') return;
         api.ModuleTable.bindCsvUpload(lb);
         api.ModuleTable.bindOptionChanges(lb);
+        api.ModuleTable.bindBackendNotice(lb);
     };
 
     Themify.on('tb_editing_module_setting', bindTableLightbox);

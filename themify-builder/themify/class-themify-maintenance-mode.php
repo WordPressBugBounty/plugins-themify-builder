@@ -94,9 +94,9 @@ class Themify_Maintenance_Mode {
                 $post_parent = $post_aux->post_parent;
             }
             $output .= sprintf( '<option value="%s"%s>%s</option>',
-                $val,
-                selected( $val, $selected,false ),
-                $page->post_title
+                esc_attr( $val ),
+                selected( $val, $selected, false ),
+                esc_html( $page->post_title )
             );
         }
         echo $output;

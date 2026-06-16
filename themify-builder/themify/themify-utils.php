@@ -622,6 +622,80 @@ function themify_sanitize_hex_color($value) {
     return $value;
 }
 
+/**
+ * Sanitize space-separated CSS class names for safe HTML class attributes.
+ *
+ * @since 7.0
+ */
+function themify_sanitize_css_classes( $classes ) {
+    if ( $classes === '' || $classes === null ) {
+        return '';
+    }
+    if ( ! is_string( $classes ) ) {
+        return '';
+    }
+    $parts = preg_split( '/\s+/', trim( $classes ) );
+    $sanitized = array();
+    foreach ( $parts as $part ) {
+        if ( $part === '' ) {
+            continue;
+        }
+        $clean = sanitize_html_class( $part );
+        if ( $clean !== '' ) {
+            $sanitized[] = $clean;
+        }
+    }
+    return implode( ' ', $sanitized );
+}
+
+/**
+ * Sanitize a CSS length value with an allowed unit.
+ *
+ * @since 7.0
+ */
+function themify_sanitize_css_size( $value, $unit = 'px' ) {
+    $value = preg_replace( '/[^0-9.]/', '', (string) $value );
+    if ( $value === '' ) {
+        return '';
+    }
+    $allowed_units = array( 'px', '%', 'em', 'rem', 'vw', 'vh', 'vmin', 'vmax' );
+    if ( ! in_array( $unit, $allowed_units, true ) ) {
+        $unit = 'px';
+    }
+    return $value . $unit;
+}
+
+/**
+ * Sanitize inline CSS declarations for style attributes.
+ *
+ * @since 7.0
+ */
+function themify_sanitize_inline_css( $css ) {
+    if ( $css === '' || $css === null ) {
+        return '';
+    }
+    $css = wp_strip_all_tags( (string) $css );
+    $css = preg_replace( '/expression\s*\(/i', '', $css );
+    $css = preg_replace( '/javascript\s*:/i', '', $css );
+    $css = preg_replace( '/@import/i', '', $css );
+    $css = preg_replace( '/<\/?style/i', '', $css );
+    return trim( $css );
+}
+
+/**
+ * Sanitize builder custom CSS before writing to a stylesheet file.
+ *
+ * @since 7.0
+ */
+function themify_sanitize_builder_custom_css( $css ) {
+    if ( ! is_string( $css ) || $css === '' ) {
+        return '';
+    }
+    $css = preg_replace( '/<\/style/i', '', $css );
+    $css = preg_replace( '/<script/i', '', $css );
+    return $css;
+}
+
 if (!function_exists('themify_get_image_sizes_list')) {
 
     /**
@@ -1772,9 +1846,13 @@ function themify_is_dev_mode():bool {
 }
 
 function themify_is_concate_disabled():bool {
+    $disable_dev_concate = themify_check('setting-dev-mode-concate', true) || (defined('THEMIFY_DEV') && THEMIFY_DEV);
+    $dev_context = themify_check('setting-dev-mode', true)
+        || (defined('THEMIFY_DEV') && THEMIFY_DEV)
+        || (class_exists('Themify_Builder_Model', false) && Themify_Builder_Model::is_front_builder_activate());
     $is_disabled = themify_check('setting-disable-concate-css', true)
         || (defined('THEMIFY_DISABLE_CONCATE_CSS') && THEMIFY_DISABLE_CONCATE_CSS)
-        || (themify_is_dev_mode() && (themify_check('setting-dev-mode-concate', true) || (defined('THEMIFY_DEV') && THEMIFY_DEV)));
+        || ($disable_dev_concate && $dev_context);
 
     return apply_filters('themify_disable_concate_css', $is_disabled);
 }

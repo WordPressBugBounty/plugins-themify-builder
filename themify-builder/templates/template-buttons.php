@@ -32,6 +32,9 @@ if (in_array($fields_args['buttons_style'], array('circle', 'rounded', 'squared'
 elseif ($fields_args['buttons_style'] === 'outline') {
     Themify_Builder_Model::load_module_self_style($mod_name, 'outline');
 }
+elseif ($fields_args['buttons_style'] === 'transparent') {
+    Themify_Builder_Model::load_module_self_style($mod_name, 'transparent');
+}
 /* End of old button style args */
 
 $container_class = apply_filters('themify_builder_module_classes', array(
@@ -90,6 +93,8 @@ foreach ($fields_args['content_button'] as $content) {
         'lightbox_width_unit' => 'px',
         'lightbox_height_unit' => 'px',
         'button_color_bg' => 'tb_default_color',
+        'shape' => 'default',
+        'background' => 'default',
         'title' => '',
         'id' => '',
         't' => 'i'
@@ -111,7 +116,7 @@ foreach ($fields_args['content_button'] as $content) {
             if ($content['lightbox_height'] !== '') {
                 $lightbox_settings[] = $content['lightbox_height'] . $content['lightbox_height_unit'];
             }
-            $link_attr[] = sprintf('data-zoom-config="%s"', implode('|', $lightbox_settings));
+            $link_attr[] = sprintf('data-zoom-config="%s"', esc_attr( implode( '|', $lightbox_settings ) ));
             unset($lightbox_settings);
         }
     } elseif ($content['link_options'] === 'newtab') {
@@ -119,6 +124,15 @@ foreach ($fields_args['content_button'] as $content) {
         $link_attr[] = 'target="_blank" rel="' . $nofollow . 'noopener"';
     }
     $link_css_clsss[] = $content['button_color_bg'];
+    if ($content['shape'] !== 'default') {
+        $link_css_clsss[] = $content['shape'];
+    }
+    if ($content['background'] !== 'default') {
+        $link_css_clsss[] = $content['background'];
+        if ($content['background'] === 'outline' || $content['background'] === 'transparent') {
+            Themify_Builder_Model::load_module_self_style($mod_name, $content['background']);
+        }
+    }
     if ($content['button_color_bg'] !== 'tb_default_color') {
         Themify_Builder_Model::load_color_css($content['button_color_bg']);
     }

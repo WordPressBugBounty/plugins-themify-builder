@@ -15,6 +15,9 @@ final class Themify_Builder_Visibility_Controls {
     add_filter('themify_builder_row_classes', array(__CLASS__, 'row_classes'), 10, 3);
     add_filter('themify_builder_subrow_classes', array(__CLASS__, 'row_classes'), 10, 4);
     add_filter('themify_builder_module_classes', array(__CLASS__, 'module_classes'), 10, 5);
+    add_filter('themify_builder_row_classes', array(__CLASS__, 'sanitize_classes'), 999, 3);
+    add_filter('themify_builder_subrow_classes', array(__CLASS__, 'sanitize_classes'), 999, 4);
+    add_filter('themify_builder_module_classes', array(__CLASS__, 'sanitize_classes'), 999, 5);
     }
 
     /**
@@ -65,6 +68,22 @@ final class Themify_Builder_Visibility_Controls {
         }
         if( $hide_all===true  || ( isset( $args['sticky_visibility'] ) && $args['sticky_visibility'] === 'hide')){
             $classes[] = 'hide-on-stick';
+        }
+        return $classes;
+    }
+
+    /**
+     * Sanitize user-supplied CSS class tokens before output.
+     */
+    public static function sanitize_classes( array $classes ): array {
+        foreach ( $classes as $k => $class ) {
+            if ( ! is_string( $class ) || $class === '' ) {
+                continue;
+            }
+            if ( strpos( $class, 'module' ) === 0 || strpos( $class, 'tb_' ) === 0 || strpos( $class, 'themify_builder' ) === 0 ) {
+                continue;
+            }
+            $classes[ $k ] = themify_sanitize_css_classes( $class );
         }
         return $classes;
     }

@@ -88,9 +88,9 @@ if(Themify_Builder::$frontedit_active===false){
     ?>
     <div class="themify_builder_slider tf_carousel tf_swiper-container tf_rel tf_overflow"<?php if(Themify_Builder::$frontedit_active===false):?> data-lazy="1"<?php endif;?>
         data-visible="<?php echo $fields_args['visible_opt_slider'] ?>"
-        data-tab-visible="<?php echo $fields_args['tab_visible_opt_slider'] ?>"
-        data-mob-visible="<?php echo $fields_args['mob_visible_opt_slider'] ?>"
-        data-scroll="<?php echo $fields_args['scroll_opt_slider']; ?>"
+        data-tab-visible="<?php echo esc_attr( $fields_args['tab_visible_opt_slider'] ); ?>"
+        data-mob-visible="<?php echo esc_attr( $fields_args['mob_visible_opt_slider'] ); ?>"
+        data-scroll="<?php echo esc_attr( $fields_args['scroll_opt_slider'] ); ?>"
         <?php if($arrow_vertical!==''):?>
             data-nav_out="1"
         <?php endif;?>
@@ -99,17 +99,17 @@ if(Themify_Builder::$frontedit_active===false){
             data-controller="<?php echo $fields_args['play_pause_control']=== 'yes'?'1':'0' ?>"
         <?php endif;?>
         data-pause_hover="<?php echo $fields_args['pause_on_hover_slider']=== 'resume'?'1':'0' ?>"
-        data-speed="<?php echo $fields_args['speed_opt_slider'] ?>"
+        data-speed="<?php echo esc_attr( $fields_args['speed_opt_slider'] ); ?>"
         data-wrapvar="<?php echo $fields_args['wrap_slider']!== 'no'?'1':'0' ?>"
         data-slider_nav="<?php echo $fields_args['show_arrow_slider']=== 'yes'?'1':'0' ?>"
         data-pager="<?php echo $fields_args['show_nav_slider']=== 'yes'?'1':'0' ?>"
-        data-effect="<?php echo $fields_args['effect_slider'] ?>" 
+        data-effect="<?php echo esc_attr( $fields_args['effect_slider'] ); ?>"
         data-height="<?php echo $fields_args['height_slider'] ?>"
         data-css_url="<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/carousel,<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/<?php echo $mod_name?>"
         <?php if ( $fields_args['effect_slider'] === 'continuously' && ! empty( $fields_args['continuous_dir'] ) ) : ?>
             data-auto-reverse="true"
         <?php endif; ?>
-        <?php if ( $fields_args['touch_swipe'] !== '' ) : ?>data-touch_swipe="<?php echo $fields_args['touch_swipe']; ?>" <?php endif; ?>
+        <?php if ( $fields_args['touch_swipe'] !== '' ) : ?>data-touch_swipe="<?php echo esc_attr( $fields_args['touch_swipe'] ); ?>" <?php endif; ?>
     <?php if ($template_name === 'video'): ?>data-type="video"<?php endif; ?>>
         <div class="tf_swiper-wrapper tf_lazy tf_rel tf_w tf_h tf_textc">
         <?php

@@ -1260,14 +1260,15 @@
                         'l_s_h',
                         'ht',
                         'mi_h',
-                        'mx_h',
-                        'margin-top',
-                        'margin-bottom',
-                        'm_t_h',
-                        'm_b_h'
+                        'mx_h'
                 ],
                 sides=['top','left','right','bottom'],
                 stVal=this.getStylingValue;
+            if(type==='column'){
+                units.push('margin-top','margin-bottom','margin-left','margin-right','m_t_h','m_b_h','m_l_h','m_r_h');
+            }else{
+                units.push('margin-top','margin-bottom','m_t_h','m_b_h');
+            }
                 
             if(type==='row'){
                 for (let i = 6; i>0;--i) {
@@ -1518,8 +1519,15 @@
                     this.clearPadding('p_h',bp,settings);
                     
                     //margin
-                    this.clearMarginOpposity('margin-top',bp,settings);
-                    this.clearMarginOpposity('m_t_h',bp,settings);
+                    if(type==='column'){
+                        this.clearMarginOpposity('margin-top',bp,settings);
+                        this.clearMarginOpposity('margin-left',bp,settings);
+                        this.clearMarginOpposity('m_t_h',bp,settings);
+                        this.clearMarginOpposity('m_l_h',bp,settings);
+                    }else{
+                        this.clearMarginOpposity('margin-top',bp,settings);
+                        this.clearMarginOpposity('m_t_h',bp,settings);
+                    }
                     //border
                     this.clearBorder('border',bp,settings);
                     this.clearBorder('b_h',bp,settings);

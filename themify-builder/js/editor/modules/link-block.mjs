@@ -281,7 +281,8 @@
                 heading: i18n.head,
                 blurb: i18n.blurbtext,
                 link: 'https://themify.me/',
-                lb_layout: 'icon-center'
+                lb_layout: 'icon-center',
+                color: 'default'
             };
         }
         static builderSave(settings){

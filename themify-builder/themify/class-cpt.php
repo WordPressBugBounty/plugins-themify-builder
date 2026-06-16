@@ -711,7 +711,7 @@ class CPT {
                 } else {
 
                     // display default media image with link
-                    echo '<a href="'.esc_url( $link ).'"><img src="'. site_url('/wp-includes/images/crystal/default.png') .'" alt="'. $post->post_title .'" /></a>';
+                    echo '<a href="'.esc_url( $link ).'"><img src="'. site_url('/wp-includes/images/crystal/default.png') .'" alt="'. esc_attr( $post->post_title ) .'" /></a>';
 
                 }
 

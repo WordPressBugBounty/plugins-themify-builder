@@ -19,7 +19,7 @@ class Themify_Builder_Component_Subrow{
         $is_styling = !empty($mod['styling']);
         if ($is_styling === true) {
             if (!empty($mod['styling']['custom_css_subrow'])) {
-                $print_sub_row_classes[] = $mod['styling']['custom_css_subrow'];
+                $print_sub_row_classes[] = themify_sanitize_css_classes( $mod['styling']['custom_css_subrow'] );
             }
             if (isset($mod['styling']['background_type'], $mod['styling']['background_zoom']) && $mod['styling']['background_type'] === 'image' && $mod['styling']['background_zoom'] === 'zoom' && $mod['styling']['background_repeat'] === 'repeat-none') {
                 $print_sub_row_classes[] = 'themify-bg-zoom';

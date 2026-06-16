@@ -19,7 +19,7 @@ if (!empty($settings['video_content_slider'])):?>
     $video_args=array('disable_lazy'=>true,'preload'=>'none');
     foreach ($settings['video_content_slider'] as $index => $video): ?>
         <?php if ( $index % $settings['items_per_slide'] === 0 ) : ?><div class="tf_swiper-slide"<?php if($index>=$limit):?> style="content-visibility:hidden"<?php endif;?>><?php endif; ?>
-            <div class="slide-inner-wrap"<?php if ($settings['margin'] !== ''): ?> style="<?php echo $settings['margin']; ?>"<?php endif; ?>>
+            <div class="slide-inner-wrap"<?php if ($settings['margin'] !== ''): ?> style="<?php echo esc_attr( themify_sanitize_inline_css( $settings['margin'] ) ); ?>"<?php endif; ?>>
                 <?php 
             $title_tag = isset($video['video_title_tag']) ? themify_whitelist_tag( $video['video_title_tag'], 'h3' ) : 'h3';
             if (!empty($video['video_url_slider'])): 
@@ -39,9 +39,9 @@ if (!empty($settings['video_content_slider'])):?>
                         <?php if(!empty($video['video_title_link_slider']) || isset($video['video_title_slider'])): ?>
                         <<?php echo $title_tag;?> class="slide-title">
                             <?php if (!empty($video['video_title_link_slider'])): ?>
-                                <a href="<?php echo esc_url($video['video_title_link_slider']); ?>"<?php if('yes' === $settings['open_link_new_tab_slider']):?> target="_blank" rel="noopener"<?php endif;?>><?php echo $video['video_title_slider']; ?></a>
+                                <a href="<?php echo esc_url($video['video_title_link_slider']); ?>"<?php if('yes' === $settings['open_link_new_tab_slider']):?> target="_blank" rel="noopener"<?php endif;?>><?php echo wp_kses_post( $video['video_title_slider'] ); ?></a>
                             <?php elseif (isset($video['video_title_slider'])) : ?>
-                                <?php echo $video['video_title_slider']; ?>
+                                <?php echo wp_kses_post( $video['video_title_slider'] ); ?>
                             <?php endif; ?>
                         </<?php echo $title_tag;?>>
                         <?php endif; ?>

@@ -71,7 +71,7 @@ if (!empty($fields_args['link_options']) && '' !== $fields_args['link_feature'])
             $lightbox_settings = array();
             $lightbox_settings[] = $fields_args['lightbox_width'] !== '' ? $fields_args['lightbox_width'] . $fields_args['lightbox_width_unit'] : '';
             $lightbox_settings[] = $fields_args['lightbox_height'] !== '' ? $fields_args['lightbox_height'] . $fields_args['lightbox_height_unit'] : '';
-            $link_attr .= sprintf(' data-zoom-config="%s"', implode('|', $lightbox_settings));
+            $link_attr .= sprintf(' data-zoom-config="%s"', esc_attr( implode( '|', $lightbox_settings ) ));
             $lightbox_settings = null;
         }
     } elseif ($fields_args['link_options'] === 'newtab') {
@@ -211,7 +211,7 @@ self::sticky_element_props($container_props, $fields_args);
         }
         ?>
         <div class="tb_text_wrap">
-            <?php echo $fields_args['content_feature'] !== '' ? wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['content_feature'])) : ''; ?>
+            <?php echo $fields_args['content_feature'] !== '' ? apply_filters('themify_builder_module_content', $fields_args['content_feature']) : ''; ?>
         </div>
     </div>
 </div>

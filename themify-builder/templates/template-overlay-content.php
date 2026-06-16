@@ -35,17 +35,17 @@ $container_props = apply_filters('themify_builder_module_container_props', array
 $overlay_id = 'tb_oc_' . $args['module_ID'];
 $isLoop = Themify_Builder::$is_loop;
 Themify_Builder::$is_loop = true;
-$layoutPart = $fields_args['selected_layout_part'] !== '' ? do_shortcode('[themify_layout_part slug="' . $fields_args['selected_layout_part'] . '"]') : '';
+$layoutPart = $fields_args['selected_layout_part'] !== '' ? do_shortcode('[themify_layout_part slug="' . esc_attr( $fields_args['selected_layout_part'] ) . '"]') : '';
 $is_overlay = 'overlay' === $fields_args['overlay_type'];
-$overlay_style = 'width:' . $fields_args['overlay_width'] . $fields_args['overlay_width_unit'] . ';height:' . $fields_args['overlay_height'] . $fields_args['overlay_height_unit'] . ';';
-if ($is_overlay === true && 'overlay' !== $fields_args['style'] && ( '100%' !== $fields_args['overlay_width'] . $fields_args['overlay_width_unit'] || '100%' !== $fields_args['overlay_height'] . $fields_args['overlay_height_unit'] )) {
+$overlay_style = 'width:' . themify_sanitize_css_size( $fields_args['overlay_width'], $fields_args['overlay_width_unit'] ) . ';height:' . themify_sanitize_css_size( $fields_args['overlay_height'], $fields_args['overlay_height_unit'] ) . ';';
+if ($is_overlay === true && 'overlay' !== $fields_args['style'] && ( '100%' !== themify_sanitize_css_size( $fields_args['overlay_width'], $fields_args['overlay_width_unit'] ) || '100%' !== themify_sanitize_css_size( $fields_args['overlay_height'], $fields_args['overlay_height_unit'] ) )) {
     if ('100' !== $fields_args['overlay_height'] && 'px' !== $fields_args['overlay_height_unit'] && ('slide_down' === $fields_args['style'] || 'slide_up' === $fields_args['style'])) {
     $overlay_style .= 'slide_down' === $fields_args['style'] ? 'bottom' : 'top';
-    $overlay_style .= ':' . (( 100 - $fields_args['overlay_height'] ) / 2) . $fields_args['overlay_height_unit'] . ';';
+    $overlay_style .= ':' . themify_sanitize_css_size( ( 100 - (float) $fields_args['overlay_height'] ) / 2, $fields_args['overlay_height_unit'] ) . ';';
     }
     if ('100' !== $fields_args['overlay_width'] && 'px' !== $fields_args['overlay_width_unit'] && ('slide_left' === $fields_args['style'] || 'slide_right' === $fields_args['style'])) {
     $overlay_style .= 'slide_left' === $fields_args['style'] ? 'left' : 'right';
-    $overlay_style .= ':' . (( 100 - $fields_args['overlay_width'] ) / 2) . $fields_args['overlay_width_unit'];
+    $overlay_style .= ':' . themify_sanitize_css_size( ( 100 - (float) $fields_args['overlay_width'] ) / 2, $fields_args['overlay_width_unit'] );
     }
 }
 $icon = !empty($fields_args['icon']) ? sprintf('<em>%s</em>', themify_get_icon($fields_args['icon'])) : '';
@@ -59,10 +59,10 @@ self::sticky_element_props($container_props, $fields_args);
     <?php $container_props = $container_class = $args =null; ?>
     <a href="<?php echo $is_overlay === true ? '#' . $overlay_id : '#'; ?>" rel="nofollow" class="tb_ov_co_icon_wrapper tf_inline_b<?php echo empty($icon) ? ' tb_ov_no_icon' : ''; ?>">
         <span class="tb_ov_co_icon_outer tf_inline_b"><span class="tb_ov_co_icon tf_box tf_rel tf_inline_b<?php echo empty($icon) ? ' tf_vmiddle' : ''; ?>"><?php echo $icon; ?></span></span>
-    <?php echo!empty($fields_args['icon_title']) ? '<span class="tb_ov_co_icon_title tf_vmiddle">' . $fields_args['icon_title'] . '</span>' : ''; ?>
+    <?php echo !empty($fields_args['icon_title']) ? '<span class="tb_ov_co_icon_title tf_vmiddle">' . wp_kses_post( $fields_args['icon_title'] ) . '</span>' : ''; ?>
     </a>
     <?php echo $is_overlay === false ? '<div class="tb_oc_expand_container tb_oc_expand_' . $fields_args['expand_mode'] . '">' : ''; ?>
-    <div id="<?php echo $overlay_id; ?>" style="<?php echo $overlay_style; ?>" class="tb_oc_overlay tf_scrollbar tf_box<?php echo $is_overlay === true ? ' sidemenu sidemenu-off tf_w tf_h tf_hide tb_content_overlay_' . $fields_args['style'] : ' tb_oc_expandable tf_abs tf_w tf_h'; ?>">
+    <div id="<?php echo esc_attr( $overlay_id ); ?>" style="<?php echo esc_attr( $overlay_style ); ?>" class="tb_oc_overlay tf_scrollbar tf_box<?php echo $is_overlay === true ? ' sidemenu sidemenu-off tf_w tf_h tf_hide tb_content_overlay_' . esc_attr( $fields_args['style'] ) : ' tb_oc_expandable tf_abs tf_w tf_h'; ?>">
         <?php if ($is_overlay === true): ?>
             <a id="<?php echo $overlay_id; ?>_close" href="javascript:;" rel="nofollow" class="tb_ov_close tf_box"><span class="tb_ov_close_inner tf_close tf_rel"><span class="screen-reader-text"><?php _e('Close Overlay','themify')?></span></span></a>
         <?php endif; ?>
@@ -75,8 +75,8 @@ self::sticky_element_props($container_props, $fields_args);
 
     <?php if ($is_overlay === true && in_array($fields_args['style'], array('slide_left', 'slide_right'), true)) : ?>
         <style>
-        .<?php echo $element_id; ?> .tb_content_overlay_<?php echo $fields_args['style']; ?>{
-            transform:translateX(<?php echo ( $fields_args['style'] === 'slide_left' ? '-' : '' ), $fields_args['overlay_width'], $fields_args['overlay_width_unit']; ?>)
+        .<?php echo esc_attr( $element_id ); ?> .tb_content_overlay_<?php echo esc_attr( $fields_args['style'] ); ?>{
+            transform:translateX(<?php echo esc_attr( ( $fields_args['style'] === 'slide_left' ? '-' : '' ) . themify_sanitize_css_size( $fields_args['overlay_width'], $fields_args['overlay_width_unit'] ) ); ?>)
         }
         </style>
     <?php endif; ?>

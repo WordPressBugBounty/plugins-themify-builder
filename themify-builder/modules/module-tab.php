@@ -9,6 +9,7 @@ class TB_Tab_Module extends Themify_Builder_Component_Module {
 
 
     public static function get_module_name():string {
+        add_filter('themify_builder_active_vars', [__CLASS__, 'builder_active_enqueue']);
         return __('Tab', 'themify');
     }
 
@@ -17,10 +18,19 @@ class TB_Tab_Module extends Themify_Builder_Component_Module {
     }
 
     public static function get_js_css():array {
-        return array(
+        $assets = array(
             'css' => 1,
-            'js' => 1
+            'js' => 1,
         );
+        if (Themify_Builder_Model::is_front_builder_activate()) {
+            $assets['js_admin'] = 1;
+        }
+        return $assets;
+    }
+
+    public static function builder_active_enqueue(array $vars):array {
+        $vars['addons'][THEMIFY_BUILDER_URI . '/js/modules/tab-admin.js'] = THEMIFY_VERSION;
+        return $vars;
     }
 
 

@@ -13,13 +13,77 @@
                 }]   
             }]
         }];  
+    },
+    getBuilderContent=item=>{
+        let content=item?.builder_content;
+        if(content===undefined || content===null || content===''){
+            content=getDefaultContent(item);
+        }
+        else if(typeof content==='string'){
+            content=JSON.parse(content);
+        }
+        return content;
+    },
+    getTabLinkId=link=>{
+        return (link.getAttribute('href') || link.dataset.tbInlineNav || '').replace('#', '');
     };
-    api.ModuleTab=class extends api.Module{
+    api.ModuleTab = class extends api.Module {
+
+        static activateTabForInlineEdit(el) {
+            if (!api.isVisual || !el?.closest) {
+                return;
+            }
+            const module = el.closest('.module-tab');
+            if (!module) {
+                return;
+            }
+            const link = el.closest('.tab-nav a') || (el.closest('.tab-nav-current-active') ? module.tfClass('tab-nav')[0]?.querySelector('li.current a') : null);
+            if (!link) {
+                return;
+            }
+            const li = link.parentNode,
+                tabId = getTabLinkId(link);
+            if (!tabId) {
+                return;
+            }
+            const targetTab = module.querySelector(':scope > .tab-content[data-id="' + tabId + '"]');
+            if (!targetTab) {
+                return;
+            }
+            if (li?.classList.contains('current') && targetTab.getAttribute('aria-hidden') !== 'true') {
+                return;
+            }
+            const tabNav = module.tfClass('tab-nav')[0],
+                nav = module.tfClass('tab-nav-current-active')[0],
+                currentTab = module.querySelector(':scope > .tab-content[aria-hidden="false"]');
+            if (tabNav) {
+                for (const item of tabNav.children) {
+                    const expanded = item === li ? 'true' : 'false';
+                    item.classList.toggle('current', expanded === 'true');
+                    item.setAttribute('aria-expanded', expanded);
+                }
+            }
+            if (currentTab && currentTab !== targetTab) {
+                currentTab.setAttribute('aria-hidden', 'true');
+            }
+            targetTab.setAttribute('aria-hidden', 'false');
+            if (nav) {
+                const title = nav.tfClass('tb_activetab_title')[0];
+                if (title) {
+                    title.replaceChildren(...link.cloneNode(true).children);
+                }
+            }
+        }
+
+        inlineEditorStart(el) {
+            this.constructor.activateTabForInlineEdit(el);
+        }
+
         constructor(fields) {
             const arr = fields.mod_settings?.tab_content_tab;
             if(arr){
                 for(let i=arr.length-1;i>-1;--i){
-                    if(!arr[i].builder_content){
+                    if(arr[i].builder_content===undefined || arr[i].builder_content===null || arr[i].builder_content===''){
                         arr[i].builder_content=getDefaultContent(arr[i]);
                         delete arr[i].text_tab;
                     }
@@ -275,9 +339,11 @@
             return {
                 tab_content_tab:[
                     {
-                        title_tab:i18n.tabt
+                        title_tab:i18n.tabt,
+                        builder_content: getDefaultContent({text_tab: i18n.tabc})
                     }
-                ]
+                ],
+                color_tab: 'accent-color'
             };
         }
         static builderSave(settings){
@@ -358,14 +424,48 @@
                 contentTab.push({});
             }
         }
+        _syncTabState(){
+            const module=this.el.tfClass('module-tab')[0] || this.el.querySelector('.module-tab');
+            if(!module){
+                return;
+            }
+            const tabNav=module.tfClass('tab-nav')[0];
+            if(!tabNav?.children.length){
+                return;
+            }
+            let currentLi=tabNav.querySelector('li.current');
+            if(!currentLi?.isConnected){
+                currentLi=tabNav.children[0];
+            }
+            const link=currentLi?.tfTag('a')[0];
+            if(!link){
+                return;
+            }
+            const tabId=getTabLinkId(link);
+            for(const li of tabNav.children){
+                const expanded=li===currentLi?'true':'false';
+                li.classList.toggle('current',expanded==='true');
+                li.setAttribute('aria-expanded',expanded);
+            }
+            for(const content of module.querySelectorAll(':scope > .tab-content')){
+                content.setAttribute('aria-hidden',content.dataset.id===tabId?'false':'true');
+            }
+            const title=module.tfClass('tab-nav-current-active')[0]?.tfClass('tb_activetab_title')[0];
+            if(title){
+                title.replaceChildren(...link.cloneNode(true).children);
+            }
+        }
         deleteRow(item,parent){
             const index=Themify.convert(parent.children).indexOf(item);
             if(api.isVisual){
                 const tab=this.el.querySelector('ul.tab-nav').children[index];
                 if(tab){
-                    const id=tab.tfTag('a')[0].getAttribute('href');
+                    const tabId=getTabLinkId(tab.tfTag('a')[0]);
                     tab.remove();
-                    this.el.querySelector('[data-id="'+id.replace('#','')+'"]').remove();
+                    if(tabId){
+                        this.el.querySelector('[data-id="'+tabId+'"]')?.remove();
+                    }
+                    this._syncTabState();
                 }
             }else{
                 contentTab.splice(index,1);
@@ -403,8 +503,8 @@
             const index=Themify.convert(row.parentNode.children).indexOf(row);
             if(api.isVisual){
                 const title=this.el.querySelector('ul.tab-nav').children[index],
-                    id=title.tfTag('a')[0].getAttribute('href'),
-                    content=this.el.querySelector('[data-id="'+id.replace('#','')+'"]'),
+                    tabId=getTabLinkId(title.tfTag('a')[0]),
+                    content=tabId?this.el.querySelector('[data-id="'+tabId+'"]'):null,
                     settings=this._getBuilderContent(content);
                     api.Helper.clearElementId(settings,true);
                     const {tabTitleWrap,tabContent}=this._getItem({builder_content:settings},{},1,true);
@@ -441,7 +541,7 @@
             const content_tabs=this.get('mod_settings').tab_content_tab,
             rows=[];
             for(let i=0;i<content_tabs.length;i++){
-                rows[i]={title:content_tabs[i].title_tab,content:content_tabs[i].builder_content || getDefaultContent()};
+                rows[i]={title:content_tabs[i].title_tab,content:getBuilderContent(content_tabs[i])};
             }
             (new TB_BuilderContentLightbox(this,'tb_tabs_edit')).open(rows,index);
         }
@@ -461,7 +561,8 @@
                     if(items){
                         for(let i=0;i<items.length;++i){
                             if(rows[i]!==undefined){
-                                rows[i].builder_content=this._getBuilderContent(items[i]);
+                                const scraped=this._getBuilderContent(items[i],saving);
+                                rows[i].builder_content=api.Helper.mergeBuilderContentFromDom(rows[i].builder_content,scraped,items[i],saving,i18n.tabc);
                             }
                         }
                     }
@@ -474,7 +575,7 @@
                 link=createElement('a',{href:'#'+tabId}),
                 span = createElement('span', 'tb_tab_title'),
                 tabContent=createElement('',{class:'tab-content tf_clear','data-id':tabId,'aria-hidden':index!==0}),
-                builder_content=item.builder_content || getDefaultContent(item),
+                builder_content=getBuilderContent(item),
                 fr=createDocumentFragment(),
                 settings=[],
                 containers=[];
@@ -527,6 +628,12 @@
                 classes=['module','module-tab','ui'],
                 activetab_title = createElement('span', 'tb_activetab_title'),
                 checkClass=[layout,color,data.css_tab];
+            if (color !== 'tb_default_color' && color !== 'transparent' && color !== 'outline') {
+                const tbm = typeof ThemifyBuilderModuleJs !== 'undefined' ? ThemifyBuilderModuleJs : null,
+                    cssBase = tbm?.cssUrl || (Themify.builder_url + 'css/modules/'),
+                    ver = tbm?.ver || Themify.v || null;
+                Themify.loadCss(cssBase + 'colors.css', 'tb_module_color', ver);
+            }
             if(data.style_tab){
                 classes.push('tab-style-'+data.style_tab);
             }
@@ -557,15 +664,16 @@
                 module.appendChild(this.constructor.getModuleTitle(data.mod_title_tab,'mod_title_tab'));
             }
             module.append(currentActiveWrap,tabNav);
-            if(api.activeModel?.id===this.id && !isRestore){
+            if(api.activeModel?.id===this.id && !isRestore && api.isUndoRedoRestore!==true){
                 this.parseHtml(data);
             }
             module.tfOn(_CLICK_,e=>{
-                const target=e.target,
-                    cl=target?.classList;
-                if(cl.contains('tb_add_tab') || cl.contains('tb_del_tab')){
+                const addBtn=e.target.closest('.tb_add_tab'),
+                    delBtn=e.target.closest('.tb_del_tab');
+                if(addBtn || delBtn){
                     e.stopPropagation();
-                    if(cl.contains('tb_add_tab')){
+                    e.preventDefault();
+                    if(addBtn){
                         if(api.activeModel?.id===this.id){
                             Themify.triggerEvent(api.LightBox.el.tfClass('add_new')[0],e.type);
                         }
@@ -573,43 +681,49 @@
                             api.undoManager.start('inlineAdd');
                             const settings=this.get('mod_settings'),
                                 ul=this.el.tfClass('tab-nav')[0],
-                            def=this.constructor.default().tab_content_tab?.[0] || {};
+                            def=api.Helper.cloneObject(this.constructor.default().tab_content_tab?.[0] || {});
                             settings.tab_content_tab??=[];
-                            const index=settings.tab_content_tab.push(def),
+                            const index=settings.tab_content_tab.push(def)-1,
                                 {tabTitleWrap,tabContent}=this._getItem(def,settings,index);
-                            tabTitleWrap.appendChild(target);
+                            tabTitleWrap.appendChild(addBtn);
                             ul.appendChild(tabTitleWrap);
                             ul.parentNode.appendChild(tabContent);
+                            api.patchBuilderInlineNav?.(this.el);
                             this.set('mod_settings',settings);
                             api.undoManager.end('inlineAdd');
                         }
                     }
                     else{
-                        const li=target.closest('li'),
+                        const li=delBtn.closest('li'),
                             index=Themify.convert(li.parentNode.children).indexOf(li);
                         if(index!==-1){
                             if(api.activeModel?.id===this.id){
-                                Themify.triggerEvent(api.LightBox.el.tfClass('tb_delete_row')[index],e.type);
+                                const deleteRow=api.LightBox.el?.tfClass('tb_delete_row')[index];
+                                if(deleteRow){
+                                    Themify.triggerEvent(deleteRow,e.type);
+                                }
                             }
                             else{
                                 api.undoManager.start('inlineDelete');
                                 const settings=this.get('mod_settings'),
-                                    id=li.tfTag('a')[0].getAttribute('href'),
-                                    addBtn=li.tfClass('tb_add_btn')[0],
-                                    content=this.el.querySelector('[data-id="'+id.replace('#','')+'"]');
+                                    tabId=getTabLinkId(li.tfTag('a')[0]),
+                                    moveAddBtn=li.tfClass('tb_add_btn')[0],
+                                    content=tabId?this.el.querySelector('[data-id="'+tabId+'"]'):null;
                                 settings.tab_content_tab.splice(index, 1); 
                                 this.set('mod_settings',settings);
-                                if(addBtn){
-                                    li.previousElementSibling?.appendChild(addBtn);
+                                if(moveAddBtn){
+                                    li.previousElementSibling?.appendChild(moveAddBtn);
                                 }
-                                content.remove();
+                                content?.remove();
                                 li.remove();
+                                this._syncTabState();
+                                api.patchBuilderInlineNav?.(this.el);
                                 api.undoManager.end('inlineDelete');
                             }
                         }
                     }
                 }
-            },{passive:true});
+            },{passive:false});
             
             
             for(let i=0,len=arr.length;i<len;++i){

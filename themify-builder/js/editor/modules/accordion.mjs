@@ -13,13 +13,94 @@
                 }]   
             }]
         }];  
+    },
+    getBuilderContent=item=>{
+        let content=item?.builder_content;
+        if(content===undefined || content===null || content===''){
+            content=getDefaultContent(item);
+        }
+        else if(typeof content==='string'){
+            content=JSON.parse(content);
+        }
+        return content;
     };
+    const closeAccordionPanel = li => {
+        if (!li) {
+            return;
+        }
+        const panel = li.querySelector(':scope > .accordion-content'),
+            link = li.querySelector(':scope > .accordion-title a');
+        li.classList.remove('builder-accordion-active');
+        panel?.classList.add('tf_hide');
+        panel?.setAttribute('aria-hidden', 'true');
+        link?.setAttribute('aria-expanded', 'false');
+        li.querySelector(':scope > .accordion-title .accordion-active-icon')?.classList.add('tf_hide');
+        li.querySelector(':scope > .accordion-title .accordion-icon')?.classList.remove('tf_hide');
+    },
+    resetAccordionPanelDisplay = panel => {
+        if (!panel) {
+            return;
+        }
+        panel.style.removeProperty('display');
+        panel.style.removeProperty('height');
+        panel.style.removeProperty('overflow');
+        panel.style.removeProperty('padding-top');
+        panel.style.removeProperty('padding-bottom');
+        panel.style.removeProperty('margin-top');
+        panel.style.removeProperty('margin-bottom');
+    },
+    isAccordionPanelOpen = li => {
+        const panel = li?.querySelector(':scope > .accordion-content');
+        if (!panel || !li.classList.contains('builder-accordion-active')) {
+            return false;
+        }
+        if (panel.classList.contains('tf_hide') || panel.getAttribute('aria-hidden') === 'true') {
+            return false;
+        }
+        return panel.style.display !== 'none';
+    },
+    forceOpenAccordionPanel = li => {
+        if (!li || isAccordionPanelOpen(li)) {
+            return;
+        }
+        const module = li.closest('.module-accordion'),
+            panel = li.querySelector(':scope > .accordion-content'),
+            link = li.querySelector(':scope > .accordion-title a'),
+            type = module?.dataset?.behavior;
+        if (type === 'accordion' && li.parentNode) {
+            for (const sib of li.parentNode.children) {
+                if (sib !== li) {
+                    closeAccordionPanel(sib);
+                }
+            }
+        }
+        li.classList.add('builder-accordion-active');
+        resetAccordionPanelDisplay(panel);
+        panel?.classList.remove('tf_hide');
+        panel?.setAttribute('aria-hidden', 'false');
+        link?.setAttribute('aria-expanded', 'true');
+        li.querySelector(':scope > .accordion-title .accordion-active-icon')?.classList.remove('tf_hide');
+        li.querySelector(':scope > .accordion-title .accordion-icon')?.classList.add('tf_hide');
+    };
+
     api.ModuleAccordion = class extends api.Module {
+
+        static openPanelForInlineEdit(el) {
+            if (!api.isVisual || !el?.closest) {
+                return;
+            }
+            forceOpenAccordionPanel(el.closest('.module-accordion li'));
+        }
+
+        inlineEditorStart(el) {
+            this.constructor.openPanelForInlineEdit(el);
+        }
+
         constructor(fields) {
             const arr = fields.mod_settings?.content_accordion;
             if(arr){
                 for(let i=arr.length-1;i>-1;--i){
-                    if(!arr[i].builder_content){
+                    if(arr[i].builder_content===undefined || arr[i].builder_content===null || arr[i].builder_content===''){
                         arr[i].builder_content=getDefaultContent(arr[i]);
                         delete arr[i].text_accordion;
                     }
@@ -196,9 +277,11 @@
         static default() {
             return {
                     content_accordion: [{
-                        title_accordion: i18n.acct
+                        title_accordion: i18n.acct,
+                        builder_content: getDefaultContent({text_accordion: i18n.acccont})
                     }
-                ]
+                ],
+                color_accordion: 'accent-color'
             };
         }
         static builderSave(settings){
@@ -297,7 +380,7 @@
                     settings=this._getBuilderContent(accItem);
                     api.Helper.clearElementId(settings,true);
                     accItem.after(this._getItem({builder_content:settings},{},1,true));
-                    
+                    api.patchBuilderInlineNav?.(this.el);
             }else{
                 const settings=api.Helper.cloneObject(contentAccordion[index]);
                 if(settings.builder_content){
@@ -332,7 +415,7 @@
             const content_accordion=this.get('mod_settings').content_accordion,
             rows=[];
             for(let i=0;i<content_accordion.length;i++){
-                rows[i]={title:content_accordion[i].title_accordion,content:content_accordion[i].builder_content || getDefaultContent()};
+                rows[i]={title:content_accordion[i].title_accordion,content:getBuilderContent(content_accordion[i])};
             }
             (new TB_BuilderContentLightbox(this,'tb_acc_edit')).open(rows,index);
         }
@@ -352,7 +435,9 @@
                     if(items){
                         for(let i=0;i<items.length;++i){
                             if(rows[i]!==undefined){
-                                rows[i].builder_content=this._getBuilderContent(items[i],saving);
+                                const panel=items[i].querySelector(':scope>.accordion-content'),
+                                    scraped=this._getBuilderContent(items[i],saving);
+                                rows[i].builder_content=api.Helper.mergeBuilderContentFromDom(rows[i].builder_content,scraped,panel,saving,i18n.acccont);
                             }
                         }
                     }
@@ -367,7 +452,7 @@
                 titleWrap = createElement( 'span','accordion-title-wrap' ),
                 title = createElement( data.title_tag || 'div','accordion-title tf_rel' ),
                 content = createElement('',{id:tabId + '-content',class:'accordion-content tf_clearfix'+(!isOpen?' tf_hide':''),'data-id':tabId,'aria-hidden':isOpen}),
-                builder_content=item.builder_content || getDefaultContent(item),
+                builder_content=getBuilderContent(item),
                 fr=createDocumentFragment(),
                 settings=[],
                 containers=[];
@@ -414,6 +499,12 @@
                     module =createElement('','module module-accordion'+(data.css_accordion?' '+data.css_accordion:'')),
                     ul = createElement('ul'),
                     ulClasses = ['module-accordion', 'ui',color];
+            if (color !== 'tb_default_color' && color !== 'transparent' && color !== 'outline') {
+                const tbm = typeof ThemifyBuilderModuleJs !== 'undefined' ? ThemifyBuilderModuleJs : null,
+                    cssBase = tbm?.cssUrl || (Themify.builder_url + 'css/modules/'),
+                    ver = tbm?.ver || Themify.v || null;
+                Themify.loadCss(cssBase + 'colors.css', 'tb_module_color', ver);
+            }
             if (data.expand_collapse_accordion) {
                 module.dataset.behavior = data.expand_collapse_accordion;
             }
@@ -423,7 +514,7 @@
             if (data.accordion_appearance_accordion) {
                 ulClasses.push(data.accordion_appearance_accordion.split('|').join(' '));
             }
-            if(api.activeModel?.id===this.id && !isRestore){
+            if(api.activeModel?.id===this.id && !isRestore && api.isUndoRedoRestore!==true){
                 this.parseHtml(data);
             }
             ul.className = ulClasses.join(' ');
@@ -443,10 +534,11 @@
                         else{
                             api.undoManager.start('inlineAdd');
                             const settings=this.get('mod_settings'),
-                            def=this.constructor.default().content_accordion?.[0] || {};
+                            def=api.Helper.cloneObject(this.constructor.default().content_accordion?.[0] || {});
                             settings.content_accordion??=[];
-                            const index=settings.content_accordion.push(def);
+                            const index=settings.content_accordion.push(def)-1;
                             this.el.tfTag('ul')[0].appendChild(this._getItem(def,settings,index));
+                            api.patchBuilderInlineNav?.(this.el);
                             this.set('mod_settings',settings);
                             api.undoManager.end('inlineAdd');
                         }

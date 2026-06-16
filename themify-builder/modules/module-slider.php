@@ -122,7 +122,7 @@ class TB_Slider_Module extends Themify_Builder_Component_Module {
                 'show_arrow_slider' => $atts['slider_nav'],
                 'left_margin_slider' => '',
                 'right_margin_slider' => '',
-                'css_slider' => $atts['class']
+                'css_slider' => themify_sanitize_css_classes( $atts['class'] )
             )
         );
 

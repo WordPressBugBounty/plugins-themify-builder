@@ -91,7 +91,7 @@ if(!empty( $list_categories )){
                             $orders['rate']=__( 'Rating','themify' );
                         }
                         foreach($orders as $order=>$title):?>
-                            <li data-order-by="<?php echo $order; ?>"<?php echo $order===$args['ajax_sort_order_by'] ? ' class="active"' : ''; ?>><?php echo $title; ?></li>
+                            <li data-order-by="<?php echo esc_attr( $order ); ?>"<?php echo $order===$args['ajax_sort_order_by'] ? ' class="active"' : ''; ?>><?php echo esc_html( $title ); ?></li>
                         <?php endforeach; ?>
                     </ul>
                 </div>

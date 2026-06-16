@@ -534,12 +534,17 @@ if (!function_exists('themify_permalink_attr')) {
             }
         }
         $rel = $rel === true && $isLightbox === false ? 'target="_blank" rel="noopener"' : '';
-        $result = array('href' => $link, 'cl' => trim($cl), 'r' => $rel, 'l' => $isLightbox);
+        $result = array(
+            'href' => esc_url( $link ),
+            'cl' => esc_attr( trim( $cl ) ),
+            'r' => $rel,
+            'l' => $isLightbox
+        );
 
         if ($echo === false) {
             return $result;
         }
-        echo 'href="' . esc_url( $result['href'] ) . '"';
+        echo 'href="' . $result['href'] . '"';
         if ($result['cl'] !== '') {
             echo ' class="' . $result['cl'] . '"';
         }
@@ -675,7 +680,7 @@ if (!function_exists('themify_post_media')) {
                 }
                 ?>
                     <?php if ($isImage === true): ?>
-                        <a href="<?php echo esc_url( $link_attr['href'] ) ?>"<?php if ($link_attr['cl'] !== ''): ?> class="<?php echo $link_attr['cl'] ?>"<?php endif; ?><?php if ($link_attr['r'] !== ''): ?> <?php echo $link_attr['r'] ?><?php endif; ?>>
+                        <a href="<?php echo esc_url( $link_attr['href'] ) ?>"<?php if ($link_attr['cl'] !== ''): ?> class="<?php echo esc_attr( $link_attr['cl'] ) ?>"<?php endif; ?><?php if ($link_attr['r'] !== ''): ?> <?php echo $link_attr['r'] ?><?php endif; ?>>
                     <?php endif; ?>
                     <?php echo $post_image; ?>
                     <?php if ($isImage === true): ?>
@@ -770,7 +775,7 @@ if (!function_exists('themify_post_media')) {
                 <?php if (themify_check('setting-excerpt_more', true) && (!is_single() || isset($themify->post_module_hook))) : ?>
 
                     <div class="more-link-wrap"><a href="<?php $link = themify_permalink_attr(array(), false);
-                echo esc_url( $link['href'] ); ?>" class="more-link"><?php echo $more_text; ?></a></div>
+                echo esc_url( $link['href'] ); ?>" class="more-link"><?php echo wp_kses_post( $more_text ); ?></a></div>
 
             <?php endif; ?>
 
@@ -858,9 +863,9 @@ if (!function_exists('themify_post_title')) {
             }
             if ($args['unlink'] !== true) {
                 $link = themify_permalink_attr($args, false);
-                $html .= '<a href="' . $link['href'] . '"';
+                $html .= '<a href="' . esc_url( $link['href'] ) . '"';
                 if ($link['cl'] !== '') {
-                    $html .= ' class="' . $link['cl'] . '" ';
+                    $html .= ' class="' . esc_attr( $link['cl'] ) . '" ';
                 }
                 if ($link['r'] !== '') {
                     $html .= $link['r'];

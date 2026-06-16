@@ -162,7 +162,8 @@
                 text_callout: i18n.caltext,
                 action_btn_text_callout: i18n.actbtn,
                 action_btn_link_callout: 'https://themify.me/',
-                action_btn_color_callout: 'blue'
+                color_callout: 'default',
+                action_btn_color_callout: 'accent-color'
             };
         }
         static builderSave(settings){

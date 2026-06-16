@@ -1191,6 +1191,7 @@
             const current=bp==='desktop'?settings:settings['breakpoint_'+bp];
             if(current!==undefined){
                 delete current[key+'_opp_top'];
+                delete current[key+'_opp_left'];
             }
         }
         static clearWidth(key,bp,settings,isHeight,minId,maxId){
@@ -1598,7 +1599,7 @@
                 else if(item === 'solid' || (item === 'none' && i.includes('frame_layout'))){
                     delete settings[i];
                 }
-                else if(item===false && (i === 'background_image-type_image' || i === 'resp_no_bg' || i==='background_image-css' || i === 'background_gradient-css' || i === 'cover_gradient-css' || i === 'cover_gradient_hover-css' ||  i === 'background_zoom' || i === 'b_sh_inset' || i === 'background_image-circle-radial' || i === 'margin-top_opp_top' || i === 'm_t_h_opp_top' || i.includes('padding_opp_')|| i.includes('margin_opp_') || i.includes('_user_role', 3))){
+                else if(item===false && (i === 'background_image-type_image' || i === 'resp_no_bg' || i==='background_image-css' || i === 'background_gradient-css' || i === 'cover_gradient-css' || i === 'cover_gradient_hover-css' ||  i === 'background_zoom' || i === 'b_sh_inset' || i === 'background_image-circle-radial' || i === 'margin-top_opp_top' || i === 'margin-left_opp_left' || i === 'm_t_h_opp_top' || i === 'm_l_h_opp_left' || i.includes('padding_opp_')|| i.includes('margin_opp_') || i.includes('_user_role', 3))){
                     delete settings[i];
                 }
                 else if(i.indexOf('checkbox_') === 0 && i.includes('_apply_all', 6)){

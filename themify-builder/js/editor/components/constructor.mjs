@@ -4,6 +4,36 @@ const createTextNode=text=>{
   return doc.createTextNode(text);  
 };
 const tbExtraBgLayerSerialize = new WeakMap();
+const tbGetThemeAccentSwatchColor = () => {
+    const fallback = '#4d7de1',
+        resolvers = [],
+        docs = [];
+    try { resolvers.push(window.tfSvGradientStopDisplayBackground); } catch(e) {}
+    try { resolvers.push(window.parent?.tfSvGradientStopDisplayBackground); } catch(e) {}
+    try { resolvers.push(window.top?.tfSvGradientStopDisplayBackground); } catch(e) {}
+    for (let i = 0; i < resolvers.length; ++i) {
+        if (typeof resolvers[i] === 'function') {
+            let color = resolvers[i]('--theme_accent', 'builder');
+            if (color && !/^var\(/i.test(color) && color.indexOf('--') !== 0) {
+                return color;
+            }
+        }
+    }
+    try { docs.push(document); } catch(e) {}
+    try { docs.push(topWindowDoc); } catch(e) {}
+    try { docs.push(window.parent?.document); } catch(e) {}
+    try { docs.push(window.top?.document); } catch(e) {}
+    for (let i = 0; i < docs.length; ++i) {
+        let swatch = docs[i]?.querySelector?.('.tf_sv_dd_item[data-name="theme_accent"] .tf_sv_dd_swatch');
+        if (swatch) {
+            let color = swatch.style.background || swatch.style.backgroundColor || getComputedStyle(swatch).backgroundColor;
+            if (color) {
+                return color;
+            }
+        }
+    }
+    return fallback;
+};
 
 window.ThemifyConstructor = {
     clicked: null,
@@ -355,6 +385,16 @@ window.ThemifyConstructor = {
                         }
                     ],
                     color: [
+                        {
+                            img: 'accent-color',
+                            value: 'accent-color',
+                            label: 'accent'
+                        },
+                        {
+                            img: 'white',
+                            value: 'white',
+                            label: 'white'
+                        },
                         {
                             img: 'default',
                             value: 'default',
@@ -6788,8 +6828,9 @@ window.ThemifyConstructor = {
                     v=data.default;
                 }
                 else{
-                    const def = api.activeModel.type === 'module' ? api.activeModel.getPreviewSettings() : null;
-                    v = def?.[data.id] ?? (options[0].value || '');
+                    const def = api.activeModel.type === 'module' ? api.activeModel.getPreviewSettings() : null,
+                        isColorPreset = data.class?.split(' ').includes('tb_colors');
+                    v = def?.[data.id] ?? (isColorPreset ? (self.is_new === true ? 'accent-color' : 'default') : (options[0].value || ''));
                 }
                 self.settings[data.id] = v;
             }
@@ -6806,6 +6847,12 @@ window.ThemifyConstructor = {
                     sprite = createElement('span','tb_sprite');
                     if (img.includes('http')) {
                         sprite.style.backgroundImage = 'url(' + img + ')';
+                    } else if (img === 'accent-color') {
+                        sprite.style.setProperty('background-image', 'none', 'important');
+                        sprite.style.background = tbGetThemeAccentSwatchColor();
+                    } else if (img === 'white') {
+                        sprite.style.setProperty('background-image', 'none', 'important');
+                        sprite.style.background = '#fff';
                     } else {
                         sprite.className += ' tb_' + img;
                     }
@@ -9816,7 +9863,8 @@ window.ThemifyConstructor = {
                 max: 40
             },
             '%': {
-                min: (type === 'margin' ? -100 : 0)
+                min: (type === 'margin' ? -500 : 0),
+                max: (type === 'margin' ? 500 : 100)
             }
         };
         return unit ? units[unit] : units;
@@ -9933,13 +9981,18 @@ window.ThemifyConstructor = {
     },
     margin_opposity: {
         update(id, v, self) {
+            const data = self._stylesData[id];
             self.range.update(id, v, self);
             self.checkbox.update(id + '_opp_top', self.getStyleVal(id + '_opp_top'), self);
-            self.range.update(self._stylesData[id].bottomId, self.getStyleVal(self._stylesData[id].bottomId), self);
+            self.range.update(data.bottomId, self.getStyleVal(data.bottomId), self);
+            if (data.leftId) {
+                self.range.update(data.leftId, self.getStyleVal(data.leftId), self);
+                self.range.update(data.rightId, self.getStyleVal(data.rightId), self);
+                self.checkbox.update(data.leftId + '_opp_left', self.getStyleVal(data.leftId + '_opp_left'), self);
+            }
         },
         render(data, self) {
-
-            const items = ['topId', 'bottomId'],
+            const hasHorizontal = data.leftId && data.rightId,
                     ul = createElement('ul', 'tb_seperate_items tf_inline_b tb_has_opposite'),
                     range = api.Helper.cloneObject(data),
                     units = {
@@ -9952,41 +10005,64 @@ window.ThemifyConstructor = {
                             max: 50
                         },
                         '%': {
-                            min: -100
+                            min: -500,
+                            max: 500
                         }
+                    },
+                    sides = hasHorizontal
+                        ? [
+                            {key: 'topId', prop: 'margin-top', class: 'top', tooltip: i18n.top},
+                            {key: 'bottomId', prop: 'margin-bottom', class: 'bottom', tooltip: i18n.bottom},
+                            {key: 'leftId', prop: 'margin-left', class: 'left', tooltip: i18n.left},
+                            {key: 'rightId', prop: 'margin-right', class: 'right', tooltip: i18n.right}
+                        ]
+                        : [
+                            {key: 'topId', prop: 'margin-top', class: 'top', tooltip: i18n.top},
+                            {key: 'bottomId', prop: 'margin-bottom', class: 'bottom', tooltip: i18n.bottom}
+                        ],
+                    addOpposite = (oppId, oppClass) => {
+                        let opposite = createElement('li', 'tb_seperate_opposite ' + oppClass);
+                        opposite.appendChild(self.checkboxGenerate('checkbox',
+                                {
+                                    id: oppId,
+                                    class: 'style_apply_oppositive',
+                                    options: [
+                                        {name: '1', value: ''}
+                                    ]
+                                }
+                        ));
+                        let ch_op = opposite.querySelector('.style_apply_oppositive');
+                        ch_op.tfOn('change', function (e) {
+                            e.stopPropagation();
+                            self.margin._bindingOppositive(this, true);
+                        }, {passive: true})
+                        .parentNode.insertBefore(createElement('','tb_oppositive_state'), ch_op.nextSibling);
+                        if (ch_op.checked === true) {
+                            self.afterRun.push(() => {
+                                self.margin._bindingOppositive(ch_op);
+                            });
+                        }
+                        ul.appendChild(opposite);
                     };
-            for (let i = 0; i < 2; ++i) {
-                let  li = createElement('li');
-                range.id = data[items[i]];
-                range.prop = items[i] === 'topId' ? 'margin-top' : 'margin-bottom';
-                range.class = 'tb_multi_field tb_range_' + (items[i] === 'topId' ? 'top' : 'bottom');
+            for (let i = 0, len = sides.length; i < len; ++i) {
+                let side = sides[i],
+                        li = createElement('li');
+                range.id = data[side.key];
+                range.prop = side.prop;
+                range.class = 'tb_multi_field tb_range_' + side.class;
                 range.opposite = true;
                 range.units = units;
-                range.tooltip = items[i] === 'topId' ? i18n.top : i18n.bottom;
+                range.tooltip = side.tooltip;
                 li.appendChild(self.range.render(range, self));
-                ul.appendChild(li);
-                if (i === 0) {
-                    let opposite = createElement('li','tb_seperate_opposite tb_opposite_top');
-                    opposite.appendChild(self.checkboxGenerate('checkbox',
-                            {
-                                id: range.id + '_opp_top',
-                                class: 'style_apply_oppositive',
-                                options: [
-                                    {name: '1', value: ''}
-                                ]
-                            }
-                    ));
-                    let ch_op = opposite.querySelector('.style_apply_oppositive');
-                    ch_op.tfOn('change', function (e) {
-                        e.stopPropagation();
-                        self.margin._bindingOppositive(this, true);
-                    }, {passive: true})
-                    .parentNode.insertBefore(createElement('','tb_oppositive_state'), ch_op.nextSibling);
-
-                    ul.appendChild(opposite);
+                if (i === 1) {
+                    addOpposite(data.topId + '_opp_top', 'tb_opposite_top');
+                } else if (hasHorizontal && i === 2) {
+                    addOpposite(data.leftId + '_opp_left', 'tb_opposite_left');
                 }
-                self._stylesData[data[items[i]]] = self.styles[data[items[i]]] = {id: data[items[i]], type: data.type, prop: (items[i] === 'topId' ? 'margin-top' : 'margin-bottom'), selector: data.selector};
+                ul.appendChild(li);
+                self._stylesData[data[side.key]] = self.styles[data[side.key]] = {id: data[side.key], type: data.type, prop: side.prop, selector: data.selector};
             }
+            self._stylesData[data.topId] = api.Helper.cloneObject(data);
             data.label??= 'm';
             return ul;
         }

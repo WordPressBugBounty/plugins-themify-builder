@@ -87,6 +87,31 @@
                             transparent: true
                         },
                         {
+                            id: 'shape',
+                            type: 'layout',
+                            mode: 'sprite',
+                            label: 'shape',
+                            options: [
+                                { img: 'normall_button', value: 'default', label: 'def' },
+                                { img: 'squared_button', value: 'squared', label: 'squared' },
+                                { img: 'circle_button', value: 'circle', label: 'circle' },
+                                { img: 'rounded_button', value: 'rounded', label: 'rounded' }
+                            ],
+                            option_js: true
+                        },
+                        {
+                            id: 'background',
+                            type: 'layout',
+                            mode: 'sprite',
+                            label: 'bg',
+                            options: [
+                                { img: 'normall_button', value: 'default', label: 'def' },
+                                { img: 'solid_button', value: 'solid', label: 'solid' },
+                                { img: 'outline_button', value: 'outline', label: 'o' }
+                            ],
+                            option_js: true
+                        },
+                        {
                             type: 'radio',
                             id: 't',
                             label: 'icon',
@@ -318,7 +343,8 @@
             return {
                     content_button: [{
                         label: i18n.btntext,
-                        link: 'https://themify.me/'
+                        link: 'https://themify.me/',
+                        button_color_bg: 'accent-color'
                     }
                 ]
             };
@@ -347,7 +373,9 @@
                     lightbox_height_unit:'px',
                     button_color_bg:'default',
                     link_options:'regular',
-                    t:'i'
+                    t:'i',
+                    shape:'default',
+                    background:'default'
                 },
                 lottieDel= [
                     'st',
@@ -473,7 +501,15 @@
 
             if (item.link) {
                 let color = !item.button_color_bg || item.button_color_bg === 'default' ? 'tb_default_color' : item.button_color_bg,
-                    link = constructor._setEditableContent(createElement('a',{href:item.link,class:'ui builder_button tf_in_flx ' + color}),'label',item.label,'','content_button');
+                    itemClasses = ['ui','builder_button','tf_in_flx',color],
+                    link;
+                if(item.shape && item.shape !== 'default'){
+                    itemClasses.push(item.shape);
+                }
+                if(item.background && item.background !== 'default'){
+                    itemClasses.push(item.background);
+                }
+                link = constructor._setEditableContent(createElement('a',{href:item.link,class:itemClasses.join(' ')}),'label',item.label,'','content_button');
                 if (item.id) {
                     link.id = item.id;
                 }

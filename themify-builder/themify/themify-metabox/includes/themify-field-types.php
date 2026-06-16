@@ -800,7 +800,7 @@ function themify_create_inner_page( $type, $selected ) {
                     }
                     $checked = isset( $selected['post_type'][ $key ][ $post->post_name ] ) ? checked( $selected['post_type'][ $key ][ $post->post_name ], 'on', false ) : '';
                     /* note: slugs are more reliable than IDs, they stay unique after export/import */
-                    $output .= '<label><input type="checkbox" data-name="popup_show[post_type][' . $key . '][' . $post->post_name . ']"' . $checked . ' />' . $post->post_title . '</label>';
+                    $output .= '<label><input type="checkbox" data-name="popup_show[post_type][' . esc_attr( $key ) . '][' . esc_attr( $post->post_name ) . ']"' . $checked . ' />' . esc_html( $post->post_title ) . '</label>';
                     if ( $i === ($page_id * $posts_per_page) ) {
                         $output .= '</div>';
                         $page_id++;
@@ -830,7 +830,7 @@ function themify_create_inner_page( $type, $selected ) {
                 $output              .= '<div class="themify-assignment-items-page themify-assignment-items-page-' . $page_id . '">';
                 foreach ( $terms as $term ) :
                     $checked = isset( $selected['tax'][ $key ][ $term->slug ] ) ? checked( $selected['tax'][ $key ][ $term->slug ], 'on', false ) : '';
-                    $output  .= '<label><input type="checkbox" data-name="popup_show[tax][' . $key . '][' . $term->slug . ']" ' . $checked . ' />' . $term->name . '</label>';
+                    $output  .= '<label><input type="checkbox" data-name="popup_show[tax][' . esc_attr( $key ) . '][' . esc_attr( $term->slug ) . ']" ' . $checked . ' />' . esc_html( $term->name ) . '</label>';
                     if ( $i === ( $page_id * $posts_per_page ) ) {
                         $output .= '</div>';
                         $page_id ++;
@@ -860,7 +860,7 @@ function themify_create_inner_page( $type, $selected ) {
                 $output              .= '<div class="themify-assignment-items-page themify-assignment-items-page-' . $page_id . '">';
                 foreach ( $terms as $term ) :
                     $checked = isset( $selected['tax'][ $key ][ $term->slug ] ) ? checked( $selected['tax'][ $key ][ $term->slug ], 'on', false ) : '';
-                    $output  .= '<label><input type="checkbox" data-name="popup_show[tax][' . $key . '][' . $term->slug . ']" ' . $checked . ' />' . $term->name . '</label>';
+                    $output  .= '<label><input type="checkbox" data-name="popup_show[tax][' . esc_attr( $key ) . '][' . esc_attr( $term->slug ) . ']" ' . $checked . ' />' . esc_html( $term->name ) . '</label>';
                     if ( $i === ( $page_id * $posts_per_page ) ) {
                         $output .= '</div>';
                         $page_id ++;

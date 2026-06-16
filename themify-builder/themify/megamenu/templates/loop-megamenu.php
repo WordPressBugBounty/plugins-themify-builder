@@ -18,11 +18,10 @@ $dimensions = apply_filters( 'themify_mega_menu_image_dimensions', array(
     'src'=>themify_has_post_video()?themify_fetch_video_image(themify_get( 'video_url' ),true ):''
 ) );
 $link=themify_permalink_attr(array(),false);
-$cl=$link['cl']!==''?' class="'.$link['cl'].'"':'';
 $img=themify_get_image($dimensions);
 ?>
 <article class="post type-<?php echo get_post_type(); ?>">
-    <a href="<?php echo $link['href']; ?>"<?php echo $cl?>>
+    <a href="<?php echo esc_url( $link['href'] ); ?>"<?php echo $link['cl'] !== '' ? ' class="' . esc_attr( $link['cl'] ) . '"' : ''; ?>>
         <?php if(!empty($img)): ?>
         <figure class="post-image">
             <?php echo $img; ?>

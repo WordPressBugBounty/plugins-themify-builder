@@ -69,7 +69,8 @@ $newtab =false;
 if($fields_args['link_image'] !== ''){
     if($fields_args['param_image'] === 'lightbox'){
         $lightbox_data = $fields_args['lightbox_width']!=='' ||  $fields_args['lightbox_height']!=='' ? sprintf(' data-zoom-config="%s|%s"'
-            , $fields_args['lightbox_width'] . $fields_args['lightbox_width_unit'], $fields_args['lightbox_height'] . $fields_args['lightbox_height_unit']) : false;
+            , esc_attr( themify_sanitize_css_size( $fields_args['lightbox_width'], $fields_args['lightbox_width_unit'] ) )
+            , esc_attr( themify_sanitize_css_size( $fields_args['lightbox_height'], $fields_args['lightbox_height_unit'] ) )) : false;
     }
     else{
         $newtab=$fields_args['param_image'] === 'newtab';

@@ -47,7 +47,7 @@ if( $query->have_posts()):
             <?php if($post_image!==false):?>
                 <img src="<?php echo esc_url( $post_image );?>" width="47" height="48" />
             <?php endif;?>
-            <span class="title"><?php the_title()?></span>
+            <span class="title"><?php echo esc_html( get_the_title() ); ?></span>
             <?php if($is_product===true):?>
                 <?php global $product?>
                 <span class="price"><?php echo $product->get_price_html()?></span>

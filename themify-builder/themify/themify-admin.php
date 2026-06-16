@@ -611,7 +611,7 @@ function themify_page() {
                         </div>
                     </div>
                     <div class="themify-skins">
-                        <input type="hidden" name="skin" value="<?php echo themify_get( 'skin','',true ); ?>">
+                        <input type="hidden" name="skin" value="<?php echo esc_attr( themify_get( 'skin','',true ) ); ?>">
                         <?php echo themify_get_skins_admin(); ?>
                     </div>
                     <?php if( $skins_and_demos ) : ?>

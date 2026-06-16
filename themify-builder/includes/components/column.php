@@ -31,7 +31,7 @@ class Themify_Builder_Component_Column{
                 $print_column_classes[] = 'themify-bg-zoom';
             }
             if (!empty($col['styling']['custom_css_column'])) {
-                $print_column_classes[] = $col['styling']['custom_css_column'];
+                $print_column_classes[] = themify_sanitize_css_classes( $col['styling']['custom_css_column'] );
             }
             // background video
             $video_data = Themify_Builder_Component_Row::get_video_background($col['styling']);

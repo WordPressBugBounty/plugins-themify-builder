@@ -84,7 +84,7 @@ self::sticky_element_props($container_props, $fields_args);
             if($fields_args['lightbox_height']!=='') {
                 $lightbox_settings[]=$fields_args['lightbox_height'] . $fields_args['lightbox_height_unit'];
             }
-            $link_attr[]=sprintf('data-zoom-config="%s"', implode('|', $lightbox_settings));
+            $link_attr[]=sprintf('data-zoom-config="%s"', esc_attr( implode( '|', $lightbox_settings ) ));
             unset($lightbox_settings);
         }
     } 
