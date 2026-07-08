@@ -9,7 +9,7 @@
                 {
                     id: 'selected_layout_part',
                     type: 'layoutPart',
-                    label: 'layoutPart',
+                    label: 'layoutp',
                     required: {
                         message: 'lpartmsg'
                     },

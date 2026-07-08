@@ -106,7 +106,11 @@ if (empty($limit)) {
 }
 $mod_name_query = isset( $fields_args['term_type'] ) && $fields_args['term_type'] === 'post_slug' ? $fields_args['term_type'] : $fields_args['type_query_' . $mod_name];
 $base_query_taxonomy = $mod_name !== 'post' ? $mod_name . '-category' : $mod_name_query;
-$filter_taxonomy = ! empty( $fields_args['post_filter_tax'] ) ? sanitize_key( $fields_args['post_filter_tax'] ) : $base_query_taxonomy;
+$filter_taxonomy = themify_normalize_filter_taxonomy(
+	$fields_args['post_filter_tax'] ?? '',
+	$fields_args['post_type_' . $mod_name] ?? 'post',
+	$base_query_taxonomy
+);
 if ( $ajax_filter_taxonomy === '' || ( $filter_taxonomy !== '' && $ajax_filter_taxonomy !== $filter_taxonomy ) ) {
     $ajax_filter_taxonomy = $filter_taxonomy;
 }

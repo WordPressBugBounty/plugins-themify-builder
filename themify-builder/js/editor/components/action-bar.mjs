@@ -354,7 +354,7 @@
                             if(tagName==='DIV' &&target.classList.contains('tb_dragger')){
                                 api.EdgeDrag.openLightBox(target);
                             }
-                            else if(!api.isDocked){
+                            else if(!api.isDocked || !topWindowDoc.body.classList.contains('tb_panel_docked')){
                                 const el = target.closest('[data-cid]');
                                 if(el){
                                     e.preventDefault();
@@ -572,7 +572,7 @@
                 if(e.ctrlKey===true || e.metaKey===true){
                     el.classList.toggle('tb_element_clicked');
                 }
-                else if ((e.type==='dblclick' || api.isDocked) && !el.classList.contains('tb_active_layout_part')) {
+                else if ((e.type==='dblclick' || (api.isDocked && topWindowDoc.body.classList.contains('tb_panel_docked'))) && !el.classList.contains('tb_active_layout_part')) {
                     try{
                         clearTimeout(clickTimer);
                         const isSame=api.activeModel?.id===model.id;

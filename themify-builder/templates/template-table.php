@@ -35,7 +35,7 @@ if (!empty($data['cols'])) {
 }
 
 $render_cell = static function ($cell) {
-    return wp_kses_post(do_shortcode((string) $cell));
+    return do_shortcode((string) $cell);
 };
 
 $container_class = apply_filters('themify_builder_module_classes', array(

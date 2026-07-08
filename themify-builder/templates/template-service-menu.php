@@ -155,7 +155,7 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h
 
             <?php if ($fields_args['description_service_menu'] !== '') : ?>
                 <div class="tb-menu-description">
-                    <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['description_service_menu'])); ?>
+                    <?php echo apply_filters('themify_builder_module_content', $fields_args['description_service_menu']); ?>
                 </div>
             <?php endif; ?>
         </div>

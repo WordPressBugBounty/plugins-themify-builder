@@ -70,7 +70,7 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h
     <div class="callout-content tf_left">
         <<?php echo esc_attr($fields_args['title_tag']);?> class="callout-heading"><?php echo wp_kses_post($fields_args['heading_callout']); ?></<?php echo esc_attr($fields_args['title_tag']);?>>
         <div class="tb_text_wrap">
-            <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['text_callout']));?>
+            <?php echo apply_filters('themify_builder_module_content', $fields_args['text_callout']);?>
         </div>
     </div>
     <!-- /callout-content -->

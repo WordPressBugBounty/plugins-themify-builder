@@ -19,6 +19,12 @@ class TB_Map_Module extends Themify_Builder_Component_Module {
         return 'map-alt';
     }
 
+    public static function get_js_css():array {
+        return array(
+            'css' => 1
+        );
+    }
+
     /**
      * Handles Ajax request to check map api
      *

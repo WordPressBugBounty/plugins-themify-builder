@@ -79,14 +79,15 @@ class TB_Tab_Module extends Themify_Builder_Component_Module {
 				'value' => $module['mod_settings']['mod_title_tab'],
 			];
 		}
-		if ( ! empty( $module['mod_settings']['tab_content_tab'] ) ) {
+		if ( ! empty( $module['mod_settings']['tab_content_tab'] ) && is_array( $module['mod_settings']['tab_content_tab'] ) ) {
 			foreach ( $module['mod_settings']['tab_content_tab'] as $row_index => $tab ) {
-				if ( isset( $tab['title_tab'] ) ) {
-					$fields[] = [
-						'id' => 'title_tab-' . $row_index,
-						'value' => $tab['title_tab'],
-					];
+				if ( ! is_array( $tab ) ) {
+					continue;
 				}
+				$fields[] = [
+					'id' => 'title_tab-' . $row_index,
+					'value' => isset( $tab['title_tab'] ) ? $tab['title_tab'] : '',
+				];
 				if ( isset( $tab['text_tab'] ) ) {
 					$fields[] = [
 						'id' => 'text_tab-' . $row_index,
@@ -101,19 +102,35 @@ class TB_Tab_Module extends Themify_Builder_Component_Module {
 	}
 
 	public static function translate_module( $module_data, $translations ) {
+		if ( empty( $module_data['mod_settings'] ) || ! is_array( $module_data['mod_settings'] ) ) {
+			$module_data['mod_settings'] = [];
+		}
+		if ( empty( $module_data['mod_settings']['tab_content_tab'] ) || ! is_array( $module_data['mod_settings']['tab_content_tab'] ) ) {
+			$module_data['mod_settings']['tab_content_tab'] = [];
+		}
+
 		foreach ( $translations as $item_key => $value ) {
 			if ( $item_key === 'mod_title_tab' ) {
 				$module_data['mod_settings']['mod_title_tab'] = $value;
 				continue;
 			}
-			$parts = explode( '-', $item_key, 2 );
-			if ( count( $parts ) !== 2 ) {
+
+			$dash_pos = strrpos( $item_key, '-' );
+			if ( $dash_pos === false ) {
 				continue;
 			}
-			list( $field, $index ) = $parts;
-			if ( isset( $module_data['mod_settings']['tab_content_tab'][ $index ][ $field ] ) ) {
-				$module_data['mod_settings']['tab_content_tab'][ $index ][ $field ] = $value;
+
+			$field = substr( $item_key, 0, $dash_pos );
+			$index = substr( $item_key, $dash_pos + 1 );
+			if ( $field === '' || $index === '' || ! is_numeric( $index ) ) {
+				continue;
 			}
+
+			if ( ! isset( $module_data['mod_settings']['tab_content_tab'][ $index ] ) || ! is_array( $module_data['mod_settings']['tab_content_tab'][ $index ] ) ) {
+				$module_data['mod_settings']['tab_content_tab'][ $index ] = [];
+			}
+
+			$module_data['mod_settings']['tab_content_tab'][ $index ][ $field ] = $value;
 		}
 
 		return $module_data;

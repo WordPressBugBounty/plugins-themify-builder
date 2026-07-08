@@ -30,6 +30,10 @@
                         {
                             value: 'azure',
                             name: 'Azure'
+                        },
+                        {
+                            value: 'openstreetmap',
+                            name: 'OpenStreetMap'
                         }
                     ],
                     option_js: true
@@ -416,7 +420,7 @@
                 dataset.reverseGeocoding=!address && latlong;
                 dataset.control=data.map_control !== 'no' ? 0 : 1;
                 dataset.zoom=zoom_map;
-                dataset.type = provider === 'google' ? roadMap : ( provider === 'bing' ? data.bing_type_map || 'aerial' : data.azure_type_map || 'road' );
+                dataset.type = provider === 'google' ? roadMap : ( provider === 'bing' ? data.bing_type_map || 'aerial' : ( provider === 'azure' ? data.azure_type_map || 'road' : '' ) );
                 dataset.scroll=data.scrollwheel_map === 'enable'?1:0;
                 dataset.drag=0;//disable draggable for UI
                 dataset.mdrag=0;

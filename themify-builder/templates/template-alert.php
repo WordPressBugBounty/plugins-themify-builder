@@ -141,7 +141,7 @@ if ($is_alert_visible===true):
             <div class="alert-content">
                 <<?php echo esc_attr($fields_args['title_tag']);?> class="alert-heading"<?php echo $tb_inline_edit ? ' data-name="heading_alert" contenteditable="false"' : ''; ?>><?php echo wp_kses_post($fields_args['heading_alert']); ?></<?php echo esc_attr($fields_args['title_tag']);?>>
                 <div class="tb_text_wrap">
-                    <?php echo wp_kses_post(apply_filters('themify_builder_module_content', $fields_args['text_alert']));?>
+                    <?php echo apply_filters('themify_builder_module_content', $fields_args['text_alert']);?>
                 </div>
             </div>
             <!-- /alert-content -->

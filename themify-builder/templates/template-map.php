@@ -80,7 +80,13 @@ if ($fields_args['b_width_map'] !== '') {
     $style .= ';';
 }
 $notice='';
-if ( current_user_can( 'manage_options' ) ) {
+$osm_tile_url = '';
+$osm_tile_attribution = '';
+if ( $fields_args['map_provider'] === 'openstreetmap' ) {
+    $osm_tile_url = apply_filters( 'themify_builder_osm_tile_url', 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' );
+    $osm_tile_attribution = apply_filters( 'themify_builder_osm_tile_attribution', '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' );
+}
+if ( current_user_can( 'manage_options' ) && $fields_args['map_provider'] !== 'openstreetmap' ) {
     $map_key = themify_builder_get( 'setting-' . $fields_args['map_provider'] . '_map_key', 'builder_settings_' . $fields_args['map_provider'] . '_map_key' );
     if ( empty( $map_key ) ) {
         $notice = sprintf( __( 'Missing <a href="%s">API Key</a>', 'themify' ),
@@ -124,11 +130,15 @@ self::sticky_element_props($container_props, $fields_args);
             <?php endif; ?> 
             data-address="<?php echo esc_attr( $fields_args['address_map'] !== '' ? $fields_args['address_map'] : $fields_args['latlong_map'] ); ?>"
             data-zoom="<?php echo esc_attr( $fields_args['zoom_map'] ); ?>"
-            data-type="<?php echo esc_attr( $fields_args['map_provider'] === 'google' ? $fields_args['type_map'] : $fields_args[ $fields_args['map_provider'] . '_type_map' ] ); ?>"
+            data-type="<?php echo esc_attr( $fields_args['map_provider'] === 'google' ? $fields_args['type_map'] : ( $fields_args['map_provider'] === 'bing' ? $fields_args['bing_type_map'] : ( $fields_args['map_provider'] === 'azure' ? $fields_args['azure_type_map'] : '' ) ) ); ?>"
             data-scroll="<?php echo $fields_args['scrollwheel_map'] === 'enable'; ?>"
             data-drag="<?php echo $fields_args['draggable_map'] === 'enable'; ?>"
             data-mdrag="<?php echo $fields_args['draggable_disable_mobile_map'] === 'yes'; ?>"
             data-control="<?php echo $fields_args['map_control'] === 'no'; ?>"
+            <?php if ( $fields_args['map_provider'] === 'openstreetmap' ) : ?>
+            data-tile-url="<?php echo esc_attr( $osm_tile_url ); ?>"
+            data-tile-attribution="<?php echo esc_attr( $osm_tile_attribution ); ?>"
+            <?php endif; ?>
             class="<?php if(Themify_Builder::$frontedit_active===false):?>tf_lazy <?php endif;?>themify_map<?php echo $fields_args['map_provider'] !== 'google'?' themify_' . $fields_args['map_provider'] . '_map':''?>"
             style="<?php  echo $style; ?>"
             data-info-window="<?php  esc_attr_e($info_window_map); ?>"

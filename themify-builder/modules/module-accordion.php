@@ -85,14 +85,15 @@ class TB_Accordion_Module extends Themify_Builder_Component_Module {
 				'value' => $module['mod_settings']['mod_title_accordion'],
 			];
 		}
-		if ( ! empty( $module['mod_settings']['content_accordion'] ) ) {
+		if ( ! empty( $module['mod_settings']['content_accordion'] ) && is_array( $module['mod_settings']['content_accordion'] ) ) {
 			foreach ( $module['mod_settings']['content_accordion'] as $row_index => $acc ) {
-				if ( isset( $acc['title_accordion'] ) ) {
-					$fields[] = [
-						'id' => 'title_accordion-' . $row_index,
-						'value' => $acc['title_accordion'],
-					];
+				if ( ! is_array( $acc ) ) {
+					continue;
 				}
+				$fields[] = [
+					'id' => 'title_accordion-' . $row_index,
+					'value' => isset( $acc['title_accordion'] ) ? $acc['title_accordion'] : '',
+				];
 				if ( isset( $acc['text_accordion'] ) ) {
 					$fields[] = [
 						'id' => 'text_accordion-' . $row_index,
@@ -107,19 +108,35 @@ class TB_Accordion_Module extends Themify_Builder_Component_Module {
 	}
 
 	public static function translate_module( $module_data, $translations ) {
+		if ( empty( $module_data['mod_settings'] ) || ! is_array( $module_data['mod_settings'] ) ) {
+			$module_data['mod_settings'] = [];
+		}
+		if ( empty( $module_data['mod_settings']['content_accordion'] ) || ! is_array( $module_data['mod_settings']['content_accordion'] ) ) {
+			$module_data['mod_settings']['content_accordion'] = [];
+		}
+
 		foreach ( $translations as $item_key => $value ) {
 			if ( $item_key === 'mod_title_accordion' ) {
 				$module_data['mod_settings']['mod_title_accordion'] = $value;
 				continue;
 			}
-			$parts = explode( '-', $item_key, 2 );
-			if ( count( $parts ) !== 2 ) {
+
+			$dash_pos = strrpos( $item_key, '-' );
+			if ( $dash_pos === false ) {
 				continue;
 			}
-			list( $field, $index ) = $parts;
-			if ( isset( $module_data['mod_settings']['content_accordion'][ $index ][ $field ] ) ) {
-				$module_data['mod_settings']['content_accordion'][ $index ][ $field ] = $value;
+
+			$field = substr( $item_key, 0, $dash_pos );
+			$index = substr( $item_key, $dash_pos + 1 );
+			if ( $field === '' || $index === '' || ! is_numeric( $index ) ) {
+				continue;
 			}
+
+			if ( ! isset( $module_data['mod_settings']['content_accordion'][ $index ] ) || ! is_array( $module_data['mod_settings']['content_accordion'][ $index ] ) ) {
+				$module_data['mod_settings']['content_accordion'][ $index ] = [];
+			}
+
+			$module_data['mod_settings']['content_accordion'][ $index ][ $field ] = $value;
 		}
 
 		return $module_data;

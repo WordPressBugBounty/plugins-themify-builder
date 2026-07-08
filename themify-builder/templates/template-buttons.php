@@ -129,9 +129,11 @@ foreach ($fields_args['content_button'] as $content) {
     }
     if ($content['background'] !== 'default') {
         $link_css_clsss[] = $content['background'];
-        if ($content['background'] === 'outline' || $content['background'] === 'transparent') {
-            Themify_Builder_Model::load_module_self_style($mod_name, $content['background']);
-        }
+    }
+    if ($content['background'] === 'outline') {
+        Themify_Builder_Model::load_module_self_style($mod_name, 'outline');
+    } elseif ($content['background'] === 'transparent' || $content['button_color_bg'] === 'transparent') {
+        Themify_Builder_Model::load_module_self_style($mod_name, 'transparent');
     }
     if ($content['button_color_bg'] !== 'tb_default_color') {
         Themify_Builder_Model::load_color_css($content['button_color_bg']);

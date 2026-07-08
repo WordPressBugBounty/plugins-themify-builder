@@ -9308,21 +9308,13 @@ window.ThemifyConstructor = {
             self.afterRun.push(() => {
                 setTimeout(() => {
                     const css = getComputedStyle(box);
-                    _this.w = parseInt(css.getPropertyValue('width'));
-                    _this.h = parseInt(css.getPropertyValue('height'));
-                    let fresh = self.getStyleVal(data.id);
-                    const domInp = self.getEl(data.id);
-                    if ((fresh === undefined || fresh === null || fresh === '') && domInp != null) {
-                        fresh = domInp.value;
+                    _this.w = parseInt(css.getPropertyValue('width'), 10) || 0;
+                    _this.h = parseInt(css.getPropertyValue('height'), 10) || 0;
+                    const cur = (input.value || '').trim();
+                    if (_this._isGridPositionValue(cur)) {
+                        const parts = cur.split(',');
+                        _this._syncGridHandlePixels(handler, wrapper, parts[0], parts[1]);
                     }
-                    let vv = _this._normalizePositionVal(fresh);
-                    if (!vv) {
-                        vv = _this._normalizePositionVal(data.default !== undefined && data.default !== null ? data.default : '') || (data.default !== undefined && data.default !== null ? data.default : '0,0');
-                    }
-                    if (!vv) {
-                        vv = '0,0';
-                    }
-                    _this.update(data.id, vv, self);
                 }, 700);
             });
             if (data.prop === 'background-position') {
@@ -12308,6 +12300,8 @@ window.ThemifyConstructor = {
     },
     post_filter: {
         render(data, self) {
+            const filterPostType = self.type.includes('product') ? 'product' : (self.type.includes('portfolio') ? 'portfolio' : 'post'),
+                defaultFilterTax = filterPostType === 'product' ? 'product_cat' : (filterPostType === 'portfolio' ? 'portfolio-category' : 'category');
             return self.create([{
                 type: 'group',
                 label: 'postf',
@@ -12358,9 +12352,11 @@ window.ThemifyConstructor = {
                         options: [
                             {
                                 type : 'select',
-                                label : 'query_tax_id',
+                                label : 'filter_tax_id',
                                 dataset : 'taxonomy',
-                                id : 'post_filter_tax'
+                                dataset_args : { post_type: filterPostType },
+                                id : 'post_filter_tax',
+                                default : defaultFilterTax
                             },
                             {
                                 type : 'select',

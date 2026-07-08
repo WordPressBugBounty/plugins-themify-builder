@@ -1541,7 +1541,7 @@ function themify_make_lazy(?string $html, bool $load = true):?string {//@todo mo
                         }
                         $orig = $item;
                         $item = preg_replace('/\s+/', ' ', $item);
-                        if (($ext === 'audio' || $ext === 'video') && (strpos($item, 'wcmp-player') !== false || strpos($item, 'data-lazyloading=') !== false || strpos($item, 'mejs__player') !== false)) {
+                        if (($ext === 'audio' || $ext === 'video') && (strpos($item, 'wcmp-player') !== false || strpos($item, 'data-lazyloading=') !== false || strpos($item, 'mejs__player') !== false || strpos($item, 'vjs-tech') !== false || strpos($item, 'product_video_gallery_for_wc') !== false)) {
                             continue;
                         }
                         if ($ext !== 'audio') {
@@ -1857,6 +1857,20 @@ function themify_is_concate_disabled():bool {
     return apply_filters('themify_disable_concate_css', $is_disabled);
 }
 
+function themify_is_amp():bool {
+    static $is = null;
+    if ($is !== null) {
+        return $is;
+    }
+    $is = false;
+    if ((function_exists('amp_is_request') && amp_is_request())
+        || (function_exists('is_amp_endpoint') && is_amp_endpoint())
+        || (function_exists('ampforwp_is_amp_endpoint') && ampforwp_is_amp_endpoint())) {
+        $is = true;
+    }
+    return (bool) apply_filters('themify_is_amp', $is);
+}
+
 function themify_disable_other_lazy() {
     add_filter('wp_lazy_loading_enabled', '__return_false', 100);
     add_filter('lazyload_is_enabled', '__return_false', 1, 100); //disable jetpack lazy load
@@ -2034,21 +2048,180 @@ function themify_get_template(string $slug, string $name = '', array $args = arr
     }
 }
 
+/* Map assigned terms to filter taxonomy term IDs (matches by slug across taxonomies). */
+if ( ! function_exists( 'themify_map_term_to_filter_taxonomy' ) ) :
+function themify_map_term_to_filter_taxonomy( $term, $filter_taxonomy ) {
+    if ( ! $term || is_wp_error( $term ) || ! taxonomy_exists( $filter_taxonomy ) ) {
+        return false;
+    }
+    if ( $term->taxonomy === $filter_taxonomy ) {
+        return $term;
+    }
+    $slug = $term->slug;
+    while ( $slug !== '' ) {
+        $match = get_term_by( 'slug', $slug, $filter_taxonomy );
+        if ( $match && ! is_wp_error( $match ) ) {
+            return $match;
+        }
+        $pos = strrpos( $slug, '-' );
+        if ( false === $pos ) {
+            break;
+        }
+        $slug = substr( $slug, 0, $pos );
+    }
+    return false;
+}
+endif;
+
+if ( ! function_exists( 'themify_get_cross_taxonomy_term_ids' ) ) :
+function themify_get_cross_taxonomy_term_ids( $filter_term, $object_taxonomy ): array {
+    if ( ! $filter_term || is_wp_error( $filter_term ) || ! taxonomy_exists( $object_taxonomy ) ) {
+        return array();
+    }
+    if ( $filter_term->taxonomy === $object_taxonomy ) {
+        return array( (int) $filter_term->term_id );
+    }
+    $ids = array();
+    foreach ( array_unique( array( $filter_term->slug, $filter_term->slug . '-product' ) ) as $slug ) {
+        $term = get_term_by( 'slug', $slug, $object_taxonomy );
+        if ( ! $term || is_wp_error( $term ) ) {
+            continue;
+        }
+        $ids[] = (int) $term->term_id;
+        $children = get_term_children( $term->term_id, $object_taxonomy );
+        if ( ! is_wp_error( $children ) && ! empty( $children ) ) {
+            $ids = array_merge( $ids, array_map( 'intval', $children ) );
+        }
+    }
+    return array_values( array_unique( $ids ) );
+}
+endif;
+
+if ( ! function_exists( 'themify_normalize_filter_taxonomy' ) ) :
+function themify_normalize_filter_taxonomy( $taxonomy, $post_type, $fallback = '' ) {
+    $taxonomy = sanitize_key( (string) $taxonomy );
+    $fallback = sanitize_key( (string) $fallback );
+    if ( is_array( $post_type ) ) {
+        $post_type = reset( $post_type );
+    }
+    $post_type = sanitize_key( (string) $post_type );
+    if ( $post_type === 'product' ) {
+        if ( $taxonomy === 'category' || ( $taxonomy === '' && ( $fallback === 'category' || $fallback === '' ) ) ) {
+            return 'product_cat';
+        }
+        if ( $taxonomy === 'tag' || ( $taxonomy === '' && $fallback === 'tag' ) ) {
+            return 'product_tag';
+        }
+        if ( $taxonomy === '' ) {
+            return $fallback !== '' ? $fallback : 'product_cat';
+        }
+        return $taxonomy;
+    }
+    if ( $taxonomy === '' ) {
+        return $fallback !== '' ? $fallback : 'category';
+    }
+    return $taxonomy;
+}
+endif;
+
+if ( ! function_exists( 'themify_get_post_filter_classes' ) ) :
+function themify_get_post_filter_classes( $object_id, $filter_taxonomy ): array {
+    $classes = array();
+    if ( ! taxonomy_exists( $filter_taxonomy ) ) {
+        return $classes;
+    }
+    $post_type = get_post_type( $object_id );
+    if ( ! $post_type ) {
+        return $classes;
+    }
+    $added = array();
+    foreach ( get_object_taxonomies( $post_type, 'names' ) as $taxonomy ) {
+        $terms = wp_get_object_terms( $object_id, $taxonomy );
+        if ( is_wp_error( $terms ) || empty( $terms ) ) {
+            continue;
+        }
+        foreach ( $terms as $term ) {
+            $filter_term = themify_map_term_to_filter_taxonomy( $term, $filter_taxonomy );
+            if ( $filter_term && ! isset( $added[ $filter_term->term_id ] ) ) {
+                $classes[] = 'cat-' . $filter_term->term_id;
+                $added[ $filter_term->term_id ] = true;
+            }
+        }
+    }
+    return $classes;
+}
+endif;
+
+if ( ! function_exists( 'themify_build_filter_tax_query' ) ) :
+function themify_build_filter_tax_query( $filter_taxonomy, $term_id, $post_type ): array {
+    $term_id = (int) $term_id;
+    if ( $term_id <= 0 || ! taxonomy_exists( $filter_taxonomy ) ) {
+        return array();
+    }
+    if ( is_array( $post_type ) ) {
+        $post_type = reset( $post_type );
+    }
+    $filter_term = get_term( $term_id, $filter_taxonomy );
+    if ( ! $filter_term || is_wp_error( $filter_term ) ) {
+        return array(
+            array(
+                'taxonomy' => $filter_taxonomy,
+                'field' => 'term_id',
+                'terms' => $term_id,
+                'operator' => 'IN',
+            ),
+        );
+    }
+    $queries = array();
+    foreach ( get_object_taxonomies( $post_type, 'names' ) as $taxonomy ) {
+        if ( $taxonomy === $filter_taxonomy ) {
+            $queries[] = array(
+                'taxonomy' => $taxonomy,
+                'field' => 'term_id',
+                'terms' => (int) $filter_term->term_id,
+                'operator' => 'IN',
+            );
+            continue;
+        }
+        $term_ids = themify_get_cross_taxonomy_term_ids( $filter_term, $taxonomy );
+        if ( ! empty( $term_ids ) ) {
+            $queries[] = array(
+                'taxonomy' => $taxonomy,
+                'field' => 'term_id',
+                'terms' => $term_ids,
+                'operator' => 'IN',
+            );
+        }
+    }
+    if ( empty( $queries ) ) {
+        return array(
+            array(
+                'taxonomy' => $filter_taxonomy,
+                'field' => 'term_id',
+                'terms' => $term_id,
+                'operator' => 'IN',
+            ),
+        );
+    }
+    if ( count( $queries ) === 1 ) {
+        return $queries;
+    }
+    return array_merge( array( 'relation' => 'OR' ), $queries );
+}
+endif;
+
 /* Add category id class in post loop for Masonry filter */
 if ( ! function_exists( 'themify_post_filter_class' ) ) :
 function themify_post_filter_class(array $classes, $class, $post_id):array {
-    $categories = wp_get_object_terms($post_id, get_query_var('tf_query_tax', 'category'));
-    if ( ! is_wp_error( $categories ) ) {
-        foreach ($categories as $category) {
-            $classes[] = ' cat-' . $category->term_id;
-        }
-        $is_ajax = get_query_var('tf_ajax_filter', false);
-        if (true === $is_ajax) {
-            if (isset($_POST['action'], $_POST['tax']) && $_POST['action'] === 'themify_ajax_load_more') {
-                $classes[] = 'ajax-cat-' . (int) $_POST['tax'];
-            } else {
-                $classes[] = 'initial-cat';
-            }
+    $filter_tax = get_query_var( 'tf_query_tax', 'category' );
+    foreach ( themify_get_post_filter_classes( $post_id, $filter_tax ) as $cat_class ) {
+        $classes[] = ' ' . $cat_class;
+    }
+    if ( true === get_query_var( 'tf_ajax_filter', false ) ) {
+        if ( isset( $_POST['action'], $_POST['tax'] ) && $_POST['action'] === 'themify_ajax_load_more' ) {
+            $classes[] = 'ajax-cat-' . (int) $_POST['tax'];
+        } else {
+            $classes[] = 'initial-cat';
         }
     }
     return $classes;

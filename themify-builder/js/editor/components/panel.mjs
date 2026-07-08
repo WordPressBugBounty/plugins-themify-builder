@@ -1040,7 +1040,7 @@
                     api.isDocked=false;
                 }
                 else if(!api.isDocked){
-                    api.isDocked=Themify.isRTL?'right':'left';
+                    api.isDocked = false;
                 }
             }
             Themify.on('tb_panel_drag_start', () => {

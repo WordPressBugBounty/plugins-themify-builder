@@ -881,7 +881,13 @@ class Themify_Builder_Active{
             $mode = isset($_POST['mode']) ? $_POST['mode'] : null;
 
             if ($dataset === 'taxonomy') {
-                $result = Themify_Builder_Model::get_public_taxonomies();
+                $post_type = '';
+                if (!empty($_POST['args']['post_type'])) {
+                    $post_type = sanitize_key(wp_unslash($_POST['args']['post_type']));
+                }
+                $result = $post_type !== ''
+                    ? Themify_Builder_Model::get_public_taxonomies_for_post_type($post_type)
+                    : Themify_Builder_Model::get_public_taxonomies();
             } 
             elseif ($dataset === 'post_type') {
                 $result =Themify_Builder_Model::get_public_post_types();

@@ -876,6 +876,7 @@
                         }
                     }
                 }
+                value = value.filter(row => Object.keys(row).length > 0);
             } 
             else if (cl.contains('module-widget-form-container')) {
                 value = this.serializeObject(item);

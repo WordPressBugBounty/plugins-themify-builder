@@ -30,6 +30,7 @@ $fields_args = $args['mod_settings']+ array(
     'wh_m_m_ct_unit' => 'px',
     'tooltips' => '',
     'mega' => '',
+    'mobile_layout_part' => '', // layout part to display in mobile menu instead of the menu
 );
 if ($fields_args['according_style_menu']!=='') {
     $fields_args['according_style_menu'] = self::get_checkbox_data($fields_args['according_style_menu']);
@@ -72,6 +73,12 @@ if ( $fields_args['allow_menu_breakpoint'] !== '' ) {
     $container_props['data-menu-breakpoint'] = 0;
 }
 $container_props['data-element-id'] = $element_id;
+
+// Pass layout part slug to JS so it knows to swap the menu content on mobile
+if ( ! empty( $fields_args['mobile_layout_part'] ) ) {
+    $container_props['data-mobile-layout-part'] = $fields_args['mobile_layout_part'];
+}
+
 $container_props = apply_filters('themify_builder_module_container_props', self::parse_animation_effect($fields_args,$container_props), $fields_args, $mod_name, $element_id);
 $breakpoint=$container_props['data-menu-breakpoint'];
 if(Themify_Builder::$frontedit_active===false){
@@ -115,7 +122,7 @@ self::sticky_element_props($container_props, $fields_args);
         }
         $menu = themify_menu_nav( $args );
     }
-    if($breakpoint>0 && ($menu || ! empty( $fields_args['allow_menu_fallback'] ))):?>
+    if($breakpoint>0 && ($menu || ! empty( $fields_args['allow_menu_fallback'] ) || ! empty( $fields_args['mobile_layout_part'] ))):?>
         <style>
             @media(max-width:<?php echo $breakpoint?>px){
                 .<?php echo $element_id?> .menu-module-burger{
@@ -148,6 +155,14 @@ self::sticky_element_props($container_props, $fields_args);
             , wp_list_pages( $args ) );
         
     }
+
+    // If a Layout Part is selected, render it inside the mobile menu panel
+    if ( ! empty( $fields_args['mobile_layout_part'] ) ) : ?>
+        <div class="mobile-menu-layout-part" style="display:none;">
+            <?php echo do_shortcode( '[themify_layout_part slug="' . esc_attr( $fields_args['mobile_layout_part'] ) . '"]' ); ?>
+        </div>
+    <?php endif;
+
     if ( $fields_args['mobile_menu_style'] === 'slide') {
         $menu_slide_direction = in_array( $fields_args['menu_slide_direction'], array( 'left', 'right', 'top', 'bottom' ), true ) ? $fields_args['menu_slide_direction'] : 'left';
         $menu_slide_offset = themify_sanitize_css_size( $fields_args['wh_m_m_ct'], $fields_args['wh_m_m_ct_unit'] );

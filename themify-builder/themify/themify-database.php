@@ -111,6 +111,15 @@ function themify_sanitize_data(array &$data ){
     if ( !empty( $data )) {
         $html=array( 'setting-custom_css', 'setting-header_html', 'setting-footer_html', 'setting-footer_text_left', 'setting-footer_text_right', 'setting-homepage_welcome', 'setting-store_info_address' );
         foreach( $data as $name => &$value ){
+            if ( is_object( $value ) ) {
+                if ( false !== stripos( $name, 'field_ids' ) ) {
+                    $value = wp_json_encode( $value );
+                } else {
+                    continue;
+                }
+            } elseif ( ! is_string( $value ) ) {
+                continue;
+            }
             if ( in_array( $name,$html ,true )
                 || ( false !== stripos( $name, 'setting-hooks' ) )
             ) {

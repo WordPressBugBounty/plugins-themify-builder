@@ -899,13 +899,19 @@ class Themify_Enqueue_Assets {
         if (self::$disableGoogleFontsLoad === null) {
             $path.= self::loadGoogleFonts();
         }
-        if ($key !== '') {
-            $upload_dir = themify_upload_dir();
-            $href = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], self::$concateFile);
-            unset($upload_dir);
-            $path .= '<link rel="preload" fetchpriority="high" href="' . $href . '" as="style"><link fetchpriority="high" id="themify_concate-css" rel="stylesheet" href="' . $href . '">';
-        } else {
-            $path .= $output.'<style id="themify_concate-css"></style>';//need when dev mode is enabled
+        if (!themify_is_amp() && !preg_match('/<html[^>]*\s(?:amp|⚡)(?:=|[\s>])/i', $body)) {
+            if ($key !== '') {
+                $upload_dir = themify_upload_dir();
+                $href = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], self::$concateFile);
+                unset($upload_dir);
+                $path .= '<link rel="preload" fetchpriority="high" href="' . $href . '" as="style"><link fetchpriority="high" id="themify_concate-css" rel="stylesheet" href="' . $href . '">';
+            } else {
+                $path .= $output;
+                // Placeholder for generate-style.js in dev mode; empty style tags invalidate AMP.
+                if ($output !== '' || themify_is_dev_mode()) {
+                    $path .= '<style id="themify_concate-css"></style>';
+                }
+            }
         }
         unset($output);
         self::$concateFile =  null;
@@ -1370,6 +1376,8 @@ class Themify_Enqueue_Assets {
                 'map_key' => wp_strip_all_tags( themify_builder_get('setting-google_map_key', 'builder_settings_google_map_key') ?: '' ),
                 'bing_map_key' =>wp_strip_all_tags( themify_builder_get('setting-bing_map_key', 'builder_settings_bing_map_key') ?: '' ),
                 'azure_key' => wp_strip_all_tags( themify_builder_get('setting-azure_map_key', 'builder_settings_azure_map_key') ?: '' ),
+                'osm_tile_url' => apply_filters( 'themify_builder_osm_tile_url', 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' ),
+                'osm_tile_attribution' => apply_filters( 'themify_builder_osm_tile_attribution', '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' ),
                 'menu_tooltips' => [],
                 'plugin_url'=>rtrim(plugins_url(),'/'),
                 'content_url'=>content_url(),
@@ -2163,7 +2171,7 @@ class Themify_Enqueue_Assets {
             if (!empty($themify->post_layout_type) && $themify->post_layout_type !== 'default') {
                 $class[] = $themify->post_layout_type;
             }
-            if ($post_type === 'product' && themify_is_woocommerce_active()) {
+            if ($post_type === 'product' && themify_is_woocommerce_active() && $type !== 'builder') {
                 global $woocommerce_loop;
                 if ((isset($woocommerce_loop['name']) && in_array( $woocommerce_loop['name'], [ 'up-sells', 'cross-sells', 'related' ], true ) ) || wc_get_loop_prop('is_shortcode')) {
                     $layout = (int) wc_get_loop_prop('columns');

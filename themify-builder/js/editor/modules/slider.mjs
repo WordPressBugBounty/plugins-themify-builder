@@ -1,8 +1,46 @@
 (api => {
     "use strict";
+    const isEmptySliderRow = (row, id) => {
+        if (!row || typeof row !== 'object' || Array.isArray(row)) {
+            return true;
+        }
+        if (id === 'img_content_slider') {
+            return !row.img_url_slider;
+        }
+        if (id === 'video_content_slider') {
+            return !row.video_url_slider;
+        }
+        if (id === 'text_content_slider') {
+            const text = row.text_caption_slider;
+            return !text || text === '<br>' || text === '<br/>' || text === '<br />';
+        }
+        return Object.keys(row).length === 0;
+    },
+    filterEmptySliderRows = (rows, id) => {
+        if (!Array.isArray(rows)) {
+            return [];
+        }
+        return rows.filter(row => !isEmptySliderRow(row, id));
+    };
+
     api.ModuleSlider = class extends api.Module {
         constructor(fields) {
+            const settings = fields.mod_settings || {};
+            for (const id of ['img_content_slider', 'video_content_slider', 'text_content_slider']) {
+                if (settings[id]) {
+                    settings[id] = filterEmptySliderRows(settings[id], id);
+                }
+            }
             super(fields);
+        }
+
+        static builderSave(settings) {
+            for (const id of ['img_content_slider', 'video_content_slider', 'text_content_slider']) {
+                if (settings[id]) {
+                    settings[id] = filterEmptySliderRows(settings[id], id);
+                }
+            }
+            super.builderSave(settings);
         }
         static getOptions() {
             const display=[

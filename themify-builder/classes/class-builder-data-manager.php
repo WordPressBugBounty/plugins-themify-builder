@@ -88,13 +88,15 @@ class ThemifyBuilder_Data_Manager {
      * @param int $post_id 
      * @param string $action 
      * @param string $custom_css 
+     * @param array $save_options Optional. `silent` skips meta hooks, post_modified, and themify_builder_save_data.
      */
-    public static function save_data($builder_data, $post_id, string $action = 'frontend',$custom_css=null):array {
+    public static function save_data($builder_data, $post_id, string $action = 'frontend',$custom_css=null, array $save_options = []):array {
         /* save the data in json format */
         global $wpdb;
+        $silent = ! empty( $save_options['silent'] );
         try{
             $wpdb->query('START TRANSACTION');
-            $result=self::update_builder_meta($post_id,$builder_data,$action!=='backend',false);
+            $result=self::update_builder_meta( $post_id, $builder_data, $action !== 'backend', false, ! $silent );
             unset($builder_data);
             if(!empty($result['mid'])){
                 $isRevision=wp_is_post_revision($post_id);
@@ -123,7 +125,7 @@ class ThemifyBuilder_Data_Manager {
                     do_action( 'themify_builder_custom_css_updated', $post_id,$action );
                 }
                 $wpdb->query('COMMIT');
-                if($isRevision===false){
+                if ( $isRevision === false && ! $silent ) {
                     // update the post modified date time, to indicate the post has been modified
                     self::update_post(array('ID'=>$post_id,'post_modified'=>current_time('mysql'),'post_modified_gmt'=>current_time('mysql', 1)));
                     /**
@@ -306,6 +308,14 @@ class ThemifyBuilder_Data_Manager {
      * @param int $post_id
      * @param mixed $data 
      */
+    public static function sync_static_content_to_post_content( int $post_id ): bool {
+        $data = self::get_data( $post_id );
+        if ( empty( $data ) || ! is_array( $data ) ) {
+            return false;
+        }
+        return self::save_builder_text_only( $post_id, $data );
+    }
+
     private static function save_builder_text_only(int $post_id, $data ):bool {
         if(wp_is_post_revision( $post_id )){
             return false;
@@ -389,7 +399,7 @@ class ThemifyBuilder_Data_Manager {
     /**
      * Save the builder in post meta
      */
-    public static function update_builder_meta(int $post_id,$data,bool $static_text=true,bool $transaction=true):array{
+    public static function update_builder_meta(int $post_id,$data,bool $static_text=true,bool $transaction=true,bool $fire_meta_hooks=true):array{
         $kses_filter = ! current_user_can( 'unfiltered_html' );
         if(is_array($data)){
             $builder=self::json_escape( $data, $kses_filter );
@@ -435,9 +445,11 @@ class ThemifyBuilder_Data_Manager {
                 if($isNotEmpty===true){
                     if($isUpdate===true){
                         $meta_id= (int)$meta_id->meta_id;
-                        //fires wp hooks
-                        do_action( 'update_post_meta', $meta_id, $post_id, self::META_KEY, $builder );
-                        do_action( 'update_postmeta', $meta_id, $post_id, self::META_KEY, $builder );
+                        if ( $fire_meta_hooks ) {
+                            //fires wp hooks
+                            do_action( 'update_post_meta', $meta_id, $post_id, self::META_KEY, $builder );
+                            do_action( 'update_postmeta', $meta_id, $post_id, self::META_KEY, $builder );
+                        }
                         $result = $wpdb->update(
                             $wpdb->postmeta,
                             array(
@@ -455,8 +467,10 @@ class ThemifyBuilder_Data_Manager {
                         if(!empty($meta_id) && isset($meta_id->meta_id)){//wp bug, if db has gone can be 0
                             $wpdb->query( sprintf( "DELETE FROM $wpdb->postmeta WHERE `post_id` = %d AND `meta_key` = '%s'", $post_id,self::META_KEY ));
                         }
-                        //fires wp hooks
-                        do_action( 'add_post_meta', $post_id, self::META_KEY, $builder);
+                        if ( $fire_meta_hooks ) {
+                            //fires wp hooks
+                            do_action( 'add_post_meta', $post_id, self::META_KEY, $builder );
+                        }
                         $result = $wpdb->insert(
                             $wpdb->postmeta,
                             array(
@@ -489,16 +503,15 @@ class ThemifyBuilder_Data_Manager {
                     if($transaction===true){
                         $wpdb->query('COMMIT');
                     }
-                    if($mid!==-1){//fires wp hooks
-                        if($isUpdate===true){
+                    if ( $mid !== -1 && $fire_meta_hooks ) {//fires wp hooks
+                        if ( $isUpdate === true ) {
                             do_action( 'updated_post_meta', $meta_id, $post_id, self::META_KEY, $builder );
                             do_action( 'update_postmeta', $meta_id, $post_id, self::META_KEY, $builder );
-                        }
-                        else{
+                        } else {
                             do_action( 'added_post_meta', $mid, $post_id, self::META_KEY, $builder );
                         }
                     }
-                    if($isRevision===false && $transaction===true){
+                    if ( $isRevision === false && $transaction === true && $fire_meta_hooks ) {
                         // update the post modified date time, to indicate the post has been modified
                         self::update_post(array('ID'=>$post_id,'post_modified'=>current_time('mysql'),'post_modified_gmt'=>current_time('mysql', 1)));
                     }

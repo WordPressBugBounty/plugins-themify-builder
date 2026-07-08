@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class TF_SV_Framework {
 
     const OPTION_KEY = 'tf_sv_vars';
+    const SORT_KEY   = 'tf_sv_sort_order';
 
     public static function init() {
         add_filter( 'themify_builder_active_vars', [ __CLASS__, 'builder_active_vars' ] );
@@ -14,6 +15,7 @@ final class TF_SV_Framework {
         add_action( 'wp_ajax_tf_sv_theme_native_colors', [ __CLASS__, 'ajax_theme_native_colors' ] );
         add_action( 'wp_ajax_tf_sv_import_missing_vars', [ __CLASS__, 'ajax_import_missing_vars' ] );
         add_action( 'wp_ajax_tf_sv_collect_used', [ __CLASS__, 'ajax_collect_used' ] );
+        add_action( 'wp_ajax_tf_sv_save_sort_order', [ __CLASS__, 'ajax_save_sort_order' ] );
         add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_frontend_assets' ] );
         add_action( 'admin_enqueue_scripts', [ __CLASS__, 'enqueue_admin_assets' ], 30 );
         add_action( 'customize_controls_enqueue_scripts', [ __CLASS__, 'enqueue_customizer_controls' ], 30 );
@@ -237,6 +239,31 @@ final class TF_SV_Framework {
             'css' => self::build_root_css(),
             'message' => __( 'Style Variables saved.', 'themify' )
         ] );
+    }
+
+    public static function get_sort_order(): array {
+        $order = get_theme_mod( self::SORT_KEY, [] );
+        return is_array( $order ) ? $order : [];
+    }
+
+    public static function ajax_save_sort_order() {
+        check_ajax_referer( 'tf_sv_nonce', 'nonce' );
+        if ( ! current_user_can( 'edit_theme_options' ) ) {
+            wp_send_json_error( [ 'message' => __( 'Permission denied.', 'themify' ) ], 403 );
+        }
+        $order = [];
+        if ( isset( $_POST['order'] ) ) {
+            $decoded = json_decode( wp_unslash( $_POST['order'] ), true );
+            if ( is_array( $decoded ) ) {
+                foreach ( $decoded as $type => $names ) {
+                    if ( is_string( $type ) && is_array( $names ) ) {
+                        $order[ sanitize_key( $type ) ] = array_values( array_filter( array_map( 'sanitize_text_field', $names ) ) );
+                    }
+                }
+            }
+        }
+        set_theme_mod( self::SORT_KEY, $order );
+        wp_send_json_success( [ 'order' => $order ] );
     }
 
     public static function ajax_refresh_vars() {
@@ -492,6 +519,7 @@ final class TF_SV_Framework {
             'ajaxUrl' => admin_url( 'admin-ajax.php' ),
             'nonce' => wp_create_nonce( 'tf_sv_nonce' ),
             'vars' => self::get_js_vars(),
+            'sortOrder' => self::get_sort_order(),
             'context' => is_customize_preview() ? 'customizer_preview' : ( is_admin() ? 'admin' : 'front' ),
             'fontCatalog' => self::build_font_catalog_payload(),
             'breakpoints' => self::get_breakpoints_payload(),
@@ -501,7 +529,7 @@ final class TF_SV_Framework {
                 'fonts' => __( 'Fonts', 'themify' ),
                 'numbers' => __( 'Numbers', 'themify' ),
                 'addNew' => __( '+ Add new', 'themify' ),
-                'editVariables' => __( 'Edit Variables', 'themify' ),
+                'editVariables' => __( 'Edit', 'themify' ),
                 'noVariablesYet' => __( 'No variables yet', 'themify' ),
                 'save' => __( 'Save', 'themify' ),
                 'close' => __( 'Close', 'themify' ),

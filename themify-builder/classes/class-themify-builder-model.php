@@ -610,6 +610,56 @@ final class Themify_Builder_Model {
         return apply_filters('builder_get_public_taxonomies', $result);
     }
 
+    /**
+     * Get public taxonomies registered for a post type.
+     *
+     * @since 7.5.0
+     */
+    public static function get_public_taxonomies_for_post_type( string $post_type ): array {
+        $excluded = array(
+            'post_format' => true,
+            'section-category' => true,
+            'product_shipping_class' => true,
+            'product_visibility' => true,
+        );
+        $all = get_taxonomies( array( 'public' => true ), 'objects' );
+        $result = array();
+        foreach ( get_object_taxonomies( $post_type, 'names' ) as $key ) {
+            if ( isset( $excluded[ $key ] ) || ! isset( $all[ $key ] ) ) {
+                continue;
+            }
+            $result[ $key ] = self::get_filter_taxonomy_label( $key, $post_type );
+        }
+        if ( $post_type === 'product' && isset( $result['product_cat'] ) ) {
+            $result = array_merge(
+                array( 'product_cat' => $result['product_cat'] ),
+                array_diff_key( $result, array( 'product_cat' => null ) )
+            );
+        } elseif ( $post_type === 'post' && isset( $result['category'] ) ) {
+            $result = array_merge(
+                array( 'category' => $result['category'] ),
+                array_diff_key( $result, array( 'category' => null ) )
+            );
+        }
+        return apply_filters( 'builder_get_public_taxonomies_for_post_type', $result, $post_type );
+    }
+
+    /**
+     * Label for filter taxonomy dropdown options.
+     */
+    private static function get_filter_taxonomy_label( string $taxonomy, string $post_type ): string {
+        if ( $post_type === 'product' ) {
+            if ( $taxonomy === 'product_cat' ) {
+                return __( 'Product Categories', 'themify' );
+            }
+            if ( $taxonomy === 'product_tag' ) {
+                return __( 'Product Tags', 'themify' );
+            }
+        }
+        $tax = get_taxonomy( $taxonomy );
+        return $tax ? $tax->labels->name : $taxonomy;
+    }
+
     public static function parse_slug_to_ids(string $slug_string, string $post_type = 'post'):array {
         $slug_arr = \explode(',', $slug_string);
         $return = [];
@@ -1027,14 +1077,19 @@ final class Themify_Builder_Model {
         if ( $taxonomy === '' || $term_id <= 0 ) {
             return;
         }
-        $new_clause = array(
-            'taxonomy' => $taxonomy,
-            'field'    => 'term_id',
-            'terms'    => $term_id,
-            'operator' => 'IN',
-        );
+        $post_type = isset( $args['post_type'] ) ? $args['post_type'] : 'post';
+        $new_clause = function_exists( 'themify_build_filter_tax_query' )
+            ? themify_build_filter_tax_query( $taxonomy, $term_id, $post_type )
+            : array(
+                array(
+                    'taxonomy' => $taxonomy,
+                    'field'    => 'term_id',
+                    'terms'    => $term_id,
+                    'operator' => 'IN',
+                ),
+            );
         if ( empty( $args['tax_query'] ) || ! is_array( $args['tax_query'] ) ) {
-            $args['tax_query'] = array( $new_clause );
+            $args['tax_query'] = $new_clause;
             return;
         }
         $args['tax_query'] = array(

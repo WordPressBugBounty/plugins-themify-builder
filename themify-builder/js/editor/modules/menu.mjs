@@ -115,14 +115,16 @@
                             show: [
                                 'menu_breakpoint',
                                 'menu_slide_direction',
-                                'mobile_menu_style'
+                                'mobile_menu_style',
+                                'mobile_layout_part'
                             ]
                         },
                         not_checked: {
                             hide: [
                                 'menu_breakpoint',
                                 'menu_slide_direction',
-                                'mobile_menu_style'
+                                'mobile_menu_style',
+                                'mobile_layout_part'
                             ]
                         }
                     }
@@ -175,6 +177,14 @@
                         left: 'left'
                     },
                     wrap_class: 'tb_checkbox_element_allow_menu'
+                },
+                {
+                    id: 'mobile_layout_part',
+                    type: 'layoutPart',
+                    label: 'layoutp',
+                    wrap_class: 'tb_checkbox_element_allow_menu',
+                    add_url: themifyBuilder.admin_url + '/post-new.php?post_type=tbuilder_layout_part',
+                    edit_url: themifyBuilder.admin_url + '/edit.php?post_type=tbuilder_layout_part'
                 },
                 {
                     id: 'tooltips',
@@ -259,6 +269,7 @@
                 delete settings.menu_breakpoint;
                 delete settings.mobile_menu_style;
                 delete settings.menu_slide_direction;
+                delete settings.mobile_layout_part;
             }
             else if(settings.mobile_menu_style==='dropdown'){
                 delete settings.menu_slide_direction;

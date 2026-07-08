@@ -46,6 +46,7 @@ $options = array(
         'query_id' => __('Post Type', 'themify'),
         'query_term_id' => __('Categories', 'themify'),
         'query_tax_id' => __('Taxonomy', 'themify'),
+        'filter_tax_id' => __('Filter Taxonomy', 'themify'),
         'query_tag_id' => __('Tags', 'themify'),
         'terms'=>__('Terms', 'themify'),
         'query_desc' => __('Enter multiple category IDs (eg. 2,5,8) or slug (eg. news,blog,featured) or exclude category IDs (eg. -2,-5,-8).', 'themify'),
