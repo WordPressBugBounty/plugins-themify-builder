@@ -49,7 +49,7 @@ foreach ($arr as $mode) :
                 data-speed="<?php echo esc_attr( $settings['speed_opt_slider'] ); ?>"
                 data-slider_nav="<?php echo $hasNav ?>"
                 data-wrapvar="<?php echo $settings['wrap_slider'] === 'yes' ? 1 : 0 ?>"
-                data-height="<?php echo isset($settings['horizontal']) && $settings['horizontal'] === 'yes' ? 'variable' : $settings['height_slider'] ?>"
+                data-height="<?php echo esc_attr( isset( $settings['horizontal'] ) && $settings['horizontal'] === 'yes' ? 'variable' : themify_sanitize_slider_height( $settings['height_slider'] ) ); ?>"
                 <?php if($is_slider===true ):?>
                     data-effect="<?php echo esc_attr( $settings['effect_slider'] ); ?>"
                     <?php if ( $settings['effect_slider'] === 'continuously' && ! empty( $settings['continuous_dir'] ) ) : ?>

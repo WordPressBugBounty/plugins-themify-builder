@@ -666,6 +666,47 @@ function themify_sanitize_css_size( $value, $unit = 'px' ) {
 }
 
 /**
+ * Sanitize a CSS unit token.
+ *
+ * @since 7.0
+ */
+function themify_sanitize_css_unit( $unit, $default = 'px' ) {
+    $allowed_units = array( 'px', '%', 'em', 'rem', 'vw', 'vh', 'vmin', 'vmax' );
+    $unit = strtolower( trim( (string) $unit ) );
+    if ( ! in_array( $unit, $allowed_units, true ) ) {
+        $unit = in_array( $default, $allowed_units, true ) ? $default : 'px';
+    }
+    return $unit;
+}
+
+/**
+ * Sanitize slider height option for data-height attributes.
+ *
+ * @since 7.0
+ */
+function themify_sanitize_slider_height( $value ) {
+    $value = (string) $value;
+    if ( in_array( $value, array( 'variable', 'auto', '' ), true ) ) {
+        return $value;
+    }
+    if ( preg_match( '/^([0-9.]+)(px|%|em|rem|vw|vh|vmin|vmax)$/i', $value, $matches ) ) {
+        return themify_sanitize_css_size( $matches[1], strtolower( $matches[2] ) );
+    }
+    return 'variable';
+}
+
+/**
+ * Sanitize CSS border-style values.
+ *
+ * @since 7.0
+ */
+function themify_sanitize_border_style( $value, $default = 'solid' ) {
+    $allowed = array( 'solid', 'dashed', 'dotted', 'double', 'none' );
+    $value = strtolower( trim( (string) $value ) );
+    return in_array( $value, $allowed, true ) ? $value : $default;
+}
+
+/**
  * Sanitize inline CSS declarations for style attributes.
  *
  * @since 7.0

@@ -61,7 +61,10 @@ if (!empty($fields_args['global_styles']) && Themify_Builder::$frontedit_active 
     $container_class[] = $fields_args['global_styles'];
 }
 
-$url = $fields_args['url_video'];
+$url = $fields_args['url_video'] ?? '';
+if ( ! is_string( $url ) ) {
+    $url = '';
+}
 $isOverlay = $fields_args['o_i'] !== '' && $fields_args['o_i_c'] === '1';
 if (!empty($url)) {
     $video_args = array(

@@ -184,6 +184,10 @@ class ThemifyBuilder_Data_Manager {
                 }
             }
             elseif(is_array($v)){
+                if ( $k === 'mod_settings' && isset( $arr['mod_name'] ) && is_string( $arr['mod_name'] ) ) {
+                    $v = self::sanitize_mod_settings( $arr['mod_name'], $v );
+                    $arr[ $k ] = $v;
+                }
                 if ($k === 'table_content' && isset($v['head'], $v['body'])) {
                     $arr[$k] = self::json_escape_table_content($v, $kses_filter);
                 } else {
@@ -195,6 +199,36 @@ class ThemifyBuilder_Data_Manager {
             }
         }
         return $arr;
+    }
+
+    /**
+     * Sanitize module settings that are rendered in HTML attributes or inline CSS.
+     */
+    private static function sanitize_mod_settings( string $mod_name, array $settings ):array {
+        if ( in_array( $mod_name, array( 'slider', 'gallery', 'testimonial-slider' ), true ) && isset( $settings['height_slider'] ) ) {
+            $settings['height_slider'] = themify_sanitize_slider_height( $settings['height_slider'] );
+        }
+        if ( $mod_name === 'map' ) {
+            if ( isset( $settings['b_width_map'] ) ) {
+                $settings['b_width_map'] = preg_replace( '/[^0-9.]/', '', (string) $settings['b_width_map'] );
+            }
+            if ( isset( $settings['b_style_map'] ) ) {
+                $settings['b_style_map'] = themify_sanitize_border_style( $settings['b_style_map'] );
+            }
+            if ( isset( $settings['w_map'] ) ) {
+                $settings['w_map'] = preg_replace( '/[^0-9.]/', '', (string) $settings['w_map'] );
+            }
+            if ( isset( $settings['h_map'] ) ) {
+                $settings['h_map'] = preg_replace( '/[^0-9.]/', '', (string) $settings['h_map'] );
+            }
+            if ( isset( $settings['w_map_unit'] ) ) {
+                $settings['w_map_unit'] = themify_sanitize_css_unit( $settings['w_map_unit'], '%' );
+            }
+            if ( isset( $settings['h_map_unit'] ) ) {
+                $settings['h_map_unit'] = themify_sanitize_css_unit( $settings['h_map_unit'] );
+            }
+        }
+        return $settings;
     }
 
     /**

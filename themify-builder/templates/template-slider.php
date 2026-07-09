@@ -104,7 +104,7 @@ if(Themify_Builder::$frontedit_active===false){
         data-slider_nav="<?php echo $fields_args['show_arrow_slider']=== 'yes'?'1':'0' ?>"
         data-pager="<?php echo $fields_args['show_nav_slider']=== 'yes'?'1':'0' ?>"
         data-effect="<?php echo esc_attr( $fields_args['effect_slider'] ); ?>"
-        data-height="<?php echo $fields_args['height_slider'] ?>"
+        data-height="<?php echo esc_attr( themify_sanitize_slider_height( $fields_args['height_slider'] ) ); ?>"
         data-css_url="<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/carousel,<?php echo THEMIFY_BUILDER_CSS_MODULES ?>sliders/<?php echo $mod_name?>"
         <?php if ( $fields_args['effect_slider'] === 'continuously' && ! empty( $fields_args['continuous_dir'] ) ) : ?>
             data-auto-reverse="true"

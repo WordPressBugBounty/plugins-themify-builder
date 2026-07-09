@@ -6793,13 +6793,21 @@ window.ThemifyConstructor = {
             const input = self.getEl(id);
             if (input !== null) {
                 const items = input.tfClass('tfl-icon');
+                if (v === undefined) {
+                    const isColorPreset = input.classList.contains('tb_colors');
+                    if (isColorPreset) {
+                        v = self.is_new === true ? (items[0]?.id || 'accent-color') : 'default';
+                    } else {
+                        let def = input.dataset.default;
+                        def = def === undefined ? items[0] : input.querySelector('#' + def);
+                        if (def) {
+                            def.classList.add('selected');
+                        }
+                        return;
+                    }
+                }
                 for (let i = items.length - 1; i > -1; --i) {
                     items[i].classList.toggle('selected', v === items[i].id);
-                }
-                if (v === undefined) {
-                    let def = input.dataset.default;
-                    def = def === undefined ? items[0] : def.querySelector('#' + def);
-                    def.classList.add('selected');
                 }
             }
         },
@@ -6828,9 +6836,13 @@ window.ThemifyConstructor = {
                     v=data.default;
                 }
                 else{
-                    const def = api.activeModel.type === 'module' ? api.activeModel.getPreviewSettings() : null,
-                        isColorPreset = data.class?.split(' ').includes('tb_colors');
-                    v = def?.[data.id] ?? (isColorPreset ? (self.is_new === true ? 'accent-color' : 'default') : (options[0].value || ''));
+                    const isColorPreset = data.class?.split(' ').includes('tb_colors');
+                    if (isColorPreset) {
+                        v = self.is_new === true ? (api.activeModel.type === 'module' ? api.activeModel.getPreviewSettings()?.[data.id] : null) ?? 'accent-color' : 'default';
+                    } else {
+                        const def = api.activeModel.type === 'module' ? api.activeModel.getPreviewSettings() : null;
+                        v = def?.[data.id] ?? (options[0].value || '');
+                    }
                 }
                 self.settings[data.id] = v;
             }

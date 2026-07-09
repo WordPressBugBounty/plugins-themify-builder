@@ -68,13 +68,15 @@ $container_props = apply_filters('themify_builder_module_container_props', self:
 $style = '';
 
 // specify border
-if ($fields_args['b_width_map'] !== '') {
-    if($fields_args['b_style_map']!=='none'){
-        $style = 'border:' . $fields_args['b_style_map'] . ' ' . $fields_args['b_width_map'] . 'px';
-        if ($fields_args['b_color_map'] !== '') {
-            $style.=' ' . Themify_Builder_Stylesheet::get_rgba_color($fields_args['b_color_map']);
+$b_width_map = preg_replace( '/[^0-9.]/', '', (string) $fields_args['b_width_map'] );
+if ( $b_width_map !== '' ) {
+    $b_style_map = themify_sanitize_border_style( $fields_args['b_style_map'] );
+    if ( $b_style_map !== 'none' ) {
+        $style = 'border:' . $b_style_map . ' ' . $b_width_map . 'px';
+        if ( $fields_args['b_color_map'] !== '' ) {
+            $style .= ' ' . Themify_Builder_Stylesheet::get_rgba_color( $fields_args['b_color_map'] );
         }
-    }else{
+    } else {
         $style = 'border:none';
     }
     $style .= ';';
@@ -115,8 +117,8 @@ self::sticky_element_props($container_props, $fields_args);
 
     elseif ($fields_args['address_map'] !== '' || $fields_args['latlong_map'] !== ''):
 
-        $style .= 'width:' . $fields_args['w_map'] . $fields_args['w_map_unit'] . ';';
-        $style .= 'height:' . $fields_args['h_map'] . $fields_args['h_map_unit'] . ';';
+        $style .= 'width:' . themify_sanitize_css_size( $fields_args['w_map'], themify_sanitize_css_unit( $fields_args['w_map_unit'], '%' ) ) . ';';
+        $style .= 'height:' . themify_sanitize_css_size( $fields_args['h_map'], themify_sanitize_css_unit( $fields_args['h_map_unit'] ) ) . ';';
         static $mapConnect=false;
         ?>
         <?php if($mapConnect===false && $fields_args['map_provider'] === 'google'):?>
@@ -140,7 +142,7 @@ self::sticky_element_props($container_props, $fields_args);
             data-tile-attribution="<?php echo esc_attr( $osm_tile_attribution ); ?>"
             <?php endif; ?>
             class="<?php if(Themify_Builder::$frontedit_active===false):?>tf_lazy <?php endif;?>themify_map<?php echo $fields_args['map_provider'] !== 'google'?' themify_' . $fields_args['map_provider'] . '_map':''?>"
-            style="<?php  echo $style; ?>"
+            style="<?php echo esc_attr( themify_sanitize_inline_css( $style ) ); ?>"
             data-info-window="<?php  esc_attr_e($info_window_map); ?>"
             data-reverse-geocoding="<?php echo empty($fields_args['address_map']) && !empty($fields_args['latlong_map']) ?>">
         </div>
