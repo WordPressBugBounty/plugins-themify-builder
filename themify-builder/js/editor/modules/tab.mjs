@@ -26,7 +26,8 @@
     },
     getTabLinkId=link=>{
         return (link.getAttribute('href') || link.dataset.tbInlineNav || '').replace('#', '');
-    };
+    },
+    isValidItem=item=>item!==null && typeof item==='object' && !Array.isArray(item);
     api.ModuleTab = class extends api.Module {
 
         static activateTabForInlineEdit(el) {
@@ -83,6 +84,10 @@
             const arr = fields.mod_settings?.tab_content_tab;
             if(arr){
                 for(let i=arr.length-1;i>-1;--i){
+                    if(!isValidItem(arr[i])){
+                        arr.splice(i,1);
+                        continue;
+                    }
                     if(arr[i].builder_content===undefined || arr[i].builder_content===null || arr[i].builder_content===''){
                         arr[i].builder_content=getDefaultContent(arr[i]);
                         delete arr[i].text_tab;
@@ -374,8 +379,12 @@
             }
             if(tabs){
                 for(let i=tabs.length-1;i>-1;--i){
-                    let tab=tabs[i],
-                        builder_content=tab.builder_content;
+                    let tab=tabs[i];
+                    if(!isValidItem(tab)){
+                        tabs.splice(i,1);
+                        continue;
+                    }
+                    let builder_content=tab.builder_content;
                     if(!tab.icon_tab){
                         delete tab.icon_tab;
                     }
@@ -727,6 +736,9 @@
             
             
             for(let i=0,len=arr.length;i<len;++i){
+                if(!isValidItem(arr[i])){
+                    continue;
+                }
                 let {tabTitleWrap,tabContent}=this._getItem(arr[i],data, i);
                 if((len -1)===i){
                     tabTitleWrap.appendChild(createElement('',{role:'button',class:'tb_add_btn tb_add_tab tf_plus_icon tb_disable_sorting',title:'Add Tab'}));

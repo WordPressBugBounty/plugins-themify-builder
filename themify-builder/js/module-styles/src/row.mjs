@@ -120,7 +120,7 @@ export class Row extends BaseStyles {
                                 {name: 'mute', value: 'daudio', help: 'daudioh'},
                                 {name: 'playonmobile', value: 'msupp', help: 'msupph'}
                             ],
-                            default: 'mute',
+                            default: ['mute', 'playonmobile'],
                             is_responsive: false,
                             wrap_class: 'tb_group_element_video'
                         },

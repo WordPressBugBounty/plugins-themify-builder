@@ -60,6 +60,7 @@ if (!class_exists('Themify_Builder',false)) :
             self::includes_always();
             Themify_Builder_Layouts::init();
             Themify_Global_Styles::init();
+            Themify_Builder_Style_Variables::init();
 
             // Plugin compatibility
             self::plugins_compatibility();
@@ -364,6 +365,7 @@ if (!class_exists('Themify_Builder',false)) :
             include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-widgets.php';
             include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-visibility-controls.php';
             include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-display-conditions.php';
+            include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-style-variables.php';
             if (current_user_can('publish_pages')) {
                 include THEMIFY_BUILDER_CLASSES_DIR . '/class-themify-builder-page.php';
             }

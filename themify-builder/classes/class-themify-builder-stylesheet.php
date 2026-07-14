@@ -164,19 +164,22 @@ final class Themify_Builder_Stylesheet {
         }
         $id = (int) $_POST['bid'];
 
-        // Security: non-logged-in visitors may only write CSS for posts that
-        // are published, publicly queryable, and not password-protected.
-        // This prevents anonymous actors from writing CSS files for arbitrary,
-        // draft, or private posts even though they hold a valid nonce.
-        if ( ! is_user_logged_in() ) {
+        if ( is_user_logged_in() ) {
+            if ( ! current_user_can( 'edit_post', $id ) ) {
+                wp_send_json_error( __( 'You Don`t have permission to edit this post', 'themify' ) );
+            }
+        } else {
+            // Unauthenticated on-the-fly generation is limited to published,
+            // public, non-password-protected posts.
             $post = get_post( $id );
             if ( ! $post ) {
                 wp_send_json_error();
             }
             $post_type_obj = get_post_type_object( $post->post_type );
             if (
-                $post->post_status !== 'publish'
+                'publish' !== $post->post_status
                 || post_password_required( $post )
+                || ! $post_type_obj
                 || empty( $post_type_obj->public )
             ) {
                 wp_send_json_error();

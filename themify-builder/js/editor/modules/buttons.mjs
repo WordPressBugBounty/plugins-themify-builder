@@ -107,8 +107,7 @@
                             options: [
                                 { img: 'normall_button', value: 'default', label: 'def' },
                                 { img: 'solid_button', value: 'solid', label: 'solid' },
-                                { img: 'outline_button', value: 'outline', label: 'o' },
-                                { img: 'transparent_button', value: 'transparent', label: 'transparent' }
+                                { img: 'outline_button', value: 'outline', label: 'o' }
                             ],
                             option_js: true
                         },

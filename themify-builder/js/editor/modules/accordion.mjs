@@ -23,7 +23,8 @@
             content=JSON.parse(content);
         }
         return content;
-    };
+    },
+    isValidItem=item=>item!==null && typeof item==='object' && !Array.isArray(item);
     const closeAccordionPanel = li => {
         if (!li) {
             return;
@@ -100,6 +101,10 @@
             const arr = fields.mod_settings?.content_accordion;
             if(arr){
                 for(let i=arr.length-1;i>-1;--i){
+                    if(!isValidItem(arr[i])){
+                        arr.splice(i,1);
+                        continue;
+                    }
                     if(arr[i].builder_content===undefined || arr[i].builder_content===null || arr[i].builder_content===''){
                         arr[i].builder_content=getDefaultContent(arr[i]);
                         delete arr[i].text_accordion;
@@ -303,8 +308,12 @@
             }
             if(accordion){
                 for(let i=accordion.length-1;i>-1;--i){
-                    let acc=accordion[i],
-                        builder_content=acc.builder_content;
+                    let acc=accordion[i];
+                    if(!isValidItem(acc)){
+                        accordion.splice(i,1);
+                        continue;
+                    }
+                    let builder_content=acc.builder_content;
                     if(acc.default_accordion==='closed'){
                         delete acc.default_accordion;
                     }
@@ -520,6 +529,9 @@
             ul.className = ulClasses.join(' ');
 
             for (let i = 0; i < arr.length; ++i) {
+                if(!isValidItem(arr[i])){
+                    continue;
+                }
                 ul.appendChild(this._getItem(arr[i],data, i));
             }
             module.tfOn(_CLICK_,e=>{

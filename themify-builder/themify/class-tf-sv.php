@@ -211,6 +211,12 @@ final class TF_SV_Framework {
             }
         }
         wp_register_style( $style, THEMIFY_URI . '/css/tf-sv-ui.css', [ $color_style, $combo_style ], $style_ver );
+        if ( class_exists( 'Themify_Builder_Style_Variables', false ) ) {
+            $preset_css = Themify_Builder_Style_Variables::get_preset_root_css();
+            if ( '' !== $preset_css ) {
+                wp_add_inline_style( $style, $preset_css );
+            }
+        }
         wp_register_script( $script, THEMIFY_URI . '/js/tf-sv-ui.js', [ 'jquery', $color_script, $combo_script ], $script_ver, true );
         wp_enqueue_style( $color_style );
         wp_enqueue_style( $combo_style );
@@ -376,6 +382,23 @@ final class TF_SV_Framework {
                 static fn( $m ) => $raw_vars[ strtolower( trim( $m[1] ) ) ] ?? $m[0],
                 $value
             ) );
+        }
+
+        // Fill in registered Style Variable color defaults (e.g. Builder preset colors)
+        // for names the theme does not hardcode in its CSS, so editor color swatches
+        // resolve on every theme. Theme-defined values keep priority.
+        foreach ( self::get_merged_vars() as $sv_item ) {
+            if ( 'color' !== ( $sv_item['type'] ?? '' ) ) {
+                continue;
+            }
+            $sv_name = $sv_item['name'] ?? '';
+            if ( '' === $sv_name || isset( $resolved[ $sv_name ] ) ) {
+                continue;
+            }
+            $sv_val = is_array( $sv_item['values'] ?? null ) ? trim( (string) ( $sv_item['values']['desktop'] ?? '' ) ) : '';
+            if ( '' !== $sv_val ) {
+                $resolved[ $sv_name ] = $sv_val;
+            }
         }
 
         $cache = $resolved;
