@@ -37,6 +37,7 @@ $fields_args = $args['mod_settings']+ array(
     'o_w' => '',
     'o_h' => '',
     'hover_play' => '',
+    'video_ratio' => 'landscape',
 );
 
 if (!empty($fields_args['o_i_c'])) {
@@ -62,7 +63,7 @@ if (!empty($fields_args['global_styles']) && Themify_Builder::$frontedit_active 
 }
 
 $url = $fields_args['url_video'] ?? '';
-if ( ! is_string( $url ) ) {
+if ( ! is_string( $url ) || $url === 'null' ) {
     $url = '';
 }
 $isOverlay = $fields_args['o_i'] !== '' && $fields_args['o_i_c'] === '1';
@@ -114,7 +115,7 @@ self::sticky_element_props($container_props, $fields_args);
         echo Themify_Builder_Component_Module::get_module_title($fields_args, 'mod_title_video');
         ?>
         <div class="video-wrap-outer"<?php echo '' !== $video_maxwidth ? ' style="max-width:' . esc_attr($video_maxwidth) . '"' : ''; ?>>
-            <div class="video-wrap tf_rel tf_overflow<?php echo $isLocal === true ? ' tf_local_video' : ''; ?>">
+            <div class="video-wrap tf_rel tf_overflow<?php echo $isLocal === true ? ' tf_local_video' : ''; ?><?php echo $fields_args['video_ratio'] === 'portrait' ? ' video-portrait' : ''; ?>">
                 <?php
                 if ($isLocal === true) {
                     $video = wp_video_shortcode(array(

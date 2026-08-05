@@ -410,8 +410,51 @@ final class Themify_Builder_Model {
         $content = do_shortcode(shortcode_unautop($content));
         Themify_Builder::$is_loop = $isLoop;
         $content = convert_smilies($content);
-        return self::generate_read_more($content);
+        $content = self::generate_read_more($content);
 
+        // Keep <style> from nested shortcodes (e.g. Layout Part inside Tile text).
+        // Tags can be stripped by later filters/editors, leaving CSS as visible text.
+        return self::preserve_module_styles( $content );
+    }
+
+    /**
+     * Extract stylesheet tags / orphaned Builder CSS rules and keep them applied.
+     */
+    public static function preserve_module_styles( string $content ): string {
+        if ( $content === '' || ( strpos( $content, '<style' ) === false && strpos( $content, '.tb_' ) === false ) ) {
+            return $content;
+        }
+
+        $extracted = '';
+
+        $content = preg_replace_callback( '/<style[^>]*>.*?<\/style>/is', static function ( $m ) use ( &$extracted ) {
+            $extracted .= $m[0];
+            return '';
+        }, $content );
+
+        $content = preg_replace_callback( '/<link[^>]+rel=["\']stylesheet["\'][^>]*\/?>/is', static function ( $m ) use ( &$extracted ) {
+            $extracted .= $m[0];
+            return '';
+        }, $content );
+
+        // Orphaned rules like ".tb_xxxx .ui { background-color:#xxx }" when <style> was stripped.
+        $content = preg_replace_callback( '/(\.tb_[a-zA-Z0-9_]+(?:\s+\.[a-zA-Z0-9_\-]+)*\s*\{\s*[a-zA-Z\-]+\s*:[^{}]*\})/s', static function ( $m ) use ( &$extracted ) {
+            $extracted .= '<style>' . $m[0] . '</style>';
+            return '';
+        }, $content );
+
+        if ( $extracted === '' ) {
+            return $content;
+        }
+
+        if ( ! did_action( 'wp_head' ) ) {
+            add_action( 'wp_head', static function () use ( $extracted ) {
+                echo $extracted; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            } );
+            return $content;
+        }
+
+        return $extracted . $content;
     }
 
     /*
@@ -1424,10 +1467,20 @@ final class Themify_Builder_Model {
                 'public' => \themify_builder_get( 'setting-turnstile_site', 'turnstile_site' ),
                 'private' => \themify_builder_get( 'setting-turnstile_secret', 'turnstile_secret' )
             ];
+        } else if ( $provider === 'honeypot' ) {
+            return [
+                'public' => '1',
+                'private' => '1'
+            ];
         }
     }
 
     public static function get_captcha_field(?string $provider, string $before = '',string  $after = '' ):string {
+        if ( $provider === 'honeypot' ) {
+            $output = '<div class="themify_captcha_field themify_honeypot" aria-hidden="true" style="position:absolute!important;left:-9999px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;z-index:-1!important;pointer-events:none!important"><label>' . esc_html__( 'Website', 'themify' ) . '<input type="text" name="tb_hp" value="" tabindex="-1" autocomplete="off"></label></div>';
+            return $before . $output . $after;
+        }
+
         $keys = self::get_captcha_keys( $provider );
         $output = '';
         if ( empty( $keys['public'] ) || empty( $keys['private'] ) ) {
@@ -1453,6 +1506,13 @@ final class Themify_Builder_Model {
      * @return true|WP_Error
      */
     public static function validate_captcha( $provider, $response ) {
+        if ( $provider === 'honeypot' ) {
+            if ( ! empty( $response ) ) {
+                return new WP_Error( 'captcha_test_fail', __( 'Trouble verifying captcha. Please try again.', 'themify' ) );
+            }
+            return true;
+        }
+
         $keys = self::get_captcha_keys( $provider );
         if ( empty( $keys['public'] ) || empty( $keys['private'] ) ) {
             return new WP_Error( 'missing_captcha_key', __( 'Captcha API keys are not provided.', 'themify' ) );

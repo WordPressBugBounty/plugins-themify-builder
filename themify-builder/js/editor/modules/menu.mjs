@@ -182,6 +182,7 @@
                     id: 'mobile_layout_part',
                     type: 'layoutPart',
                     label: 'layoutp',
+                    help: 'lparth',
                     wrap_class: 'tb_checkbox_element_allow_menu',
                     add_url: themifyBuilder.admin_url + '/post-new.php?post_type=tbuilder_layout_part',
                     edit_url: themifyBuilder.admin_url + '/edit.php?post_type=tbuilder_layout_part'

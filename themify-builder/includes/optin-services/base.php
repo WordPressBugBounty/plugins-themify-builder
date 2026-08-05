@@ -121,7 +121,9 @@ abstract class Builder_Optin_Service {
             $provider = $module['captcha'] === 'on' ? 'recaptcha' : $module['captcha'];
 
             $response = null;
-            if ( $provider === 'recaptcha' && ! empty( $_POST['g-recaptcha-response'] ) ) {
+            if ( $provider === 'honeypot' ) {
+                $response = isset( $_POST['tb_hp'] ) ? $_POST['tb_hp'] : '';
+            } else if ( $provider === 'recaptcha' && ! empty( $_POST['g-recaptcha-response'] ) ) {
                 $response = $_POST['g-recaptcha-response'];
             } else if ( $provider === 'hcaptcha' && ! empty( $_POST['h-captcha-response'] ) ) {
                 $response = $_POST['h-captcha-response'];
@@ -129,7 +131,7 @@ abstract class Builder_Optin_Service {
                 $response = $_POST['cf-turnstile-response'];
             }
 
-            if ( $response ) {
+            if ( $provider === 'honeypot' || $response ) {
                 $result = Themify_Builder_Model::validate_captcha( $provider, $response );
                 if ( is_wp_error( $result ) ) {
                     wp_send_json_error( [ 'error' => $result->get_error_message() ] );

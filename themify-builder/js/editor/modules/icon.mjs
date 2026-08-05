@@ -90,7 +90,8 @@
                             type: 'text',
                             label: 'label',
                             control: {
-                                selector: '.module-icon-item>span'
+                                selector: 'span:not(.tb_del_btn):not(.tb_add_btn)',
+                                rep: '.module-icon-item'
                             }
                         },
                         {
@@ -534,7 +535,7 @@
                     e.stopPropagation();
                     if(cl.contains('tb_add_micon')){
                         if(api.activeModel?.id===this.id){
-                            Themify.triggerEvent(api.LightBox.el.tfClass('add_new')[0],e.type);
+                            Themify.triggerEvent(api.LightBox.el.querySelector('.tb_row_js_wrapper > .add_new'),e.type);
                         }
                         else{
                             api.undoManager.start('inlineAdd');

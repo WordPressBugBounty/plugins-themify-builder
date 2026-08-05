@@ -563,7 +563,7 @@
                     e.stopPropagation();
                     if(cl.contains('tb_add_mbtn')){
                         if(api.activeModel?.id===this.id){
-                            Themify.triggerEvent(api.LightBox.el.tfClass('add_new')[0],e.type);
+                            Themify.triggerEvent(api.LightBox.el.querySelector('.tb_row_js_wrapper > .add_new'),e.type);
                         }
                         else{
                             api.undoManager.start('inlineAdd');

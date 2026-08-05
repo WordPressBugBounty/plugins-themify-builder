@@ -325,7 +325,8 @@ class Themify_Builder_Component_Module {
      * @return array
      */
     public static function sticky_element_props( array &$props,array $fields_args, string $motion_option_prefix = '' ) {
-        if (!empty($fields_args['stick_at_check']) || !empty($fields_args['stick_at_check_t']) || !empty($fields_args['stick_at_check_tl']) || !empty($fields_args['stick_at_check_m'])) {
+		// Prefixed calls (e.g. cover_) target child overlays — skip row/module sticky + ID.
+		if ( $motion_option_prefix === '' && ( !empty($fields_args['stick_at_check']) || !empty($fields_args['stick_at_check_t']) || !empty($fields_args['stick_at_check_tl']) || !empty($fields_args['stick_at_check_m']) ) ) {
             static $is_sticky = null;
             if ($is_sticky === null) {
                 $is_sticky = \Themify_Builder_Model::is_sticky_scroll_active();
@@ -507,7 +508,7 @@ class Themify_Builder_Component_Module {
                 }
             }
         }
-        if (isset($fields_args['custom_css_id'])) {
+        if ( $motion_option_prefix === '' && isset($fields_args['custom_css_id'])) {
             $props['id'] = $fields_args['custom_css_id'];
         }
         return $props;

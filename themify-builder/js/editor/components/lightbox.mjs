@@ -77,7 +77,7 @@
             }
         }
         static open(options, model) {
-            return new Promise(resolve => {
+            return new Promise((resolve, reject) => {
                 const callback = async response => {
                     const el=this.el,
                         lightboxContainer = el.querySelector('#tb_lightbox_container'),
@@ -158,6 +158,12 @@
                 this.close();
                 if (model) {
                     api.activeModel = model;
+                } else if (api.activeModel) {
+                    // Standalone open (import/export/etc) must not inherit a stuck model.
+                    // Leftover activeModel injects Visibility/Animation tabs and tb_lb_* class.
+                    const stuck = api.activeModel;
+                    this.el.classList.remove('tb_lb_' + stuck.get('mod_name'));
+                    api.activeModel = api.restoreVals = null;
                 }
                 try {
                     api.ActionBar.clearClicked();
@@ -172,6 +178,12 @@
                     }
                 } catch (e) {
                     console.log(e);
+                    if (model && api.activeModel === model) {
+                        this.el.classList.remove('tb_lb_' + model.get('mod_name'));
+                        api.activeModel = api.restoreVals = null;
+                    }
+                    api.Spinner.showLoader('spinhide');
+                    reject(e);
                 }
             });
         }
@@ -300,9 +312,9 @@
                         }
                     }
 
-                    // Table: run module builderSave before clearEmpty so empty header cells are not stripped from arrays.
-                    if (model.type === 'module' && model.get('mod_name') === 'table') {
-                        const Mod = api.Module.getModuleClassName('table');
+                    // Run module builderSave before clearEmpty so module-specific array cleanup runs first.
+                    if (model.type === 'module') {
+                        const Mod = api.Module.getModuleClassName(model.get('mod_name'));
                         if (Mod?.builderSave) {
                             Mod.builderSave(settings);
                         }

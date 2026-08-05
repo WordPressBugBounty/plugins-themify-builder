@@ -250,6 +250,23 @@
                             ]
                         },
                         {
+                            id: 'video_ratio',
+                            type: 'radio',
+                            label: 'vidratio',
+                            options: [
+                                {
+                                    value: 'landscape',
+                                    name: 'landscape'
+                                },
+                                {
+                                    value: 'portrait',
+                                    name: 'portrait'
+                                }
+                            ],
+                            option_js: true,
+                            default: 'landscape'
+                        },
+                        {
                             id: 'width_video',
                             type: 'number',
                             label: 'vidw',
@@ -345,7 +362,8 @@
                 ext_branding:'no',
                 loop: 'no',
                 unit_video: 'px',
-                title_tag: 'h3'
+                title_tag: 'h3',
+                video_ratio: 'landscape'
             },
             units=['font_size_caption','line_height_caption','f_s_c_h'];
 
@@ -444,6 +462,9 @@
                 }
                 if(data.width_video){
                     outer.style.maxWidth= data.width_video+(data.unit_video || 'px'); 
+                }
+                if(data.video_ratio === 'portrait'){
+                    wrap.className+=' video-portrait';
                 }
                 if(isLocal){
                     const video=createElement('video',{src:url,preload:'none','webkit-playsinline':1,playsinline:1}),

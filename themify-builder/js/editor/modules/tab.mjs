@@ -428,9 +428,9 @@
                 }
             }
         }
-        addRow(){
+        addRow(item){
             if(!api.isVisual){
-                contentTab.push({});
+                contentTab.splice(Themify.convert(item.parentNode.children).indexOf(item), 0, {});
             }
         }
         _syncTabState(){
@@ -684,7 +684,7 @@
                     e.preventDefault();
                     if(addBtn){
                         if(api.activeModel?.id===this.id){
-                            Themify.triggerEvent(api.LightBox.el.tfClass('add_new')[0],e.type);
+                            Themify.triggerEvent(api.LightBox.el.querySelector('.tb_row_js_wrapper > .add_new'),e.type);
                         }
                         else{
                             api.undoManager.start('inlineAdd');

@@ -81,6 +81,7 @@ function themify_get_image($args):string {
         'before' => '',
         'after' => '',
         'alt' => '',
+        'alt_fallback' => true,
         'title' => '',
         'crop' => true,
         'field_name' => 'post_image,image,wp_thumb,feature_image',
@@ -307,7 +308,7 @@ function themify_get_image($args):string {
                 $out_alt = $args['alt'];
             } else {
                 $out_alt = $attachment_id ? get_post_meta($attachment_id, '_wp_attachment_image_alt', true) : '';
-                if (!$out_alt) {
+                if (!$out_alt && $args['alt_fallback'] !== false) {
                     $out_alt = !empty($args['title']) ? $args['title'] : '';
                     if (!$out_alt && $attachment_id) {
                         $p = get_post($attachment_id);
@@ -348,9 +349,7 @@ function themify_get_image($args):string {
                     $out .= ' ' . $k . '="' . esc_attr($v) . '"';
                 }
             }
-            if (!empty($out_alt)) {
-                $out .= ' alt="' . esc_attr($out_alt) . '"';
-            }
+            $out .= ' alt="' . esc_attr( (string) $out_alt ) . '"';
             $out .= '>';
             if ($attachment_id && $args['disable_responsive'] === false) {
                 $out = function_exists('wp_filter_content_tags') ? wp_img_tag_add_srcset_and_sizes_attr($out, null, $attachment_id) // WP 5.5
@@ -735,6 +734,19 @@ function themify_sanitize_builder_custom_css( $css ) {
     $css = preg_replace( '/<\/style/i', '', $css );
     $css = preg_replace( '/<script/i', '', $css );
     return $css;
+}
+
+/**
+ * Sanitize builder custom JS before printing on the page.
+ *
+ * @since 7.0
+ */
+function themify_sanitize_builder_custom_js( $js ) {
+    if ( ! is_string( $js ) || $js === '' ) {
+        return '';
+    }
+    $js = preg_replace( '/<\/script/i', '', $js );
+    return $js;
 }
 
 if (!function_exists('themify_get_image_sizes_list')) {

@@ -69,6 +69,7 @@
                         requestAnimationFrame(()=>{
                             root.style.display='';  
                             this._oberserveSize();
+                            setTimeout(() => this.suggestFullWidth(), 300);
                         });
                     });
                     setTimeout(() => {
@@ -89,6 +90,7 @@
                                 '.breakpoint_switch': 'breakpointSwitcher',
                                 '.devices': 'deviceSwitcher',
                                 '.custom_css': 'addCustomCSS',
+                                '.custom_js': 'addCustomJS',
                                 '.zoom': 'zoom',
                                 '.preview': 'previewBuilder',
                                 '.tree':'initTree',
@@ -293,7 +295,7 @@
                 inlineMode.closest('.switch-wrapper').classList.toggle('disabled',!isVisual);
                 api.EdgeDrag.init();
                 Themify.trigger('tb_inline_editor_changed');
-                prms.push(builder.reLoad({builder_data:data,custom_css:builder.customCss},false,false));
+                prms.push(builder.reLoad({builder_data:data,custom_css:builder.customCss,custom_js:builder.customJs},false,false));
                 await Promise.all(prms);
                 cl.remove('working');
                 api.Module.loadBackendLightbox('preload');
@@ -330,6 +332,32 @@
                         api.Spinner.showLoader('error');
                         TF_Notification.showHide('error',e,4000);
                     }
+                }
+            }
+        },
+        async suggestFullWidth() {
+            if (!isFrontend || !themifyBuilder.suggestFullWidth || api.isGSPage) {
+                return;
+            }
+            const answer = await api.LiteLightBox.confirm({
+                msg: '<span style="line-height:1.5">' + (i18n.suggestFullWidth || '') + '</span>'
+            });
+            if (answer === 'yes') {
+                try {
+                    const bid = api.Builder.get()?.id || themifyBuilder.post_ID;
+                    if (!bid) {
+                        throw 'invalid';
+                    }
+                    api.Spinner.showLoader('show');
+                    const resp = await api.LocalFetch({ action: 'tb_set_fullwidth', bid });
+                    if (!resp || resp.success !== true) {
+                        throw resp?.data || 'error';
+                    }
+                    this.preventBeforeMsg = true;
+                    topWindow.location.hash = 'builder_active';
+                    topWindow.location.reload();
+                } catch (e) {
+                    api.Spinner.showLoader('error');
                 }
             }
         },
@@ -546,6 +574,95 @@
                         Themify.off('tb_save_lb',save);
                         if(api.Builder.get(1)===undefined){
                             this.el.tfClass('custom_css')[0].classList.toggle('active',!!builder.customCss);
+                        }
+                        else{
+                            target.classList.remove('active');
+                        }
+                        obj.destroy();
+                        input=saveBtn=obj=builder=null;
+                    },true);
+            }
+            catch(e){
+
+            }
+        },
+        async addCustomJS(e) {
+            try{
+                await api.LightBox.save();
+                const options = {
+                        contructor: true,
+                        loadMethod: 'html',
+                        save: {},
+                        data: {
+                            cus_js: {
+                                name: 'cus_js',
+                                options: [{
+                                        id: 'custom_js',
+                                        type: 'textarea',
+                                        rows: 17,
+                                        class: 'fullwidth'
+                                    },
+                                    {
+                                        id: 'custom_js_m',
+                                        type: 'message',
+                                        label: '',
+                                        comment: 'cus_js_m'
+                                    },
+                                    {
+                                        id: 'postid',
+                                        type: 'hidden',
+                                        value: api.Builder.get().id
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    target=e.target.closest('.custom_js'),
+                    box = target.getBoundingClientRect();
+                target.classList.add('active');
+                api.LightBox.el.classList.add('tb_custom_js_lightbox');
+
+                let lb=await api.LightBox.setStandAlone(box.left, box.top).open(options),
+                    input = lb.querySelector('#custom_js'),
+                    saveBtn=lb.tfClass('builder_save_button')[0],
+                    builder=api.Builder.get(),
+                    obj,
+                    save=async e=>{
+                        if(e){
+                            e.stopImmediatePropagation();
+                            e.preventDefault();
+                        }
+                        obj.save();
+                        const v = input.value.trim() || '';
+                        let err;
+                        try{
+                            err = topWindow.CodeMirror.lint.javascript?.(v);
+                        }catch(ex){
+                            err = null;
+                        }
+                        if (err?.length > 0) {
+                            const answer = await api.LiteLightBox.confirm({
+                                msg: themifyBuilder.i18n.broken_code.replace('%s','JS')
+                            });
+                            if ( answer === 'no' ) {
+                                return;
+                            }
+                        }
+                        builder.customJs=v;
+
+                        api.LightBox.close();
+                    };
+                    input.value = builder.customJs || '';
+                    obj=await api.Helper.codeMirror(input,'javascript',{autofocus:true} );
+
+                    saveBtn.tfOn(_CLICK_,save);
+                    Themify.on('tb_save_lb',save)
+                    .on('themify_builder_lightbox_close', () => {
+                        lb.classList.remove('tb_custom_js_lightbox');
+                        saveBtn.tfOff(_CLICK_,save,{once:true});
+                        Themify.off('tb_save_lb',save);
+                        if(api.Builder.get(1)===undefined){
+                            this.el.tfClass('custom_js')[0].classList.toggle('active',!!builder.customJs);
                         }
                         else{
                             target.classList.remove('active');

@@ -89,19 +89,14 @@ $img_html_title_attr = $use_media_title_attr ? $media_title_text : $fields_args[
 
 if ( '' !== $fields_args['alt_image'] ) {
 	$image_alt = $fields_args['alt_image'];
-} elseif ( '' !== $media_alt_text ) {
-	$image_alt = $media_alt_text;
 } else {
-	$image_alt = wp_strip_all_tags( is_string( $display_caption ) ? $display_caption : '' );
-}
-if ( '' === $image_alt ) {
-	$image_alt = $display_title;
+	$image_alt = $media_alt_text;
 }
 
 $image = '';
 if ( ! empty( $fields_args['url_image'] ) ) {
     $preset = $fields_args['image_size_image'] !== '' ? $fields_args['image_size_image'] : themify_builder_get('setting-global_feature_size', 'image_global_size_field');
-    $param_image=array('src'=>esc_url($fields_args['url_image']),'w'=>$fields_args['width_image'],'h'=>$fields_args['height_image'],'alt'=>$image_alt,'title'=>$img_html_title_attr,'image_size'=>$preset);
+    $param_image=array('src'=>esc_url($fields_args['url_image']),'w'=>$fields_args['width_image'],'h'=>$fields_args['height_image'],'alt'=>$image_alt,'alt_fallback'=>false,'title'=>$img_html_title_attr,'image_size'=>$preset);
     if ( Themify_Builder::$frontedit_active === true && ! self::$disable_inline_edit ) {
         $param_image['attr']=array('data-w'=>'width_image', 'data-h'=>'height_image','data-name'=>'url_image');
     }

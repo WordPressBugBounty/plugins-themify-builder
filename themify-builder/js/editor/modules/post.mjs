@@ -228,7 +228,7 @@
                     default: 'off',
                     binding:{
                         checked:{show: 'nav_type'},
-                        not_checked:{hide: 'nav_type'}
+                        not_checked:{hide: ['nav_type', 'load_more_text']}
                     }
                 },
                 {
@@ -238,7 +238,16 @@
                     options:{
                         standard: 'standard',
                         ajax: 'lmore'
+                    },
+                    binding:{
+                        standard:{hide: 'load_more_text'},
+                        ajax:{show: 'load_more_text'}
                     }
+                },
+                {
+                    id: 'load_more_text',
+                    type: 'text',
+                    label: 'lmoretxt'
                 },
                 {
                     id: 'hide_empty',
@@ -308,7 +317,8 @@
         static default(){
             return {
                 post_per_page_post : 4,
-                display_post : 'excerpt'
+                display_post : 'excerpt',
+                load_more_text : i18n.lmore
             };
         }
         static builderSave(settings,slug='post') {
@@ -441,6 +451,9 @@
             }
             if(!settings['hide_page_nav_'+slug]){
                 delete settings.nav_type;
+            }
+            if(settings.nav_type!=='ajax'){
+                delete settings.load_more_text;
             }
             if(settings.hide_empty==='yes'){
                 delete settings.no_posts;

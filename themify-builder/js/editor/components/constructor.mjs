@@ -1719,6 +1719,9 @@ window.ThemifyConstructor = {
             if (repeater !== null) {
                 const opt=api.Forms.parseSettings(repeater);
                 self.settings[ opt.id ] = opt.v;
+                if (self.values) {
+                    self.values[ opt.id ] = opt.v;
+                }
             } else {
                 self.settings[ args.id ] = val;
             }
@@ -2854,11 +2857,15 @@ window.ThemifyConstructor = {
     builder: {
         render(data, self) {
             const fr = createDocumentFragment(),
+                    // Wrap top button + list so option_js hide (e.g. Slider Display) hides both
+                    container = createElement('', 'tb_repeatable_wrap'),
                     wrapper = createElement('',{class:'tb_row_js_wrapper tf_rel tb_lb_option',id:data.id}),
                     add_new = createElement('button',{class:'add_new tf_plus_icon tf_icon_btn tf_rel',type:'button'},i18n[ data.new_row ] || i18n.new_row),
+                    add_new_top = add_new.cloneNode(true),
                     _this = this,
                     origRepeat = self.is_repeat === true;
             if (data.wrap_class !== undefined) {
+                container.className += ' ' + data.wrap_class;
                 wrapper.className += ' ' + data.wrap_class;
             }
             self.is_repeat = true;
@@ -2874,18 +2881,19 @@ window.ThemifyConstructor = {
                 wrapper.appendChild(this._builderFields(data, self));
             }
             wrapper.appendChild(add_new);
-            fr.appendChild(wrapper);
+            container.append(add_new_top, wrapper);
+            fr.appendChild(container);
             setTimeout(() => {
                 _this._sortable(wrapper, self);
-                add_new.tfOn(_CLICK_, function (e) {
+                const addItem = function (e) {
                     e.stopPropagation();
                     const isRepeat = self.is_repeat === true,
                             orig = api.Helper.cloneObject(self.values),
-                            container = this.parentNode;
+                            container = wrapper;
                     self.is_repeat = true;
                     self.values = api.activeModel.getPreviewSettings?(api.activeModel.getPreviewSettings()?.[container.id]?.[0] || {}):{};
                     const item = _this._builderFields(data, self);
-                    this.before(item);
+                    this === add_new_top ? wrapper.prepend(item) : this.before(item);
                     api.activeModel.addRow?.(item);
                     setTimeout(() => {
                         self._setUpEditors();
@@ -2896,7 +2904,9 @@ window.ThemifyConstructor = {
                     self.control.preview(container, null, {repeat: true});
                     self.is_repeat = isRepeat;
                     self.values = orig;
-                }, {passive: true});
+                };
+                add_new.tfOn(_CLICK_, addItem, {passive: true});
+                add_new_top.tfOn(_CLICK_, addItem, {passive: true});
             }, 1500);
             self.is_repeat = origRepeat;
             return fr;
@@ -3787,8 +3797,11 @@ window.ThemifyConstructor = {
             return _defaults[type];
         },
         _create(data, type, id, vals, isRemovable) {
-            const opt = data.options[type],
-                li = createElement('li',{class:'tb_sort_fields_item','data-type':type},i18n[opt.label] || opt.label),
+            const opt = data.options?.[type];
+            if (!opt) {
+                return null;
+            }
+            const li = createElement('li',{class:'tb_sort_fields_item','data-type':type},i18n[opt.label] || opt.label),
                 arrow = createElement('span','tb_sort_field_dropdown_pointer');
 
             if (isRemovable === true) {
@@ -3984,8 +3997,17 @@ window.ThemifyConstructor = {
         },
         _remove(self, el) {
             el = el.closest('li');
-            const p = el.parentNode;
-            el.parentNode.removeChild(el);
+            const p = el.parentNode,
+                id = el.dataset.id,
+                type = el.dataset.type,
+                vals = self.values?.[p.id || p.dataset.inputId];
+            el.remove();
+            if (Array.isArray(vals)) {
+                const key = this._find(vals, id || type, !id);
+                if (key !== false) {
+                    vals.splice(key, 1);
+                }
+            }
             self.control.preview(p, null, {repeat: true});
             Themify.triggerEvent(p, 'delete');
         },
@@ -3995,7 +4017,14 @@ window.ThemifyConstructor = {
                     plusWrap = createElement('','tb_sort_fields_plus_wrap'),
                     ul = createElement('ul','tf_scrollbar'),
                     item = createElement('ul','tb_sort_fields_parent'),
-                    values = self.values[data.id]?.slice(0) || [];
+                    rawValues = self.values[data.id],
+                    values = Array.isArray(rawValues) ? rawValues.filter(v => v && typeof v === 'object' && !Array.isArray(v) && v.type && data.options?.[v.type]) : [];
+            if (Array.isArray(rawValues) && values.length !== rawValues.length) {
+                self.values[data.id] = values;
+                if (self.settings) {
+                    self.settings[data.id] = values;
+                }
+            }
             if (self.is_repeat === true) {
                 item.dataset.inputId = data.id;
                 item.className += self.is_sort === true ? ' tb_lb_sort_child' : ' tb_lb_option_child';
@@ -4005,25 +4034,34 @@ window.ThemifyConstructor = {
             }
 
             for (let i in data.options) {
-                ul.appendChild(this._create(data, i));
+                const plusItem = this._create(data, i);
+                if (plusItem) {
+                    ul.appendChild(plusItem);
+                }
             }
             for (let i = 0; i < values.length; ++i) {
                 if (self.is_new !== true || values[i].show === true) {
-                    item.appendChild(this._create(data, values[i].type, values[i].id, values, true));
+                    const field = this._create(data, values[i].type, values[i].id, values, true);
+                    if (field) {
+                        item.appendChild(field);
+                    }
                 }
             }
 
             wrapper.tfOn(_CLICK_, e => {
-                const li = e.target.tagName === 'LI' ? e.target : e.target.parentNode;
-                if (li.tagName === 'LI') {
+                const li = e.target.closest('li');
+                if (li?.tagName === 'LI') {
                     e.stopPropagation();
-                    if (e.target.classList.contains('tb_sort_fields_remove')) {
+                    if (e.target.classList.contains('tb_sort_fields_remove') || e.target.closest('.tb_sort_fields_remove')) {
                         this._remove(self, e.target);
                     } else {
                         if (li.closest('.tb_sort_fields_plus_wrap')) {
-                            item.appendChild(this._create(data, e.target.dataset.type, null, values, true));
-                            self.control.preview(item, null, {repeat: true});
-                        } else {
+                            const field = this._create(data, li.dataset.type || e.target.dataset.type, null, values, true);
+                            if (field) {
+                                item.appendChild(field);
+                                self.control.preview(item, null, {repeat: true});
+                            }
+                        } else if (li.classList.contains('tb_sort_fields_item') && li.dataset.type) {
                             this._edit(self, data, values, li);
                         }
                     }
@@ -7620,7 +7658,8 @@ window.ThemifyConstructor = {
                         '' : '',
                         [recaptchaKey] : 'recptch',
                         [hcaptchaKey] : 'hcptch',
-                        turnstile : 'turnstile'
+                        turnstile : 'turnstile',
+                        honeypot : 'honeypot'
                     }
                 };
             if ( data.hide_empty ) {
@@ -7634,7 +7673,7 @@ window.ThemifyConstructor = {
                         value = selected=== recaptchaKey ? 'recaptcha' : ( selected === hcaptchaKey ? 'hcaptcha' : selected ),
                         error=current.nextElementSibling,
                         cache=this._cache;
-                    if ( value === '' ) {
+                    if ( value === '' || value === 'honeypot' ) {
                         error.innerHTML = '';
                     } else {
                         cache[ value ]??= await api.LocalFetch( { action : 'tb_validate_captcha', provider : value } );

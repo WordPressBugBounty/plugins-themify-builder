@@ -48,6 +48,7 @@ class Themify_Builder_Active{
                     add_action('wp_ajax_tb_get_ajax_data', array(__CLASS__, 'get_ajax_data'));
                     add_action('wp_ajax_tb_validate_captcha', array(__CLASS__, 'ajax_validate_captcha'));
                     add_action('wp_ajax_tb_get_pages', array(__CLASS__, 'tb_get_pages'));
+                    add_action('wp_ajax_tb_set_fullwidth', array(__CLASS__, 'set_fullwidth'));
                 } 
                 if ($is_admin === false || $is_ajax===true) {
                     add_action('admin_bar_menu', array(__CLASS__, 'builder_admin_bar_menu'), 100);
@@ -103,6 +104,7 @@ class Themify_Builder_Active{
             $builderData = self::get_active_builder_vars();
             $builderData['upload_url'] = themify_upload_dir('baseurl');
             $builderData['available_shortcodes'] = array_keys($shortcode_tags);
+            $builderData['post_ID'] = (int) Themify_Builder::$builder_active_id;
 
             do_action('themify_builder_active_enqueue', 'visual');
             wp_localize_script('themify-colorpicker', 'themifyCM', Themify_Metabox::themify_localize_cm_data());
@@ -213,6 +215,7 @@ class Themify_Builder_Active{
                 'layouts' => Themify_Builder_Model::get_layouts(),
                 'blocks' => 'https://themify.org/public-api/predesigned-rows/',
                 'custom_css' => get_post_meta($id, 'tbp_custom_css', true),
+                'custom_js' => get_post_meta($id, 'tbp_custom_js', true),
                 'post_title' => get_the_title($id),
                 'cf_api_url' => Themify_Custom_Fonts::$api_url,
                 'safe' => themify_get_web_safe_font_list(),
@@ -241,6 +244,9 @@ class Themify_Builder_Active{
             if(empty($vars['custom_css'])){
                 unset($vars['custom_css']);
             }
+            if(empty($vars['custom_js'])){
+                unset($vars['custom_js']);
+            }
             if(empty($vars['imgphp'])){
                 unset($vars['imgphp']);
             }
@@ -256,7 +262,33 @@ class Themify_Builder_Active{
             if(empty($vars['style_json'])){
                 unset($vars['style_json']);
             }
+            if ( ! is_admin() && $id && self::should_suggest_fullwidth( (int) $id ) ) {
+                $vars['suggestFullWidth'] = 1;
+            }
             return $vars;
+        }
+
+        private static function should_suggest_fullwidth( int $id ): bool {
+            if ( get_post_type( $id ) !== 'page' ) {
+                return false;
+            }
+            if ( ! themify_is_themify_theme() && ! current_theme_supports( 'themify-page-options' ) ) {
+                return false;
+            }
+            return ! self::is_full_width_layout( $id );
+        }
+
+        private static function is_full_width_layout( int $id ): bool {
+            $classes = get_body_class();
+            if ( in_array( 'full_width', $classes, true ) || in_array( 'tb_fullwidth', $classes, true ) ) {
+                return true;
+            }
+            if ( get_post_meta( $id, 'content_width', true ) === 'full_width' ) {
+                return true;
+            }
+            $post_type = get_post_type( $id );
+            $key = $post_type === 'page' ? 'page_layout' : 'custom_post_' . $post_type . '_single';
+            return get_post_meta( $id, $key, true ) === 'full_width';
         }
 
         private static function includes():void {
@@ -611,7 +643,8 @@ class Themify_Builder_Active{
                         }
                         Themify_Builder::$builder_is_saving = true;
                         $custom_css = isset($_POST['custom_css']) ? $_POST['custom_css'] : null;
-                        $results = ThemifyBuilder_Data_Manager::save_data($data, $post_id, $_POST['sourceEditor'], $custom_css);
+                        $custom_js = isset($_POST['custom_js']) ? $_POST['custom_js'] : null;
+                        $results = ThemifyBuilder_Data_Manager::save_data($data, $post_id, $_POST['sourceEditor'], $custom_css, $custom_js);
                         if (!empty($results['mid'])) {
                             $data = $post_id = null;
                             $results['builder_data'] = json_decode($results['builder_data'], true);
@@ -786,6 +819,20 @@ class Themify_Builder_Active{
                 wp_send_json(apply_filters('themify_builder_query_post', $result, $_POST['type'], $post_types));
             }
             wp_die();
+        }
+
+        public static function set_fullwidth(): void {
+            check_ajax_referer( 'tf_nonce', 'nonce' );
+            $bid = ! empty( $_POST['bid'] ) ? (int) $_POST['bid'] : 0;
+            if ( ! $bid || ! current_user_can( 'edit_post', $bid ) || get_post_type( $bid ) !== 'page' ) {
+                wp_send_json_error( 'invalid' );
+            }
+            update_post_meta( $bid, 'content_width', 'full_width' );
+            if ( themify_is_themify_theme() ) {
+                update_post_meta( $bid, 'page_layout', 'full_width' );
+                update_post_meta( $bid, 'hide_page_title', 'yes' );
+            }
+            wp_send_json_success();
         }
 
         

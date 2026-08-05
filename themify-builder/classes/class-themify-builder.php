@@ -38,6 +38,7 @@ if (!class_exists('Themify_Builder',false)) :
         private static $post_ids = array();
         public static $builder_is_saving = false;
         private static $tooltips = [];
+        private static $custom_js = [];
 
         /* flag to indicate when Builder is rendering the output */
         private static $is_rendering = false;
@@ -425,6 +426,7 @@ if (!class_exists('Themify_Builder',false)) :
          */
         public static function register_js_css():void {
             add_action('wp_footer', array(__CLASS__, 'footer_js'));
+            add_action('wp_footer', array(__CLASS__, 'print_custom_js'), 30);
         }
 
         public static function footer_js():void {
@@ -476,6 +478,35 @@ if (!class_exists('Themify_Builder',false)) :
             }
             Themify_Enqueue_Assets::localize_script('themify-main-script', 'tbLocalScript', $args);
             $args = null;
+        }
+
+        /**
+         * Queue per-page custom JS for a builder post.
+         */
+        public static function enqueue_custom_js(int $post_id):void {
+            if (isset(self::$custom_js[$post_id]) || Themify_Builder_Model::is_front_builder_activate()) {
+                return;
+            }
+            $js = get_post_meta($post_id, 'tbp_custom_js', true);
+            if (!empty($js)) {
+                self::$custom_js[$post_id] = $js;
+            }
+        }
+
+        /**
+         * Print per-page custom JS in the footer.
+         */
+        public static function print_custom_js():void {
+            if (empty(self::$custom_js) || Themify_Builder_Model::is_front_builder_activate()) {
+                return;
+            }
+            foreach (self::$custom_js as $post_id => $js) {
+                $js = themify_sanitize_builder_custom_js($js);
+                if ($js !== '') {
+                    echo '<script id="tb_custom_js_' . (int) $post_id . '">' . "\n" . $js . "\n" . '</script>' . "\n";
+                }
+            }
+            self::$custom_js = [];
         }
 
 
@@ -738,6 +769,7 @@ if (!class_exists('Themify_Builder',false)) :
                     if ($isLoop === false) {
                         Themify_Builder_Stylesheet::enqueue_stylesheet(false, $post_id);
                     }
+                    self::enqueue_custom_js((int) $post_id);
                     $builder_data = ThemifyBuilder_Data_Manager::get_data($post_id);
                     if(empty($builder_data) && !Themify_Builder_Model::is_frontend_editor_page()){
                         return $content;

@@ -352,9 +352,9 @@
                 }
             }
         }
-        addRow(){
+        addRow(item){
             if(!api.isVisual){
-                contentAccordion.push({});
+                contentAccordion.splice(Themify.convert(item.parentNode.children).indexOf(item), 0, {});
             }
         }
         deleteRow(item,parent){
@@ -457,10 +457,10 @@
             const isOpen = item.default_accordion === 'open',
                 tabId = 'acc-' +this.id+'-'+index,
                 li = createElement('li','tb_is_repeat'+(isOpen?' builder-accordion-active':'')),
-                link = createElement('a', { class: 'tb_title_accordion', href: '#' + tabId, 'aria-controls': tabId + '-content', 'aria-expanded': isOpen }),
+                link = createElement('a', { class: 'tb_title_accordion', href: '#' + tabId, 'aria-controls': tabId, 'aria-expanded': isOpen }),
                 titleWrap = createElement( 'span','accordion-title-wrap' ),
                 title = createElement( data.title_tag || 'div','accordion-title tf_rel' ),
-                content = createElement('',{id:tabId + '-content',class:'accordion-content tf_clearfix'+(!isOpen?' tf_hide':''),'data-id':tabId,'aria-hidden':isOpen}),
+                content = createElement('',{id:tabId,class:'accordion-content tf_clearfix'+(!isOpen?' tf_hide':''),'data-id':tabId,'aria-hidden':isOpen}),
                 builder_content=getBuilderContent(item),
                 fr=createDocumentFragment(),
                 settings=[],
@@ -541,7 +541,7 @@
                     e.stopPropagation();
                     if(cl.contains('tb_add_acc')){
                         if(api.activeModel?.id===this.id){
-                            Themify.triggerEvent(api.LightBox.el.tfClass('add_new')[0],e.type);
+                            Themify.triggerEvent(api.LightBox.el.querySelector('.tb_row_js_wrapper > .add_new'),e.type);
                         }
                         else{
                             api.undoManager.start('inlineAdd');

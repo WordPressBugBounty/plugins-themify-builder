@@ -39,6 +39,7 @@
             </li>
             <li class="divider"></li>
             <li class="css"><button type="button" class="tb_tooltip custom_css btn"><span><?php _e('Custom CSS', 'themify'); ?></span><?php _e('CSS', 'themify'); ?></button></li>
+            <li class="js"><button type="button" class="tb_tooltip custom_js btn"><span><?php _e('Custom Javascript', 'themify'); ?></span><?php _e('JS', 'themify'); ?></button></li>
         </ul>
         <div class="save_wrap flex">
             <button type="button" class="tb_tooltip tf_close" title="<?php _e('ESC', 'themify') ?>"><span><?php _e('Close', 'themify'); ?></span></button>

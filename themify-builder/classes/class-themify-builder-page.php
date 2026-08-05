@@ -88,7 +88,8 @@ class Themify_Builder_Builder_Page {
             }
         } elseif ( ! empty( $layout ) ) {
             $custom_css = isset( $layout['custom_css'] ) ? $layout['custom_css'] : null;
-            ThemifyBuilder_Data_Manager::save_data( $layout['builder_data'], $new_page, 'frontend', $custom_css );
+            $custom_js = isset( $layout['custom_js'] ) ? $layout['custom_js'] : null;
+            ThemifyBuilder_Data_Manager::save_data( $layout['builder_data'], $new_page, 'frontend', $custom_css, $custom_js );
             if ( ! empty( $layout['used_gs'] ) ) {
                 Themify_Global_Styles::builder_import( $layout['used_gs'], true );
             }

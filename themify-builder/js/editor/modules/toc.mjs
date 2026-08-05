@@ -191,6 +191,13 @@
                     }
                 },
                 {
+                    id: 'm_sticky',
+                    type: 'toggle_switch',
+                    label: 'msticky',
+                    options: 'simple',
+                    default: 'off'
+                },
+                {
                     type: 'group',
                     wrap_class: 'tb_toc_min_ic',
                     options: [
@@ -268,6 +275,10 @@
             };
         }
         static builderSave(settings) {
+            if (settings.m_beh === 's') {
+                settings.m_sticky = 'yes';
+            }
+            delete settings.m_beh;
             const def = {
                 in_cont: 'b',
                 in_tags: 'h1|h2|h3|h4|h5|h6',
@@ -279,6 +290,7 @@
                 cic: '-',
                 cmic: '+',
                 minimize: 'no',
+                m_sticky: 'no',
                 mic: 'ti-angle-up',
                 mmic: 'ti-angle-down',
                 bp: 'tl',
@@ -321,7 +333,8 @@
                     head = createElement('','tb_toc_head tf_clearfix'),
                     mark = data.mark || 'none',
                     classes = ['module', 'module-toc', 'tb_toc_' + mark],
-                    dataset=module.dataset;
+                    dataset=module.dataset,
+                    isSticky = data.m_sticky === 'yes' || data.m_beh === 's';
 
             if (data.m_t) {
                 head.appendChild(this.constructor.getModuleTitle(data.m_t, 'm_t'));
@@ -332,6 +345,9 @@
             if (data.tree !== 'no') {
                 classes.push('tb_toc_tree');
             }
+            if (isSticky) {
+                classes.push('tb_toc_m_sticky');
+            }
             module.className = classes.join(' ');
             dataset.min = data.min >= 1 ? data.min : 2;
             dataset.maxh = data.maxh > 2 ? data.maxh : 32;
@@ -340,6 +356,13 @@
 
             if (data.ex_m_t === 'yes') {
                 dataset.ex_m = 1;
+            }
+            if (isSticky) {
+                module.appendChild(createElement('button', {
+                    type: 'button',
+                    class: 'tb_toc_sticky_btn',
+                    'aria-expanded': 'false'
+                }));
             }
             if (data.minimize === 'yes') {
                 dataset.bp = data.bp || '';
@@ -354,12 +377,13 @@
             if (data.in_custom) {
                 dataset.sel = data.in_custom;
             }
-            module.appendChild(head);
+            const panel = createElement('', isSticky ? 'tb_toc_sticky_panel' : 'tb_toc_content');
+            panel.appendChild(head);
 
             if (mark === 'ic' && data.ic) {
                 const tpl = createElement('template','tpl_toc_ic');
                 tpl.content.appendChild(api.Helper.getIcon(data.ic, 'tb_toc_ic'));
-                module.appendChild(tpl);
+                panel.appendChild(tpl);
             }
             if (data.tree !== 'no' && data.colapse !== 'no') {
                 const cic = createElement('template', 'tpl_toc_cic'),
@@ -378,8 +402,9 @@
                 } else {
                     cic_close.content.appendChild(api.Helper.getIcon(colapseup, 'tb_toc_cic_close tf_hide'));
                 }
-                module.append(cic, cic_close);
+                panel.append(cic, cic_close);
             }
+            module.appendChild(panel);
             return module;
         }
     };

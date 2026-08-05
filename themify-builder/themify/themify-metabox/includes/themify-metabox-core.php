@@ -594,6 +594,110 @@ class Themify_Metabox {
     }
 
     /**
+     * Build a gradient swatch entry for Color Manager.
+     *
+     * @param string $id    Swatch id
+     * @param int    $angle Linear angle in degrees
+     * @param array  $stops List of [ position, color ] pairs, e.g. [ ['0%', 'rgba(0,0,0,1)'], ... ]
+     * @return array
+     */
+    private static function make_gradient_swatch( $id, $angle, array $stops ) {
+        $gradient = array();
+        $css_stops = array();
+        foreach ( $stops as $stop ) {
+            $gradient[] = $stop[0] . ' ' . $stop[1];
+            $css_stops[] = $stop[1] . ' ' . $stop[0];
+        }
+        $gradient_str = implode( '|', $gradient );
+        return array(
+            'id' => $id,
+            'setting' => array(
+                'angle' => (int) $angle,
+                'circle' => false,
+                'type' => 'linear',
+                'gradient' => $gradient_str,
+            ),
+            'gradient' => $gradient_str,
+            'css' => 'linear-gradient(' . (int) $angle . 'deg,' . implode( ', ', $css_stops ) . ')',
+        );
+    }
+
+    /**
+     * Default pre-created gradient swatches
+     *
+     * @return array
+     */
+    public static function get_default_gradients() {
+        return array(
+            '99999' => self::make_gradient_swatch( '99999', 180, array(
+                array( '0%', 'rgba(200,71,255,1)' ),
+                array( '100%', 'rgba(15,223,255,1)' ),
+            ) ),
+            '99998' => self::make_gradient_swatch( '99998', 180, array(
+                array( '0%', 'rgba(69,240,255,1)' ),
+                array( '100%', 'rgba(13,110,255,1)' ),
+            ) ),
+            '99997' => self::make_gradient_swatch( '99997', 180, array(
+                array( '0%', 'rgba(210,255,133,1)' ),
+                array( '100%', 'rgba(33,232,172,1)' ),
+            ) ),
+            '99996' => self::make_gradient_swatch( '99996', 180, array(
+                array( '0%', 'rgba(239,255,133,1)' ),
+                array( '99%', 'rgba(255,143,15,1)' ),
+            ) ),
+            '99995' => self::make_gradient_swatch( '99995', 180, array(
+                array( '0%', 'rgba(255,133,255,1)' ),
+                array( '97%', 'rgba(255,10,67,1)' ),
+            ) ),
+            '99994' => self::make_gradient_swatch( '99994', 132, array(
+                array( '0%', 'rgba(249,255,219,1)' ),
+                array( '59%', 'rgba(254,212,255,1)' ),
+                array( '100%', 'rgba(204,255,239,1)' ),
+            ) ),
+            '99993' => self::make_gradient_swatch( '99993', 132, array(
+                array( '0%', 'rgba(237,255,247,1)' ),
+                array( '59%', 'rgba(255,216,194,1)' ),
+                array( '99%', 'rgba(250,232,255,1)' ),
+            ) ),
+            '99992' => self::make_gradient_swatch( '99992', 132, array(
+                array( '0%', 'rgba(217,242,255,1)' ),
+                array( '59%', 'rgba(204,255,207,1)' ),
+                array( '100%', 'rgba(255,245,173,1)' ),
+            ) ),
+            '99991' => self::make_gradient_swatch( '99991', 132, array(
+                array( '0%', 'rgba(133,182,255,1)' ),
+                array( '58%', 'rgba(234,184,255,1)' ),
+                array( '97%', 'rgba(255,245,189,1)' ),
+            ) ),
+            '99990' => self::make_gradient_swatch( '99990', 132, array(
+                array( '0%', 'rgba(189,255,214,1)' ),
+                array( '59%', 'rgba(112,186,255,1)' ),
+                array( '95%', 'rgba(253,184,255,1)' ),
+            ) ),
+            '99989' => self::make_gradient_swatch( '99989', 132, array(
+                array( '0%', 'rgba(255,226,130,1)' ),
+                array( '59%', 'rgba(202,122,255,1)' ),
+                array( '100%', 'rgba(130,184,255,1)' ),
+            ) ),
+            '99988' => self::make_gradient_swatch( '99988', 132, array(
+                array( '0%', 'rgba(240,154,52,1)' ),
+                array( '63%', 'rgba(255,202,89,1)' ),
+                array( '97%', 'rgba(255,235,173,1)' ),
+            ) ),
+            '99987' => self::make_gradient_swatch( '99987', 132, array(
+                array( '0%', 'rgba(127,212,255,1)' ),
+                array( '63%', 'rgba(255,56,162,1)' ),
+                array( '99%', 'rgba(255,191,112,1)' ),
+            ) ),
+            '99986' => self::make_gradient_swatch( '99986', 132, array(
+                array( '0%', 'rgba(114,107,255,1)' ),
+                array( '63%', 'rgba(234,138,255,1)' ),
+                array( '100%', 'rgba(255,201,138,1)' ),
+            ) ),
+        );
+    }
+
+    /**
      * Localize required data for manage color and gradient swatches
      * @since 4.5
      */
@@ -610,6 +714,8 @@ class Themify_Metabox {
                 '11111'=>array('color'=>'rgb(255,255,255)','opacity'=>'1','uid'=>'11111'),
                 '11110'=>array('color'=>'rgb(0,0,0)','opacity'=>'1','uid'=>'11110'),
         );
+        // Pre-created gradients (from themify.org/dev/test/preset-gradients/)
+        $default['gradients'] = self::get_default_gradients();
         // validate colors value
         $colors = maybe_unserialize( get_option( 'themify_saved_colors', serialize( $default['colors'] ) ) );
         if(is_array($colors) && !empty($colors)){
@@ -618,15 +724,15 @@ class Themify_Metabox {
         }elseif(!is_array($colors)){
             $colors = $default['colors'];
         }
-        unset($default);
         // validate gradients value
-        $grads = maybe_unserialize( get_option( 'themify_saved_gradients', serialize( array() ) ) );
-        if(is_array($grads) && !empty($grads)){
-            $test_color = current($grads);
-            $grads = is_array($test_color) && !empty($test_color['setting']) ? $grads : array();
-        }elseif (!is_array($grads)){
-            $grads = array();
+        $grads = maybe_unserialize( get_option( 'themify_saved_gradients', serialize( $default['gradients'] ) ) );
+        if ( is_array( $grads ) && ! empty( $grads ) ) {
+            $test_grad = current( $grads );
+            $grads = is_array( $test_grad ) && ! empty( $test_grad['setting'] ) ? $grads : $default['gradients'];
+        } else {
+            $grads = $default['gradients'];
         }
+        unset( $default );
         // Localize required data for color manager
         return array(
             'nonce' => wp_create_nonce( 'tf_nonce' ),

@@ -42,6 +42,7 @@ $fields_args=$args['mod_settings']+array(
     'hide_comment_' . $mod_name => '',
     'hide_page_nav_' . $mod_name => 'yes',
     'nav_type' => 'standard',
+    'load_more_text' => '',
     'animation_effect' => '',
     'hide_empty' => 'no',
     'css_' . $mod_name => '',
@@ -514,7 +515,8 @@ $container_props['class'] = implode(' ', $container_props['class']);
                         Themify_Enqueue_Assets::loadinfiniteCss();
                     }
                     $url = is_single() ? add_query_arg(array('tf-page' => ($args['paged'] + 1)), get_permalink(get_queried_object_id())) : next_posts($the_query->max_num_pages, false);
-                    echo '<p class="tf_load_more tf_textc tf_clear"><a data-id="', $element_id, '" href="', esc_url( $url ), '" data-page="', esc_attr($args['paged']), '" class="load-more-button">', __('Load More', 'themify'), '</a></p>';
+                    $load_more_text = $fields_args['load_more_text'] !== '' ? $fields_args['load_more_text'] : __('Load More', 'themify');
+                    echo '<p class="tf_load_more tf_textc tf_clear"><a data-id="', $element_id, '" href="', esc_url( $url ), '" data-page="', esc_attr($args['paged']), '" class="load-more-button">', esc_html( $load_more_text ), '</a></p>';
                 }
                 ?>
         <?php else: ?>

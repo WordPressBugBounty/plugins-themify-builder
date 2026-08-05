@@ -571,20 +571,58 @@
         if (typeof input !== "string") {
           return input; // return as-is if not a string
         }
+        const svgAttrs = [
+          "class",
+          "id",
+          "style",
+          "width",
+          "height",
+          "viewbox",
+          "xmlns",
+          "xmlns:xlink",
+          "fill",
+          "stroke",
+          "stroke-width",
+          "stroke-dasharray",
+          "transform",
+          "d",
+          "cx",
+          "cy",
+          "r",
+          "x",
+          "y",
+          "x1",
+          "y1",
+          "x2",
+          "y2",
+          "href",
+          "xlink:href",
+          "role",
+          "aria-hidden",
+          "aria-label",
+          "data-progress",
+        ];
         const allowedTags = {
           b: [],
           i: [],
-          em: [],
+          em: ["class", "style"],
           strong: [],
           u: [],
           sub: [],
           sup: [],
-          p: [],
+          p: ["class", "style"],
           br: [],
           hr: [],
-          span: [],
-          a: ["href", "title", "target", "rel"],
-          img: ["src", "alt", "title", "width", "height"],
+          span: ["class", "style"],
+          div: ["class", "style", "id", "data-lazy", "data-layout-mobile", "data-layout-desktop"],
+          h1: ["class", "style"],
+          h2: ["class", "style"],
+          h3: ["class", "style"],
+          h4: ["class", "style"],
+          h5: ["class", "style"],
+          h6: ["class", "style"],
+          a: ["href", "title", "target", "rel", "class", "style"],
+          img: ["src", "alt", "title", "width", "height", "class", "style"],
           iframe: [
             "src",
             "width",
@@ -601,6 +639,19 @@
             "scoped",
             "title",
           ],
+          svg: svgAttrs,
+          use: svgAttrs,
+          path: svgAttrs,
+          circle: svgAttrs,
+          rect: svgAttrs,
+          line: svgAttrs,
+          polyline: svgAttrs,
+          polygon: svgAttrs,
+          g: svgAttrs,
+          defs: svgAttrs,
+          symbol: svgAttrs,
+          title: [],
+          desc: [],
         };
 
         // Parse str HTML
@@ -629,13 +680,19 @@
             const allowedAttrs = allowedTags[tagName];
             for (let i = node.attributes.length - 1; i >= 0; i--) {
               const attrName = node.attributes[i].name;
-              if (!allowedAttrs.includes(attrName)) {
+              const attrLower = attrName.toLowerCase();
+              const allowed =
+                allowedAttrs.includes(attrName) ||
+                allowedAttrs.includes(attrLower) ||
+                attrLower.startsWith("data-") ||
+                attrLower.startsWith("aria-");
+              if (!allowed) {
                 node.removeAttribute(attrName);
               } else if (
-                attrName === "href" &&
-                /^\s*javascript:/i.test(node.getAttribute("href"))
+                attrLower === "href" &&
+                /^\s*javascript:/i.test(node.getAttribute(attrName))
               ) {
-                node.removeAttribute("href");
+                node.removeAttribute(attrName);
               }
             }
 
@@ -772,26 +829,42 @@
         ).substr(0, 7);
         return Registry.get(uid) ? this.generateUniqueID() : uid;
       },
-      clearElementId(data, _new) {
+      clearElementId(data, _new, checkDom = true, reserved = null, idMap = null) {
+        const isRoot = idMap === null && _new === true;
+        reserved ??= new Set();
+        if (_new === true) {
+          idMap ??= new Map();
+        }
         for (let i = data.length - 1; i > -1; --i) {
           let item = data[i],
             opt = item.styling || item.mod_settings;
           if (_new === true) {
+            const oldId = item.element_id;
             item.element_id = this.generateUniqueID();
+            if (oldId !== undefined && oldId !== "") {
+              idMap.set(oldId, item.element_id);
+            }
           } else {
             delete item.element_id;
           }
           if (opt !== undefined) {
-            const customCss = opt.custom_css_id;
-            if (customCss !== undefined && customCss !== "") {
-              let j = 1;
-              while (true) {
-                let id = j !== 1 ? customCss + "-" + j : customCss;
-                if (!doc.tfId(id)?.closest(".module_row")) {
-                  opt.custom_css_id = id;
-                  break;
+            // Only uniquify user custom IDs when applying/inserting (_new).
+            // On copy, keep custom_css_id as-is; paste/import will resolve conflicts.
+            if (_new === true) {
+              const customCss = opt.custom_css_id;
+              if (customCss !== undefined && customCss !== "") {
+                let j = 1;
+                while (true) {
+                  let id = j !== 1 ? customCss + "-" + j : customCss;
+                  const takenInBatch = reserved.has(id),
+                    takenInDom = checkDom === true && !!doc.tfId(id)?.closest(".module_row");
+                  if (!takenInBatch && !takenInDom) {
+                    opt.custom_css_id = id;
+                    reserved.add(id);
+                    break;
+                  }
+                  ++j;
                 }
-                ++j;
               }
             }
 
@@ -801,7 +874,7 @@
               if (typeof bulder === "string") {
                 bulder = JSON.parse(bulder);
               }
-              this.clearElementId(bulder, true);
+              this.clearElementId(bulder, true, checkDom, reserved, idMap);
               opt.builder_content = bulder;
             }
             if (nested) {
@@ -811,7 +884,7 @@
                   if (typeof bulder === "string") {
                     bulder = JSON.parse(bulder);
                   }
-                  this.clearElementId(bulder, true);
+                  this.clearElementId(bulder, true, checkDom, reserved, idMap);
                   nested[j].builder_content = bulder;
                 }
               }
@@ -823,15 +896,80 @@
                 if (typeof builder === "string") {
                   builder = JSON.parse(builder);
                 }
-                this.clearElementId(builder, true);
+                this.clearElementId(builder, true, checkDom, reserved, idMap);
                 opt[toggleKey] = builder;
               }
             }
           }
           if (item.cols !== undefined) {
-            this.clearElementId(item.cols, _new);
+            this.clearElementId(item.cols, _new, checkDom, reserved, idMap);
           } else if (item.modules !== undefined) {
-            this.clearElementId(item.modules, _new);
+            this.clearElementId(item.modules, _new, checkDom, reserved, idMap);
+          }
+        }
+        // Remap sticky unstick targets after all element_ids in this tree are regenerated.
+        if (isRoot === true && idMap.size > 0) {
+          this.remapUnstickIds(data, idMap);
+        }
+      },
+      remapUnstickIds(data, idMap) {
+        const keys = [
+          "unstick_when_el_row_id",
+          "unstick_when_el_row_id_t",
+          "unstick_when_el_row_id_tl",
+          "unstick_when_el_row_id_m",
+          "unstick_when_el_mod_id",
+          "unstick_when_el_mod_id_t",
+          "unstick_when_el_mod_id_tl",
+          "unstick_when_el_mod_id_m",
+        ];
+        for (let i = data.length - 1; i > -1; --i) {
+          const item = data[i],
+            opt = item.styling || item.mod_settings;
+          if (opt !== undefined) {
+            for (let k = keys.length - 1; k > -1; --k) {
+              const key = keys[k],
+                oldId = opt[key];
+              if (oldId !== undefined && idMap.has(oldId)) {
+                opt[key] = idMap.get(oldId);
+              }
+            }
+            let nested = opt.content_accordion || opt.tab_content_tab,
+              bulder = opt.builder_content;
+            if (bulder !== undefined) {
+              if (typeof bulder === "string") {
+                bulder = JSON.parse(bulder);
+                opt.builder_content = bulder;
+              }
+              this.remapUnstickIds(bulder, idMap);
+            }
+            if (nested) {
+              for (let j = nested.length - 1; j > -1; --j) {
+                let nestedBuilder = nested[j].builder_content;
+                if (nestedBuilder) {
+                  if (typeof nestedBuilder === "string") {
+                    nestedBuilder = JSON.parse(nestedBuilder);
+                    nested[j].builder_content = nestedBuilder;
+                  }
+                  this.remapUnstickIds(nestedBuilder, idMap);
+                }
+              }
+            }
+            for (const toggleKey of ["toggle1", "toggle2"]) {
+              let builder = opt[toggleKey];
+              if (builder) {
+                if (typeof builder === "string") {
+                  builder = JSON.parse(builder);
+                  opt[toggleKey] = builder;
+                }
+                this.remapUnstickIds(builder, idMap);
+              }
+            }
+          }
+          if (item.cols !== undefined) {
+            this.remapUnstickIds(item.cols, idMap);
+          } else if (item.modules !== undefined) {
+            this.remapUnstickIds(item.modules, idMap);
           }
         }
       },

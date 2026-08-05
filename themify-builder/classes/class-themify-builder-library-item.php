@@ -216,6 +216,10 @@ class Themify_Builder_Library_Items {
             if (!empty($custom_css)) {
                 $response['custom_css'] = $custom_css;
             }
+            $custom_js = get_post_meta($id, 'tbp_custom_js', true);
+            if (!empty($custom_js)) {
+                $response['custom_js'] = $custom_js;
+            }
             echo wp_json_encode($response);
         }
         wp_die();

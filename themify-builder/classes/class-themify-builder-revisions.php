@@ -139,7 +139,8 @@ final class Themify_Builder_Revisions {
                         update_metadata('post', $new_revision_id, '_builder_custom_rev_comment', $rev_comment);
                     }
                     $custom_css = isset($_POST['custom_css']) ? $_POST['custom_css'] : null;
-                    $results = ThemifyBuilder_Data_Manager::save_data($data, $new_revision_id, $_POST['sourceEditor'], $custom_css);
+                    $custom_js = isset($_POST['custom_js']) ? $_POST['custom_js'] : null;
+                    $results = ThemifyBuilder_Data_Manager::save_data($data, $new_revision_id, $_POST['sourceEditor'], $custom_css, $custom_js);
                 }
                 if (!empty($results['mid'])) {
                     wp_send_json_success($new_revision_id);
@@ -183,7 +184,11 @@ final class Themify_Builder_Revisions {
         }
 
         if ($revision) {
-            wp_send_json(array('builder_data' => ThemifyBuilder_Data_Manager::get_data($rev_id), 'custom_css' => get_post_meta($rev_id, 'tbp_custom_css', true)));
+            wp_send_json(array(
+                'builder_data' => ThemifyBuilder_Data_Manager::get_data($rev_id),
+                'custom_css' => get_post_meta($rev_id, 'tbp_custom_css', true),
+                'custom_js' => get_post_meta($rev_id, 'tbp_custom_js', true)
+            ));
         } 
         wp_send_json_error(esc_html__('Revision post is not found or invalid ID', 'themify'));
     }
@@ -217,7 +222,7 @@ final class Themify_Builder_Revisions {
      * @param int $post_id 
      * @param object $post 
      */
-    public static function create_revision($post_id, $builder_data, $action, $custom_css = null) {
+    public static function create_revision($post_id, $builder_data, $action, $custom_css = null, $custom_js = null) {
         if (!wp_is_post_revision($post_id)) {
             $post = get_post($post_id);
             if (!empty($post) && 'auto-draft' !== $post->post_status && wp_revisions_enabled($post) && post_type_supports($post->post_type, 'revisions')) {
@@ -230,6 +235,9 @@ final class Themify_Builder_Revisions {
                     ThemifyBuilder_Data_Manager::save_data($builder_data, $rev_id, $action);
                     if ( ! empty( $custom_css ) ) {
                         update_metadata( 'post', $rev_id, 'tbp_custom_css', $custom_css);
+                    }
+                    if ( ! empty( $custom_js ) ) {
+                        update_metadata( 'post', $rev_id, 'tbp_custom_js', $custom_js);
                     }
                     return $rev_id;
                 }

@@ -138,7 +138,7 @@ class Themify_Builder_Admin{
      * @hooked to "is_protected_meta"
      */
     public static function is_protected_meta(bool $protected, $meta_key, $meta_type):bool {
-        if ($meta_key === 'tbp_custom_css') {
+        if ($meta_key === 'tbp_custom_css' || $meta_key === 'tbp_custom_js') {
             $protected = true;
         }
         return $protected;

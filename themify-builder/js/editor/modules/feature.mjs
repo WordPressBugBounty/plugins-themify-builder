@@ -15,9 +15,21 @@
                     type: 'text',
                     label: 'ftitle',
                     class: 'large',
+                    help: 'ftitleh',
                     control: {
                         selector: '.module-feature-title a'
                     }
+                },
+                {
+                    id: 'hide_title_feature',
+                    type: 'checkbox',
+                    label: '',
+                    options: [
+                        {
+                            name: 'hide',
+                            value: 'hftitle'
+                        }
+                    ]
                 },
                 {
                     id: 'title_tag',
@@ -350,6 +362,9 @@
             if(strokeWidth!==undefined && ~~strokeWidth===def.circle_stroke_feature){
                 delete settings.circle_stroke_feature;
             }
+            if(!settings.hide_title_feature || !settings.title_feature || settings.hide_title_feature==='|' || settings.hide_title_feature==='false'){
+                delete settings.hide_title_feature;
+            }
             
             if(!settings.link_feature){
                 delete settings.feature_download_link;
@@ -591,15 +606,28 @@
             }
 
             if (args.link_feature) {
-                const link = createElement('a');
+                const link = createElement('a'),
+                    linkLabel = args.title_feature || args.mod_title_feature || '';
                 link.href = args.link_feature;
+                if (linkLabel) {
+                    link.setAttribute('aria-label', linkLabel);
+                }
+                if (args.link_options === 'newtab') {
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                } else if (args.link_options === 'lightbox') {
+                    link.className = 'themify_lightbox';
+                }
+                if (args.feature_download_link === 'yes') {
+                    link.setAttribute('download', '');
+                }
                 link.appendChild(chart);
                 featureImage.appendChild(link);
             } else {
                 featureImage.appendChild(chart);
             }
 
-            if (args.title_feature) {
+            if (args.title_feature && args.hide_title_feature !== 'hide') {
                 const title = createElement(args.title_tag,'module-feature-title');
                 if (args.link_feature) {
                     title.appendChild(constructor._setEditableContent(createElement('a'),{class:'title_feature',href:args.link_feature},args.title_feature));

@@ -62,7 +62,9 @@ class TB_Signup_Form_Module extends Themify_Builder_Component_Module {
         } else if ( $module['captcha'] ) {
 
             $response = null;
-            if ( $module['captcha'] === 'recaptcha' && ! empty( $_POST['g-recaptcha-response'] ) ) {
+            if ( $module['captcha'] === 'honeypot' ) {
+                $response = isset( $_POST['tb_hp'] ) ? $_POST['tb_hp'] : '';
+            } else if ( $module['captcha'] === 'recaptcha' && ! empty( $_POST['g-recaptcha-response'] ) ) {
                 $response = $_POST['g-recaptcha-response'];
             } else if ( $module['captcha'] === 'hcaptcha' && ! empty( $_POST['h-captcha-response'] ) ) {
                 $response = $_POST['h-captcha-response'];
@@ -70,7 +72,7 @@ class TB_Signup_Form_Module extends Themify_Builder_Component_Module {
                 $response = $_POST['cf-turnstile-response'];
             }
 
-            if ( $response ) {
+            if ( $module['captcha'] === 'honeypot' || $response ) {
                 $result = Themify_Builder_Model::validate_captcha( $module['captcha'], $response );
                 if ( is_wp_error( $result ) ) {
                     $error = $result->get_error_message();

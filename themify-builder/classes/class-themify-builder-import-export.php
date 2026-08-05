@@ -354,6 +354,7 @@ final class Themify_Builder_Import_Export {
             $imports = json_decode(stripslashes($_POST['data']), true);
             if (!empty($imports) && is_array($imports)) {
                 $custom_css = '';
+                $custom_js = '';
                 $builderData = $used_gs = array();
 
                 foreach ($imports as $post_id) {
@@ -364,6 +365,7 @@ final class Themify_Builder_Import_Export {
                             // Used GS
                             $used_gs = array_merge($used_gs, Themify_Global_Styles::used_global_styles($post_id));
                             $custom_css .= get_post_meta($post_id, 'tbp_custom_css', true);
+                            $custom_js .= get_post_meta($post_id, 'tbp_custom_js', true);
                         }
                     }
                 }
@@ -378,6 +380,9 @@ final class Themify_Builder_Import_Export {
                     }
                     if (!empty($custom_css)) {
                         $response['custom_css'] = $custom_css;
+                    }
+                    if (!empty($custom_js)) {
+                        $response['custom_js'] = $custom_js;
                     }
                     if ( ! empty( $result ) && class_exists( 'TF_SV_Framework', false ) ) {
                         $used_sv = TF_SV_Framework::collect_used_vars( $result );

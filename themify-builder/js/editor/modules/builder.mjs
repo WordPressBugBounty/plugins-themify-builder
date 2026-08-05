@@ -4,7 +4,7 @@
         static items=[];
         #lastRow;
         emptyModules=new Set;
-        constructor(el, rows,customCss) {
+        constructor(el, rows,customCss,customJs) {
             const cl=el.classList,
             _this=this,
             fr = createDocumentFragment();
@@ -15,6 +15,7 @@
             _this.el = el;
             _this.isSaved=false;
             _this.customCss=customCss || '';
+            _this.customJs=customJs || '';
             _this.constructor.items.push(_this);
             for (let i = 0; i < rows.length; ++i) {
                 fr.appendChild((new api.Row(rows[i])).el);
@@ -202,11 +203,13 @@
             const builder=this.el;
             let data = json.builder_data || json,
                 customCss=json.custom_css || '',
+                customJs=json.custom_js || '',
                 isMainBuilder=!api.isVisual || builder.parentNode.closest('.themify_builder')===null;//is main builder
                 data=api.Helper.correctBuilderData(data);
             if(merge===true){
                 data= this.toJSON().concat(data);
                 customCss=this.customCss+customCss;
+                customJs=this.customJs+customJs;
             }
             else if(isMainBuilder===true && reset===true){
                 api.GS.reset();
@@ -250,7 +253,7 @@
             }
 
             this.destroy();
-            const newBuilder = new api.Builder(builder,data,customCss);
+            const newBuilder = new api.Builder(builder,data,customCss,customJs);
             if(reset===true){
                 api.undoManager.reset();
             }
@@ -292,7 +295,8 @@
                 }
                 const id = this.id,
                     data = this.toJSON(true),
-                    customCss=this.customCss || '';
+                    customCss=this.customCss || '',
+                    customJs=this.customJs || '';
                 let res,
                     localImages=allImages.get('local');
                     localImages=localImages.size>0?JSON.stringify(Array.from(localImages)):'';
@@ -303,7 +307,8 @@
                         sourceEditor: api.isVisual ? 'frontend' : 'backend',
                         action:'tb_save_data',
                         mode:'gzip',
-                        custom_css:customCss
+                        custom_css:customCss,
+                        custom_js:customJs
                     };
                 try{
                     const prms=[api.Helper.gzip(builder)];

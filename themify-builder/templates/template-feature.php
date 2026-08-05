@@ -34,6 +34,7 @@ $fields_args=$args['mod_settings']+array(
     'custom_circle_size_feature' => 120,
     'link_feature' => '',
     'feature_download_link' => '',
+    'hide_title_feature' => '',
     'link_options' => false,
     'lightbox_width' => '',
     'lightbox_height' => '',
@@ -64,7 +65,7 @@ if ($isEmpty === true) {
     }
 }
 $link_attr = '';
-if (!empty($fields_args['link_options']) && '' !== $fields_args['link_feature']) {
+if ('' !== $fields_args['link_feature']) {
     if ($fields_args['link_options'] === 'lightbox') {
         $link_attr = ' class="themify_lightbox"';
         if ($fields_args['lightbox_width'] !== '' || $fields_args['lightbox_height'] !== '') {
@@ -199,15 +200,21 @@ self::sticky_element_props($container_props, $fields_args);
         <?php
         if ('' !== $fields_args['title_feature']) {
             $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'], 'h3' );
-            ?>
-            <<?php echo esc_attr($fields_args['title_tag']); ?> class="module-feature-title">
-            <?php if ('' !== $fields_args['link_feature']): ?>
-                <a href="<?php echo esc_url($fields_args['link_feature']) ?>"<?php echo $link_attr ?>><?php echo wp_kses_post($fields_args['title_feature']) ?></a>
-            <?php else: ?>
-                <?php echo wp_kses_post($fields_args['title_feature']) ?>
-            <?php endif; ?>
-            </<?php echo esc_attr($fields_args['title_tag']); ?>>
-            <?php
+            if ($fields_args['hide_title_feature'] === 'hide') {
+                ?>
+                <<?php echo esc_attr($fields_args['title_tag']); ?> class="module-feature-title screen-reader-text"><?php echo wp_kses_post($fields_args['title_feature']); ?></<?php echo esc_attr($fields_args['title_tag']); ?>>
+                <?php
+            } else {
+                ?>
+                <<?php echo esc_attr($fields_args['title_tag']); ?> class="module-feature-title">
+                <?php if ('' !== $fields_args['link_feature']): ?>
+                    <a href="<?php echo esc_url($fields_args['link_feature']) ?>"<?php echo $link_attr ?>><?php echo wp_kses_post($fields_args['title_feature']) ?></a>
+                <?php else: ?>
+                    <?php echo wp_kses_post($fields_args['title_feature']) ?>
+                <?php endif; ?>
+                </<?php echo esc_attr($fields_args['title_tag']); ?>>
+                <?php
+            }
         }
         ?>
         <div class="tb_text_wrap">

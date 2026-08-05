@@ -86,13 +86,13 @@ $fields_args['title_tag'] = themify_whitelist_tag( $fields_args['title_tag'] );
         ?>
         <li<?php if ($isOpen===true):?> class="builder-accordion-active"<?php endif;?><?php if ( $schema===true ) : ?> itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"<?php endif; ?>>
             <<?php echo $fields_args['title_tag']; ?> class="accordion-title tf_rel"<?php if ( $schema===true ) : ?> itemprop="name"<?php endif; ?>>
-                <a href="#acc-<?php echo $tab_id . '-' . $i; ?>" class="tb_title_accordion" aria-controls="acc-<?php echo $tab_id . '-' . $i; ?>-content" aria-expanded="<?php echo $isOpen===true? 'true' : 'false' ; ?>">
+                <a href="#acc-<?php echo $tab_id . '-' . $i; ?>" class="tb_title_accordion" aria-controls="acc-<?php echo $tab_id . '-' . $i; ?>" aria-expanded="<?php echo $isOpen===true? 'true' : 'false' ; ?>">
                     <?php if ($fields_args['icon_accordion'] !== '') : ?><i class="accordion-icon<?php if ($isOpen===true):?> tf_hide<?php endif;?>"><?php echo themify_get_icon($fields_args['icon_accordion']); ?></i><?php endif; ?>
                     <?php if ($fields_args['icon_active_accordion'] !== '') : ?><i class="accordion-active-icon<?php if ($isOpen===false):?> tf_hide<?php endif;?>"><?php echo themify_get_icon($fields_args['icon_active_accordion']); ?></i><?php endif; ?>
                     <?php echo isset($content['title_accordion'])?'<span class="accordion-title-wrap">'.wp_kses_post($content['title_accordion']).'</span>':''; ?>
                 </a>
             </<?php echo $fields_args['title_tag']; ?>><!-- .accordion-title -->
-            <div id="acc-<?php echo $tab_id . '-' . $i; ?>-content" data-id="acc-<?php echo $tab_id . '-' . $i; ?>" aria-hidden="<?php echo $isOpen===true? 'false' : 'true' ; ?>" class="accordion-content<?php if ($isOpen===false): ?> tf_hide<?php endif; ?> tf_clearfix"<?php if ( $schema === true ) : ?> itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"<?php endif; ?>>
+            <div id="acc-<?php echo $tab_id . '-' . $i; ?>" data-id="acc-<?php echo $tab_id . '-' . $i; ?>" aria-hidden="<?php echo $isOpen===true? 'false' : 'true' ; ?>" class="accordion-content<?php if ($isOpen===false): ?> tf_hide<?php endif; ?> tf_clearfix"<?php if ( $schema === true ) : ?> itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"<?php endif; ?>>
                 <?php if(isset($content['text_accordion'])){?>
                     <div<?php if ( $schema===true ) : ?> itemprop="text"<?php endif; ?> class="tb_text_wrap">
                         <?php echo apply_filters('themify_builder_module_content', $content['text_accordion']);?>

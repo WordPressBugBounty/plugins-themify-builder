@@ -26,6 +26,8 @@ $fields_args = $args['mod_settings']+ array(
     'cic'=>'-',
     'cmic'=>'+',
     'minimize'=>'no',
+    'm_sticky'=>'no',
+    'm_beh'=>'c',
     'mic'=>'ti-angle-up',
     'mmic'=>'ti-angle-down',
     'bp'=>'tl',
@@ -35,6 +37,7 @@ $fields_args = $args['mod_settings']+ array(
     'ic'=>'',
     'css'=>''
 );
+$is_sticky_m = $fields_args['m_sticky']==='yes' || $fields_args['m_beh']==='s';
 $class=array(
     'module',
     'module-' . $mod_name,
@@ -47,6 +50,9 @@ if($fields_args['num']==='yes'){
 }
 if($fields_args['tree']==='yes'){
     $class[]='tb_toc_tree';
+}
+if($is_sticky_m){
+    $class[]='tb_toc_m_sticky';
 }
 $container_class = apply_filters('themify_builder_module_classes', $class, $mod_name, $element_id, $fields_args);
 
@@ -86,6 +92,10 @@ self::sticky_element_props($container_props, $fields_args);
 ?>
 <!-- module toc -->
 <div <?php echo themify_get_element_attributes($container_props); ?>>
+    <?php if($is_sticky_m): ?>
+        <button type="button" class="tb_toc_sticky_btn" aria-expanded="false"><span class="screen-reader-text"><?php esc_html_e('Table of Content', 'themify'); ?></span></button>
+    <?php endif; ?>
+    <div class="<?php echo $is_sticky_m ? 'tb_toc_sticky_panel' : 'tb_toc_content'; ?>">
     <div class="tb_toc_head tf_clearfix">
     <?php $container_props=$container_class=null; 
         echo Themify_Builder_Component_Module::get_module_title($fields_args,'m_t');
@@ -108,5 +118,6 @@ self::sticky_element_props($container_props, $fields_args);
             <?php echo $fields_args['cmic']==='+'?'<span class="tf_fa tb_toc_cic_close tf_hide"></span>':themify_get_icon($fields_args['cmic'],false,false,false,array('class'=>'tb_toc_cic_close tf_hide'))?>
         </template>
     <?php endif; ?>
+    </div>
 </div>
 <!-- /module toc -->

@@ -87,6 +87,7 @@ $isGsPost=Themify_Global_Styles::$isGlobalEditPage===true?' gs_post':'';
         <?php endif; ?>
                 <?php
                 $cus_css = get_post_meta($post_id, 'tbp_custom_css', true);
+                $cus_js = get_post_meta($post_id, 'tbp_custom_js', true);
                 ?>
                 <li class="breakpoint_switcher">
                     <a href="javascript:;" class="tb_tooltip compact compact_switcher breakpoint-desktop btn tf_hide" tabindex="-1"><?php echo themify_get_icon('desktop', 'ti') ?>
@@ -141,6 +142,7 @@ $isGsPost=Themify_Global_Styles::$isGlobalEditPage===true?' gs_post':'';
                 <li><button type="button" class="tb_tooltip duplicate btn"><?php echo $duplicate?><span><?php _e('Duplicate this page', 'themify'); ?></span></button></li>
                 <li class="divider"></li>
                 <li><button type="button" class="tb_tooltip custom_css btn<?php echo trim($cus_css) !== '' ? ' active' : ''; ?>"><span><?php _e('Custom CSS', 'themify'); ?></span><?php _e('CSS', 'themify'); ?></button></li>
+                <li><button type="button" class="tb_tooltip custom_js btn<?php echo trim($cus_js) !== '' ? ' active' : ''; ?>"><span><?php _e('Custom Javascript', 'themify'); ?></span><?php _e('JS', 'themify'); ?></button></li>
                 <li class="divider"></li>
                 <li class="mode">
                     <a href="javascript:;" class="tb_tooltip btn" tabindex="-1"><?php echo themify_get_icon('panel', 'ti') ?><span><?php _e('Interface Options', 'themify'); ?></span></a>
@@ -253,7 +255,9 @@ $isGsPost=Themify_Global_Styles::$isGlobalEditPage===true?' gs_post':'';
 </template>
 <div id="tb_lite_lightbox_root" class="tf_hide tf_w tf_h" role="dialog">
     <template shadowrootmode="open">
-        <link href="<?php echo THEMIFY_BUILDER_URI ?>/css/editor/components/lite-lightbox.css?ver<?php echo THEMIFY_VERSION?>" rel="stylesheet">
+        <style id="tb_lite_lightbox_style">
+            <?php echo file_get_contents(THEMIFY_BUILDER_DIR . '/css/editor/components/lite-lightbox.css'); ?>
+        </style>
         <div id="wrapper" class="tf_w tf_h<?php echo $isGsPost?>"></div>
     </template>
 </div>

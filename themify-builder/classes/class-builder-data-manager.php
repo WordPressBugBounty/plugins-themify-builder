@@ -88,11 +88,16 @@ class ThemifyBuilder_Data_Manager {
      * @param int $post_id 
      * @param string $action 
      * @param string $custom_css 
+     * @param string|array $custom_js Optional custom JS, or save_options array for backward compatibility.
      * @param array $save_options Optional. `silent` skips meta hooks, post_modified, and themify_builder_save_data.
      */
-    public static function save_data($builder_data, $post_id, string $action = 'frontend',$custom_css=null, array $save_options = []):array {
+    public static function save_data($builder_data, $post_id, string $action = 'frontend',$custom_css=null, $custom_js=null, array $save_options = []):array {
         /* save the data in json format */
         global $wpdb;
+        if ( is_array( $custom_js ) ) {
+            $save_options = $custom_js;
+            $custom_js = null;
+        }
         $silent = ! empty( $save_options['silent'] );
         try{
             $wpdb->query('START TRANSACTION');
@@ -109,7 +114,7 @@ class ThemifyBuilder_Data_Manager {
                         unset($plain_text);
                     }
                     if(class_exists('Themify_Builder_Revisions',false)){
-                        Themify_Builder_Revisions::create_revision($post_id,$result['builder_data'],$action, $custom_css);
+                        Themify_Builder_Revisions::create_revision($post_id,$result['builder_data'],$action, $custom_css, $custom_js);
                     }
                     // Save used GS
                     Themify_Global_Styles::save_used_global_styles($result['builder_data'], $post_id);
@@ -123,6 +128,16 @@ class ThemifyBuilder_Data_Manager {
                         delete_metadata( 'post', $post_id, 'tbp_custom_css');
                     }
                     do_action( 'themify_builder_custom_css_updated', $post_id,$action );
+                }
+                if ( $custom_js!==null ) {
+                    if(!empty($custom_js)){
+                        update_metadata( 'post', $post_id, 'tbp_custom_js', $custom_js);
+                        $result['custom_js'] = $custom_js;
+                    }
+                    else{
+                        delete_metadata( 'post', $post_id, 'tbp_custom_js');
+                    }
+                    do_action( 'themify_builder_custom_js_updated', $post_id,$action );
                 }
                 $wpdb->query('COMMIT');
                 if ( $isRevision === false && ! $silent ) {

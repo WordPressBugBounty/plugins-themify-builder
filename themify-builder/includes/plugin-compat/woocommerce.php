@@ -8,6 +8,13 @@
 
 class Themify_Builder_Plugin_Compat_WooCommerce {
 
+    /**
+     * Success notice HTML captured for single-product AJAX add to cart (not stored in WC session).
+     *
+     * @var string
+     */
+    private static $ajax_cart_message = '';
+
     static function init() {
         $description_hook = themify_get( 'setting-product_description_type','long',true );
         if ( ! is_admin() ) {
@@ -214,8 +221,10 @@ class Themify_Builder_Plugin_Compat_WooCommerce {
     public static function add_to_cart_message( $message = '' ) {
         if ( isset( $_REQUEST['wc-ajax'] ) && 'theme_add_to_cart' === $_REQUEST['wc-ajax'] ) {
             add_filter( 'woocommerce_add_to_cart_redirect', array( __CLASS__, 'ajax_add_to_cart_refresh' ), 1, 100 );
-            if ( current_filter() !== 'woocommerce_add_to_cart_quantity' ) {
-                $message = '';
+            // Keep notice for AJAX fragment only — do not leave it in WC session for the next page.
+            if ( 'wc_add_to_cart_message_html' === current_filter() && is_string( $message ) && $message !== '' ) {
+                self::$ajax_cart_message = $message;
+                return '';
             }
         }
         return $message;
@@ -237,6 +246,30 @@ class Themify_Builder_Plugin_Compat_WooCommerce {
             }
             wp_send_json_error( $data );
         }
-        WC_AJAX::get_refreshed_fragments();
+
+        // Notices must NOT go into cart fragments — WC caches fragments in sessionStorage
+        // and would replay the notice on the next product page.
+        $notices_html = '';
+        if ( self::$ajax_cart_message !== '' ) {
+            $notices_html = '<div class="woocommerce-notices-wrapper">' . wc_print_notice( self::$ajax_cart_message, 'success', array(), true ) . '</div>';
+            self::$ajax_cart_message = '';
+        }
+
+        ob_start();
+        woocommerce_mini_cart();
+        $mini_cart = ob_get_clean();
+
+        $data = array(
+            'fragments' => apply_filters(
+                'woocommerce_add_to_cart_fragments',
+                array(
+                    'div.widget_shopping_cart_content' => '<div class="widget_shopping_cart_content">' . $mini_cart . '</div>',
+                )
+            ),
+            'cart_hash' => WC()->cart->get_cart_hash(),
+            'notices_html' => $notices_html,
+        );
+
+        wp_send_json( $data );
     }
 }

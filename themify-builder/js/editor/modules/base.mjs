@@ -708,21 +708,24 @@
             _this.tab=type==='edit' || type==='swap' || !type?'setting':type;
             if (api.activeModel !== null) {
                 if (isBuilderEdit===false && api.activeModel.id === _this.id) {
-                    if(type){
-                        const clicked = lbEl.querySelector('a[data-id="tb_options_'+_this.tab+'"]');
-                        if(clicked){
-                            Themify.triggerEvent(clicked,_CLICK_);
+                    if (!lbEl.classList.contains('tf_hide')) {
+                        if(type){
+                            const clicked = lbEl.querySelector('a[data-id="tb_options_'+_this.tab+'"]');
+                            if(clicked){
+                                Themify.triggerEvent(clicked,_CLICK_);
+                            }
+                            delete _this.tab;
+                            lbEl.focus();
                         }
-                        delete _this.tab;
-                        lbEl.focus();
+                        return lbEl;
                     }
-                    return lbEl;
+                    api.activeModel = null;
                 } 
                 else {
                     await lb.save();
                 }
                 api.ActionBar.clearClicked();
-            } else if ( lbEl.classList.contains( 'tb_custom_css_lightbox' ) ) { // save Custom CSS box
+            } else if ( lbEl.classList.contains( 'tb_custom_css_lightbox' ) || lbEl.classList.contains( 'tb_custom_js_lightbox' ) ) { // save Custom CSS/JS box
                 await lb.save();
             }
             if(isBuilderEdit===true){
@@ -1402,7 +1405,12 @@
                     return true;
                 }
                 else if (typeof item === 'object') {
-                    return clearEmpty(item,Array.isArray(item));
+                    if(Array.isArray(item)){
+                        clearEmpty(item,true);
+                        return item.length===0;
+                    }
+                    clearEmpty(item,false);
+                    return Object.keys(item).length===0;
                 }
                 return false;
             },
