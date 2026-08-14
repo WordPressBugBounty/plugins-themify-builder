@@ -42,7 +42,10 @@
             <li class="js"><button type="button" class="tb_tooltip custom_js btn"><span><?php _e('Custom Javascript', 'themify'); ?></span><?php _e('JS', 'themify'); ?></button></li>
         </ul>
         <div class="save_wrap flex">
-            <button type="button" class="tb_tooltip tf_close" title="<?php _e('ESC', 'themify') ?>"><span><?php _e('Close', 'themify'); ?></span></button>
+            <ul class="menu flex">
+                <li><button type="button" class="tb_tooltip clear_layout btn"><?php echo themify_get_icon('trash', 'ti') ?><span><?php _e('Clear Layout', 'themify'); ?></span></button></li>
+                <li><button type="button" class="tb_tooltip tf_close btn" title="<?php _e('ESC', 'themify') ?>"><?php echo themify_get_icon('close', 'ti') ?><span><?php _e('Close', 'themify'); ?></span></button></li>
+            </ul>
             <div class="save_btn_wrap flex tf_rel">
                 <button type="button" class="save save_btn" title="<?php _e('Ctrl + S', 'themify') ?>"><?php _e('Save', 'themify'); ?></button>
             </div>

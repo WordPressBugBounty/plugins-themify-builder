@@ -71,7 +71,7 @@ if (!empty($fields_args['shortcode_gallery'])) {
     }
 }
 $layout = $fields_args['layout_gallery'];
-if ( $layout !== 'showcase' && $layout !== 'lightboxed' && $layout !== 'slider' ) {
+if ( $layout !== 'showcase' && $layout !== 'lightboxed' && $layout !== 'slider' && $layout !== 'horizontal' ) {
     $layout = 'grid';
 }
 $container_class = array(
@@ -97,7 +97,7 @@ if(Themify_Builder::$frontedit_active===false){
 if($layout==='showcase' || $layout==='grid'){
     Themify_Builder_Model::load_module_self_style($mod_name, $layout);
 }
-if($layout==='slider' || $layout==='grid'){
+if($layout==='slider' || $layout==='grid' || $layout==='horizontal'){
     if ( $fields_args['lightbox'] !=='' ) {
         $fields_args['lightbox'] = 'n' !== $fields_args['lightbox'];
     } 

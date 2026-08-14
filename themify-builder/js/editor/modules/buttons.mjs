@@ -26,15 +26,13 @@
                                 empty: {
                                     hide: [
                                         'link_options',
-                                        'button_color_bg',
-                                        'title'
+                                        'button_color_bg'
                                     ]
                                 },
                                 not_empty: {
                                     show: [
                                         'link_options',
-                                        'button_color_bg',
-                                        'title'
+                                        'button_color_bg'
                                     ]
                                 }
                             }
@@ -164,14 +162,37 @@
                             }
                         },
                         {
-                            id: 'title',
-                            type: 'text',
-                            label: 'tat'
-                        },
-                        {
-                            id: 'id',
-                            type: 'text',
-                            label: 'idat'
+                            type: 'add_fields',
+                            label: 'addattr',
+                            options: [
+                                {
+                                    id: 'title',
+                                    type: 'text',
+                                    label: 'title'
+                                },
+                                {
+                                    id: 'btn_class',
+                                    type: 'text',
+                                    label: 'aclass',
+                                    sanitize: 'custom_css'
+                                },
+                                {
+                                    id: 'id',
+                                    type: 'text',
+                                    label: 'id',
+                                    sanitize: 'id'
+                                },
+                                {
+                                    id: 'onclick',
+                                    type: 'text',
+                                    label: 'onclick'
+                                },
+                                {
+                                    id: 'custom_attrs',
+                                    label: 'cus',
+                                    multiple: true
+                                }
+                            ]
                         }
                     ]
                 },
@@ -394,6 +415,70 @@
                             delete btn[key];
                         }
                     }
+                    if(btn.btn_class){
+                        const fake={value:btn.btn_class};
+                        api.Forms.getValidator('custom_css')(fake);
+                        if(fake.value){
+                            btn.btn_class=fake.value;
+                        }
+                        else{
+                            delete btn.btn_class;
+                        }
+                    }
+                    if(btn.id){
+                        btn.id=btn.id.trim().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-\_]/g,'');
+                        while(btn.id && !isNaN(btn.id[0])){
+                            btn.id=btn.id.substring(1);
+                        }
+                        if(!btn.id){
+                            delete btn.id;
+                        }
+                    }
+                    let customAttrs=btn.custom_attrs;
+                    if(typeof customAttrs==='string' && customAttrs!==''){
+                        try{
+                            customAttrs=JSON.parse(customAttrs);
+                        }catch(e){
+                            customAttrs=[];
+                        }
+                    }
+                    if(!Array.isArray(customAttrs)){
+                        customAttrs=[];
+                    }
+                    if(!customAttrs.length && btn.custom_attr_name){
+                        customAttrs=[{
+                            name:btn.custom_attr_name,
+                            value:btn.custom_attr_value||''
+                        }];
+                    }
+                    delete btn.custom_attr_name;
+                    delete btn.custom_attr_value;
+                    if(customAttrs.length){
+                        const cleaned=[],
+                            used={};
+                        for(let j=0;j<customAttrs.length;++j){
+                            let name=(customAttrs[j].name||'').trim().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9_:\-.]/g,'');
+                            while(name && !/^[a-zA-Z_:]/.test(name[0])){
+                                name=name.substring(1);
+                            }
+                            if(name && !used[name]){
+                                used[name]=true;
+                                cleaned.push({
+                                    name,
+                                    value:customAttrs[j].value||''
+                                });
+                            }
+                        }
+                        if(cleaned.length){
+                            btn.custom_attrs=cleaned;
+                        }
+                        else{
+                            delete btn.custom_attrs;
+                        }
+                    }
+                    else{
+                        delete btn.custom_attrs;
+                    }
                     if(!btn.link){
                         delete btn.link_options;
                         delete btn.button_color_bg;
@@ -515,6 +600,36 @@
                 }
                 if (item.title) {
                     link.title = item.title;
+                }
+                if (item.btn_class) {
+                    link.className += ' ' + item.btn_class;
+                }
+                if (item.onclick) {
+                    link.setAttribute('onclick', item.onclick);
+                }
+                let customAttrs = item.custom_attrs;
+                if (typeof customAttrs === 'string' && customAttrs !== '') {
+                    try {
+                        customAttrs = JSON.parse(customAttrs);
+                    } catch (e) {
+                        customAttrs = [];
+                    }
+                }
+                if (!Array.isArray(customAttrs) && item.custom_attr_name) {
+                    customAttrs = [{
+                        name: item.custom_attr_name,
+                        value: item.custom_attr_value || ''
+                    }];
+                }
+                if (Array.isArray(customAttrs)) {
+                    const used = {};
+                    for (let i = 0; i < customAttrs.length; ++i) {
+                        let name = (customAttrs[i].name || '').trim().replace(/\s+/g, '-');
+                        if (name && /^[a-zA-Z_:][-a-zA-Z0-9_:.]*$/.test(name) && !used[name]) {
+                            used[name] = true;
+                            link.setAttribute(name, customAttrs[i].value || '');
+                        }
+                    }
                 }
                 if (data.download_link === 'yes') {
                     link.setAttribute('download', 1);

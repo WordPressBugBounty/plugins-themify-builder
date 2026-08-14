@@ -399,7 +399,15 @@ function themify_create_webp(string $url):string{//@todo move to class
         if(is_file ($resUrl)){
             return str_replace($upload_dir['basedir'],$upload_dir['baseurl'],$resUrl);
         }
-        if ( ! is_file( $res ) || ! is_readable( $res ) || ! getimagesize( $res ) ){
+        if ( ! is_file( $res ) || ! is_readable( $res ) ){
+            return $url;
+        }
+        // Check dimensions before decoding — Imagick/GD full load can OOM/timeout on large images
+        $imgInfo = @getimagesize( $res );
+        if ( empty( $imgInfo[0] ) || empty( $imgInfo[1] ) || empty( $imgInfo['mime'] ) ) {
+            return $url;
+        }
+        if ( $imgInfo[0] > 2560 || $imgInfo[1] > 2560 ) {
             return $url;
         }
         $webp_quality = (int) themify_builder_get( 'setting-webp-quality', 'performance-webp_quality' );
@@ -407,19 +415,20 @@ function themify_create_webp(string $url):string{//@todo move to class
             $webp_quality = 5;
         }
         if(isset($available['Imagick'])){
-            $im = new Imagick($res);
-            $lowerExt=explode('/',$im->getImageMimeType());
-            if(isset($lowerExt[1])){
-                $lowerExt=str_replace('x-','',$lowerExt[1]);
-            }else{
-                $lowerExt=false;
-            }
-            if(($lowerExt!=='png' && $lowerExt!=='jpg' && $lowerExt!=='jpeg' && $lowerExt!=='gif') || $im->getImageWidth()>2560 || $im->getImageHeight()>2560){
-                $im->clear();
-                $im=null;
-                return $url;
-            }
+            $im = null;
             try {
+                $im = new Imagick($res);
+                $lowerExt=explode('/',$im->getImageMimeType());
+                if(isset($lowerExt[1])){
+                    $lowerExt=str_replace('x-','',$lowerExt[1]);
+                }else{
+                    $lowerExt=false;
+                }
+                if($lowerExt!=='png' && $lowerExt!=='jpg' && $lowerExt!=='jpeg' && $lowerExt!=='gif'){
+                    $im->clear();
+                    $im=null;
+                    return $url;
+                }
                 if($im->setImageFormat( 'webp' ) && $im->setOption( 'webp:method', $webp_quality ) && $im->setOption('webp:lossless','false') && $im->setOption('webp:low-memory', 'true') && $im->setOption('webp:use-sharp-yuv', 'true')) {
 
                     if (($lowerExt !== 'png' || ($im->setOption('webp:alpha-compression', 1) && $im->setOption('webp:alpha-quality', 85))) &&  $im->stripImage()) {
@@ -446,45 +455,23 @@ function themify_create_webp(string $url):string{//@todo move to class
                                 Themify_Filesystem::delete($resUrl,'f');
                             }
                         }
-                        $im->clear();
-                        $im = null;
                     }
                 }
             }
             catch (Throwable $e ){
-                $im->clear();
+                if ( $im instanceof Imagick ) {
+                    $im->clear();
+                }
                 $im=null;
                 return $url;
             }
+            if ( $im instanceof Imagick ) {
+                $im->clear();
+                $im = null;
+            }
         }
         else{
-            if(function_exists('exif_imagetype')){
-                $size=image_type_to_mime_type(exif_imagetype($res));
-            }
-            elseif(function_exists('finfo_file')){
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                if($finfo!==false){
-                    $size=finfo_file($finfo, $res);
-                    finfo_close($finfo);
-                }
-                unset($finfo);
-            }
-            if(empty($size)){
-                if(function_exists('mime_content_type')){
-                    $size = mime_content_type($res);
-                }
-                else{
-                    $size = getimagesize($res);
-                    if(!isset($size['mime']) || !isset($size[0]) || !isset($size[1]) || $size[0]>2560 || $size[1]>2560){
-                        return '';
-                    }
-                    $size=$size['mime'];
-                }
-            }
-            if(empty($size)){
-                return $url;
-            }
-
+            $size = $imgInfo['mime'];
             $size=explode('/',$size);
             if(!isset($size[1])){
                 return $url;
@@ -495,61 +482,71 @@ function themify_create_webp(string $url):string{//@todo move to class
                 return $url;
             }
 
-            switch($lowerExt){
-                case 'jpeg':
-                case 'jpg':
-                    if(!function_exists('imagecreatefromjpeg')){
-                        return $url;
-                    }
-                    $im = imagecreatefromjpeg($res);
-                    break;
-                case 'png':
-                    if(!function_exists('imagecreatefrompng')){
-                        return $url;
-                    }
-                    if(function_exists('imagepalettetotruecolor')){
-                        $im = imagecreatefrompng($res);
-                        if($im!==false && (!imagepalettetotruecolor($im) || !imagealphablending($im, true) || !imagesavealpha($im, true))){
-                            imagedestroy($im);
-                            $im=null;
+            $im = null;
+            try {
+                switch($lowerExt){
+                    case 'jpeg':
+                    case 'jpg':
+                        if(!function_exists('imagecreatefromjpeg')){
+                            return $url;
                         }
-                    }
-                    else{
-                        $pngimg  = imagecreatefrompng($res);
-                        if($pngimg!==false) {
-                            // get dimens of image
-                            $w = imagesx($pngimg);
-                            $h = imagesy($pngimg);
-                            if ($w !== false && $h !== false) {
-                                $im = imagecreatetruecolor($w, $h);
-                                if ($im !== false && imagealphablending($im, false) && imagesavealpha($im, true)) {
-                                    // By default, the canvas is black, so make it transparent
-                                    $trans = imagecolorallocatealpha($im, 0, 0, 0, 127);
-                                    if($trans===false || !imagefilledrectangle($im, 0, 0, $w - 1, $h - 1, $trans) || !imagecopy($im, $pngimg, 0, 0, 0, 0, $w, $h)) {
-                                        imagedestroy($im);
-                                        $im=null;
+                        $im = @imagecreatefromjpeg($res);
+                        break;
+                    case 'png':
+                        if(!function_exists('imagecreatefrompng')){
+                            return $url;
+                        }
+                        if(function_exists('imagepalettetotruecolor')){
+                            $im = @imagecreatefrompng($res);
+                            if($im!==false && (!imagepalettetotruecolor($im) || !imagealphablending($im, true) || !imagesavealpha($im, true))){
+                                imagedestroy($im);
+                                $im=null;
+                            }
+                        }
+                        else{
+                            $pngimg  = @imagecreatefrompng($res);
+                            if($pngimg!==false) {
+                                $w = imagesx($pngimg);
+                                $h = imagesy($pngimg);
+                                if ($w !== false && $h !== false) {
+                                    $im = imagecreatetruecolor($w, $h);
+                                    if ($im !== false && imagealphablending($im, false) && imagesavealpha($im, true)) {
+                                        $trans = imagecolorallocatealpha($im, 0, 0, 0, 127);
+                                        if($trans===false || !imagefilledrectangle($im, 0, 0, $w - 1, $h - 1, $trans) || !imagecopy($im, $pngimg, 0, 0, 0, 0, $w, $h)) {
+                                            imagedestroy($im);
+                                            $im=null;
+                                        }
                                     }
                                 }
+                                imagedestroy($pngimg);
                             }
-                            imagedestroy($pngimg);
+                            $pngimg=null;
                         }
-                        $pngimg=null;
-                    }
-                    break;
-                default:
-                    return $url;
-            }
+                        break;
+                    default:
+                        return $url;
+                }
 
-            if(empty($im)){
+                if(empty($im)){
+                    return $url;
+                }
+                $res=$resUrl;
+                $quality = array( 0 => 40, 1 => 50, 2 => 60, 3 => 70, 4 => 80, 5 => 90, 6 => 100 );
+                $webp =@imagewebp($im, $res, $quality[ $webp_quality ] );
+                if(!$webp){
+                    Themify_Filesystem::delete($res,'f');
+                }
+            }
+            catch (Throwable $e) {
+                if ( ! empty( $im ) ) {
+                    imagedestroy($im);
+                }
+                $im=null;
                 return $url;
             }
-            $res=$resUrl;
-            $quality = array( 0 => 40, 1 => 50, 2 => 60, 3 => 70, 4 => 80, 5 => 90, 6 => 100 );
-            $webp =imagewebp($im, $res, $quality[ $webp_quality ] );
-            if(!$webp){
-                Themify_Filesystem::delete($res,'f');
+            if ( ! empty( $im ) ) {
+                imagedestroy($im);
             }
-            imagedestroy($im);
             $im=null;
         }
         return !empty($webp)?str_replace($upload_dir['basedir'],$upload_dir['baseurl'],$res):$url;

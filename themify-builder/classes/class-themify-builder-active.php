@@ -269,10 +269,13 @@ class Themify_Builder_Active{
         }
 
         private static function should_suggest_fullwidth( int $id ): bool {
-            if ( get_post_type( $id ) !== 'page' ) {
+            if ( get_post_type( $id ) !== 'page' || ! themify_is_themify_theme() ) {
                 return false;
             }
-            if ( ! themify_is_themify_theme() && ! current_theme_supports( 'themify-page-options' ) ) {
+            if ( themify_builder_check( 'setting-page_builder_disable_fullwidth_suggestion', 'builder_disable_fullwidth_suggestion' ) ) {
+                return false;
+            }
+            if ( get_post_meta( $id, 'page_layout', true ) !== 'sidebar-none' ) {
                 return false;
             }
             return ! self::is_full_width_layout( $id );
@@ -630,8 +633,13 @@ class Themify_Builder_Active{
                                 foreach ($images as $img) {
                                     $ext=strtolower(strtok(pathinfo($img,PATHINFO_EXTENSION ),'?'));
                                     if($ext==='png' || $ext==='jpg' || $ext==='jpeg' || $ext==='webp' || $ext==='gif' ||$ext==='bmp' ){
-                                        themify_get_image_size($img);
-                                        themify_create_webp($img);
+                                        try {
+                                            themify_get_image_size($img);
+                                            // Use generateWebp so Performance > WebP toggle is respected
+                                            themify_generateWebp($img);
+                                        } catch (Throwable $e) {
+                                            // Skip bad/oversized images — do not block Builder save
+                                        }
                                     }
                                 }
                             }

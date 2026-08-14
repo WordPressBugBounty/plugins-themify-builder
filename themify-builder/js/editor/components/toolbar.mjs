@@ -86,6 +86,7 @@
                                 '.duplicate': 'duplicate',
                                 '.save_btn': 'save',
                                 '.switch':'switchTo',
+                                '.clear_layout': 'clearLayout',
                                 '.tf_close': 'panelClose',
                                 '.breakpoint_switch': 'breakpointSwitcher',
                                 '.devices': 'deviceSwitcher',
@@ -211,6 +212,34 @@
                     }
                 });
             });
+        },
+        async clearLayout() {
+            const answer = await api.LiteLightBox.confirm({
+                msg: 'confirmClearLayout'
+            });
+            if (answer !== 'yes') {
+                return;
+            }
+            const builder = api.Builder.get(),
+                rows = builder.el.querySelectorAll(':scope>.module_row');
+            if (rows.length < 2 && !rows[0]?.tfClass('active_module')[0]) {
+                return;
+            }
+            if (api.activeModel) {
+                await api.LightBox.save();
+                api.LightBox.close();
+            }
+            api.ActionBar.clear();
+            api.undoManager.start('delete');
+            for (let i = rows.length - 1; i > -1; --i) {
+                const model = api.Registry.get(rows[i].dataset.cid);
+                if (model) {
+                    await model.delete(true);
+                }
+            }
+            builder.newRowAvailable();
+            builder.insertLayoutButton();
+            api.undoManager.end('delete');
         },
         async initRevision(e) {
             const target = e.target;
@@ -339,12 +368,16 @@
             if (!isFrontend || !themifyBuilder.suggestFullWidth || api.isGSPage) {
                 return;
             }
+            const bid = api.Builder.get()?.id || themifyBuilder.post_ID,
+                dismissKey = bid ? ('tb_dismiss_fullwidth_' + bid) : '';
+            if (dismissKey && localStorage.getItem(dismissKey)) {
+                return;
+            }
             const answer = await api.LiteLightBox.confirm({
                 msg: '<span style="line-height:1.5">' + (i18n.suggestFullWidth || '') + '</span>'
             });
             if (answer === 'yes') {
                 try {
-                    const bid = api.Builder.get()?.id || themifyBuilder.post_ID;
                     if (!bid) {
                         throw 'invalid';
                     }
@@ -359,6 +392,8 @@
                 } catch (e) {
                     api.Spinner.showLoader('error');
                 }
+            } else if (answer === 'no' && dismissKey) {
+                localStorage.setItem(dismissKey, '1');
             }
         },
         modChange(e) {

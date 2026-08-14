@@ -53,6 +53,7 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
                 add_filter('upload_mimes', array(__CLASS__, 'upload_mimes'), 99, 1);
                 add_action('admin_head', array(__CLASS__, 'clean_admin_listing_page'));
                 add_action('admin_footer', array(__CLASS__, 'admin_footer'));
+                add_action('admin_footer', array(__CLASS__, 'edit_screen_footer'));
             } else {
                 add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue_custom_fonts'), 30);
             }
@@ -109,6 +110,24 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
          * @return array
          */
         public static function meta_box_fields(array $fields):array {
+            $weights = array(
+                array('value' => '100', 'name' => __('100', 'themify')),
+                array('value' => '200', 'name' => __('200', 'themify')),
+                array('value' => '300', 'name' => __('300', 'themify')),
+                array('value' => '400', 'name' => __('400', 'themify')),
+                array('value' => '500', 'name' => __('500', 'themify')),
+                array('value' => '600', 'name' => __('600', 'themify')),
+                array('value' => '700', 'name' => __('700', 'themify')),
+                array('value' => '800', 'name' => __('800', 'themify')),
+                array('value' => '900', 'name' => __('900', 'themify')),
+            );
+            $weights_max = $weights;
+            foreach ($weights_max as $i => $w) {
+                if ($w['value'] === '900') {
+                    $weights_max[$i]['selected'] = true;
+                    break;
+                }
+            }
 
             $fields['tm-cf'] = array(
                 'name' => __('Font Variations', 'themify'),
@@ -120,7 +139,7 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
                         'description' => '',
                         'type' => 'separator',
                         'meta' => array(
-                            'html' => '<div class="themify-info-link">' . __('To add custom fonts: select the font weight/style and upload the font files accordingly. You don\'t need to upload all formats. The common support format is .ttf or .woff (just upload either .tff or .woff file is fine, depending on the font files you have). The custom fonts will appear on Builder and Customizer font select.', 'themify') . '</div>'
+                            'html' => '<div class="themify-info-link">' . __('To add custom fonts: select the font weight/style and upload the font files accordingly. You don\'t need to upload all formats. The common support format is .ttf or .woff/.woff2. For variable fonts, enable "Variable Font" and set the min/max weight range (usually 100–900), then upload a single .woff2 or .ttf variable font file. The custom fonts will appear on Builder and Customizer font select.', 'themify') . '</div>'
                         ),
                     ),
                     array(
@@ -130,20 +149,25 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
                         'add_new_label' => __('Add New Variation', 'themify'),
                         'fields' => array(
                             array(
+                                'name' => 'variable',
+                                'title' => __('Variable Font', 'themify'),
+                                'label' => __('This is a variable font (single file with a weight range)', 'themify'),
+                                'type' => 'checkbox',
+                            ),
+                            array(
                                 'name' => 'weight',
                                 'title' => __('Weight', 'themify'),
                                 'type' => 'fontweight_dropdown',
-                                'meta' => array(
-                                    array('value' => '100', 'name' => __('100', 'themify')),
-                                    array('value' => '200', 'name' => __('200', 'themify')),
-                                    array('value' => '300', 'name' => __('300', 'themify')),
-                                    array('value' => '400', 'name' => __('400', 'themify')),
-                                    array('value' => '500', 'name' => __('500', 'themify')),
-                                    array('value' => '600', 'name' => __('600', 'themify')),
-                                    array('value' => '700', 'name' => __('700', 'themify')),
-                                    array('value' => '800', 'name' => __('800', 'themify')),
-                                    array('value' => '900', 'name' => __('900', 'themify')),
-                                ),
+                                'meta' => $weights,
+                                'description' => __('For variable fonts, this is the minimum weight.', 'themify'),
+                            ),
+                            array(
+                                'name' => 'weight_max',
+                                'title' => __('Max Weight', 'themify'),
+                                'type' => 'fontweight_dropdown',
+                                'meta' => $weights_max,
+                                'description' => __('For variable fonts only. Usually 900.', 'themify'),
+                                'class' => 'tf-cf-weight-max',
                             ),
                             array(
                                 'name' => 'style',
@@ -257,8 +281,10 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
                     foreach ($fonts as $type => $format) {
                         $src .= !empty($var[$type]) ? 'url(\'' . $var[$type] . '\') format(\'' . $format . '\'),' : '';
                     }
+                    list($weight_min, $weight_max) = self::get_weight_range($var);
+                    $font_weight = self::is_variable($var) ? $weight_min . ' ' . $weight_max : $weight_min;
                     ?>
-                    @font-face{font-family:'<?php echo $font_family; ?>';font-weight:<?php echo $var['weight']; ?>;font-style:<?php echo $var['style']; ?>;src:<?php echo rtrim($src, ','); ?>;    }
+                    @font-face{font-family:'<?php echo $font_family; ?>';font-weight:<?php echo $font_weight; ?>;font-style:<?php echo $var['style']; ?>;src:<?php echo rtrim($src, ','); ?>;    }
                     <?php
                 endforeach;
                 $font_face = ob_get_clean();
@@ -292,6 +318,46 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
         }
 
         /**
+         * Whether a variation is a variable font
+         */
+        private static function is_variable($data): bool {
+            return !empty($data['variable']);
+        }
+
+        /**
+         * Normalize legacy weight keywords to numeric values
+         */
+        private static function normalize_weight($weight): string {
+            return (string) str_replace(array('normal', 'bold'), array('400', '700'), $weight);
+        }
+
+        /**
+         * Get min/max weight for a variation (same value twice for static fonts)
+         *
+         * @return int[]
+         */
+        private static function get_weight_range($data): array {
+            $min = (int) self::normalize_weight(!empty($data['weight']) ? $data['weight'] : '400');
+            if (!self::is_variable($data)) {
+                return array($min, $min);
+            }
+            $max = !empty($data['weight_max']) ? (int) $data['weight_max'] : 900;
+            if ($max < $min) {
+                return array($max, $min);
+            }
+            return array($min, $max);
+        }
+
+        /**
+         * Whether a requested weight matches a stored variation
+         */
+        private static function matches_weight($requested, $data): bool {
+            $requested = (int) self::normalize_weight($requested);
+            list($min, $max) = self::get_weight_range($data);
+            return $requested >= $min && $requested <= $max;
+        }
+
+        /**
          * Returns a list of variants
          * @return array
          */
@@ -299,11 +365,24 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
             $vars = array();
             if (!empty($variants) && is_array($variants)) {
                 foreach ($variants as $var) {
-                    /* 400 is "normal" weight, always show first */
-                    if ($var['weight'] === '400') {
-                        array_unshift($vars, '400');
+                    list($min, $max) = self::get_weight_range($var);
+                    if (self::is_variable($var)) {
+                        for ($w = $min; $w <= $max; $w += 100) {
+                            $weight = (string) $w;
+                            if ($weight === '400') {
+                                array_unshift($vars, $weight);
+                            } else {
+                                $vars[] = $weight;
+                            }
+                        }
                     } else {
-                        $vars[] = $var['weight'];
+                        $weight = (string) $min;
+                        /* 400 is "normal" weight, always show first */
+                        if ($weight === '400') {
+                            array_unshift($vars, $weight);
+                        } else {
+                            $vars[] = $weight;
+                        }
                     }
                 }
                 $vars = array_keys(array_flip($vars));
@@ -423,12 +502,12 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
                             }
                             if (!empty($variations)) {
                                 foreach ($variations as $var) {
-                                    $var = str_replace(['normal', 'bold'], ['400', '700'], $var);
+                                    $var = self::normalize_weight($var);
                                     foreach ($cf_fonts[$font_family]['data'] as $k => $v) {
-                                        $v['weight'] = str_replace(['normal', 'bold'], ['400', '700'], $v['weight']);
-                                        if ($v['weight'] === $var) {
+                                        if (self::matches_weight($var, $v)) {
                                             $font_css .= self::get_font_face_from_data($font_family, $cf_fonts[$font_family]['data'][$k]) . PHP_EOL;
                                             unset($cf_fonts[$font_family]['data'][$k]);
+                                            break;
                                         }
                                     }
                                 }
@@ -465,10 +544,12 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
             if (empty($src)) {
                 return $font_face;
             }
+            list($weight_min, $weight_max) = self::get_weight_range($data);
+            $font_weight = self::is_variable($data) ? $weight_min . ' ' . $weight_max : $weight_min;
             $font_face = '@font-face{' . PHP_EOL;
             $font_face .= "\tfont-family:'" . $font_family . "';" . PHP_EOL;
             $font_face .= "\tfont-style:" . $data['style'] . ';' . PHP_EOL;
-            $font_face .= "\tfont-weight:" . $data['weight'] . ';' . PHP_EOL;
+            $font_face .= "\tfont-weight:" . $font_weight . ';' . PHP_EOL;
             $font_face .= "\tfont-display:swap;" . PHP_EOL;
 
             if (!empty($data['eot'])) {
@@ -576,6 +657,45 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
                 <div id="tf_font_size_slider">
                 </div>
             </div>
+            <?php
+        }
+
+        /**
+         * Toggle Max Weight field when Variable Font is enabled on the edit screen
+         */
+        public static function edit_screen_footer() {
+            $screen = get_current_screen();
+            if (!$screen || $screen->post_type !== self::SLUG || !in_array($screen->base, array('post', 'post-new'), true)) {
+                return;
+            }
+            ?>
+            <script>
+            jQuery(function($){
+                function toggleRow($row){
+                    var isVar = $row.find('input[type="checkbox"][name*="[variable]"]').is(':checked');
+                    $row.find('select[name$="[weight_max]"]').closest('.themify_field_row').toggle(isVar);
+                    var $weightTitle = $row.find('select[name$="[weight]"]').closest('.themify_field_row').find('.themify_field_title');
+                    if ($weightTitle.length) {
+                        $weightTitle.text(isVar ? '<?php echo esc_js(__('Min Weight', 'themify')); ?>' : '<?php echo esc_js(__('Weight', 'themify')); ?>');
+                    }
+                }
+                function refreshAll(){
+                    $('.themify-repeater-row').each(function(){ toggleRow($(this)); });
+                }
+                refreshAll();
+                $(document).on('change', 'input[type="checkbox"][name*="[variable]"]', function(){
+                    var $row = $(this).closest('.themify-repeater-row');
+                    if (this.checked) {
+                        $row.find('select[name$="[weight]"]').val('100');
+                        $row.find('select[name$="[weight_max]"]').val('900');
+                    }
+                    toggleRow($row);
+                });
+                $(document).on('click', '.themify-repeater-add', function(){
+                    setTimeout(refreshAll, 50);
+                });
+            });
+            </script>
             <?php
         }
     }

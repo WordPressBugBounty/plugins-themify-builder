@@ -163,26 +163,17 @@ final class Themify_Builder_Stylesheet {
             wp_send_json_error();
         }
         $id = (int) $_POST['bid'];
+        $can_edit = current_user_can('edit_post', $id);
+        $stylesheet_path = self::get_stylesheet('basedir', $id)['url'];
 
-        if ( is_user_logged_in() ) {
-            if ( ! current_user_can( 'edit_post', $id ) ) {
-                wp_send_json_error( __( 'You Don`t have permission to edit this post', 'themify' ) );
-            }
-        } else {
-            // Unauthenticated on-the-fly generation is limited to published,
-            // public, non-password-protected posts.
-            $post = get_post( $id );
-            if ( ! $post ) {
+        if (!$can_edit) {
+            if (!self::can_generate_on_the_fly($id)) {
                 wp_send_json_error();
             }
-            $post_type_obj = get_post_type_object( $post->post_type );
-            if (
-                'publish' !== $post->post_status
-                || post_password_required( $post )
-                || ! $post_type_obj
-                || empty( $post_type_obj->public )
-            ) {
-                wp_send_json_error();
+            // Missing-file generation (regenerate / deleted / not found) is allowed.
+            // Existing stylesheets cannot be overwritten without edit_post.
+            if (self::is_readable_and_not_empty($stylesheet_path)) {
+                wp_send_json(array('success' => 1));
             }
         }
         if (!empty($_FILES['css'])) {
@@ -208,8 +199,14 @@ final class Themify_Builder_Stylesheet {
             } elseif (!is_array($data)) {
                 $data = array();
             }
-            $res = self::write_stylesheet($id, $data, !empty($_POST['custom_css']) ? themify_sanitize_builder_custom_css( stripcslashes( $_POST['custom_css'] ) ) : '');
-            $stylesheet_path = self::get_stylesheet('basedir', $id)['url'];
+            if ($can_edit) {
+                $custom_css = !empty($_POST['custom_css']) ? themify_sanitize_builder_custom_css( stripcslashes( $_POST['custom_css'] ) ) : '';
+            } else {
+                $data = self::sanitize_on_the_fly_css($data);
+                $custom_css = get_post_meta($id, 'tbp_custom_css', true);
+                $custom_css = $custom_css !== '' && $custom_css !== false ? themify_sanitize_inline_css( themify_sanitize_builder_custom_css( $custom_css ) ) : '';
+            }
+            $res = self::write_stylesheet($id, $data, $custom_css, $can_edit);
             $tmpFile=self::getTmpPath($stylesheet_path);
             if (!empty($res['css_file'])) {
                 Themify_Filesystem::delete($tmpFile, 'f');
@@ -223,8 +220,13 @@ final class Themify_Builder_Stylesheet {
                     foreach ($images as $img) {
                         $ext=strtolower(strtok(pathinfo($img,PATHINFO_EXTENSION ),'?'));
                         if($ext==='png' || $ext==='jpg' || $ext==='jpeg' || $ext==='webp' || $ext==='gif' ||$ext==='bmp' ){
-                            themify_get_image_size($img);
-                            themify_create_webp($img);
+                            try {
+                                themify_get_image_size($img);
+                                // Use generateWebp so Performance > WebP toggle is respected
+                                themify_generateWebp($img);
+                            } catch (Throwable $e) {
+                                // Skip bad/oversized images — do not block CSS save
+                            }
                         }
                     }
                 }
@@ -239,6 +241,85 @@ final class Themify_Builder_Stylesheet {
 
     private static function getTmpPath(string $path): string {
         return str_replace('.css', '-tmp.css', $path);
+    }
+
+    private static function can_generate_on_the_fly(int $id): bool {
+        $post = get_post($id);
+        if (!$post) {
+            return false;
+        }
+        $post_type_obj = get_post_type_object($post->post_type);
+        return $post->post_status === 'publish'
+            && !post_password_required($post)
+            && $post_type_obj
+            && !empty($post_type_obj->public);
+    }
+
+    private static function is_builder_css_selector(string $selector): bool {
+        $selector = trim($selector);
+        if ($selector === '') {
+            return false;
+        }
+        if ($selector[0] === '@') {
+            return true;
+        }
+        return strpos($selector, '.themify_builder') !== false
+            || strpos($selector, '.tb_') !== false
+            || strpos($selector, '#themify_builder') !== false;
+    }
+
+    private static function sanitize_on_the_fly_rules(array $rules): array {
+        $out = array();
+        foreach ($rules as $selector => $arr) {
+            if (!self::is_builder_css_selector((string) $selector)) {
+                continue;
+            }
+            if (!is_array($arr)) {
+                $arr = array((string) $arr);
+            }
+            $decls = array();
+            foreach ($arr as $decl) {
+                $decl = themify_sanitize_inline_css((string) $decl);
+                if ($decl !== '') {
+                    $decls[] = $decl;
+                }
+            }
+            if ($decls) {
+                $out[$selector] = $decls;
+            }
+        }
+        return $out;
+    }
+
+    private static function sanitize_on_the_fly_css($data): array {
+        if (!is_array($data)) {
+            return array();
+        }
+        $bps = array_merge(array('desktop'), array_keys(themify_get_breakpoints()));
+        $out = array();
+        if (!empty($data['gs']) && is_array($data['gs'])) {
+            $gs = array();
+            if (isset($data['gs']['used'])) {
+                $gs['used'] = sanitize_text_field((string) $data['gs']['used']);
+            }
+            foreach ($bps as $bp) {
+                if (!empty($data['gs'][$bp]) && is_array($data['gs'][$bp])) {
+                    $gs[$bp] = self::sanitize_on_the_fly_rules($data['gs'][$bp]);
+                }
+            }
+            $out['gs'] = $gs;
+        }
+        foreach ($bps as $bp) {
+            if (!empty($data[$bp]) && is_array($data[$bp])) {
+                $out[$bp] = self::sanitize_on_the_fly_rules($data[$bp]);
+            }
+        }
+        foreach (array('fonts', 'cf_fonts') as $k) {
+            if (!empty($data[$k]) && is_array($data[$k])) {
+                $out[$k] = $data[$k];
+            }
+        }
+        return $out;
     }
 
     /**
@@ -313,7 +394,7 @@ final class Themify_Builder_Stylesheet {
      * 
      * @return array
      */
-    public static function write_stylesheet($style_id, $data, string $custom_css = ''):array {
+    public static function write_stylesheet($style_id, $data, string $custom_css = '', bool $overwrite = true):array {
         // Information about how writing went.
 
         $results = array();
@@ -389,13 +470,21 @@ final class Themify_Builder_Stylesheet {
             }
         }
         $data = null;
-        self::remove_css_files($style_id);
+        $css_file = self::get_stylesheet('basedir', $style_id)['url'];
+        if ($overwrite === true) {
+            self::remove_css_files($style_id);
+        } elseif (self::is_readable_and_not_empty($css_file)) {
+            $tmp = self::get_stylesheet('baseurl', $style_id);
+            return array(
+                'css_file' => $tmp['url'],
+                'write' => true
+            );
+        }
         if (!empty($custom_css)) {
             $css .= '/*Builder Custom CSS START*/' . PHP_EOL . $custom_css . PHP_EOL . '/*Builder Custom CSS END*/';
         }
         unset($custom_css);
         if (!empty($css)) {
-            $css_file = self::get_stylesheet('basedir', $style_id)['url'];
             $css = apply_filters('themify_builder_stylesheet_css', $css, $style_id, $css_file);
             $css = '/* Generated from ' . get_post_type($style_id) . ': ' . get_post_field('post_name', $style_id) . " */\r\n" . $css;
             $write = Themify_Filesystem::put_contents($css_file, $css);

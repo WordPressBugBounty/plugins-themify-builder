@@ -97,6 +97,11 @@ foreach ($fields_args['content_button'] as $content) {
         'background' => 'default',
         'title' => '',
         'id' => '',
+        'btn_class' => '',
+        'onclick' => '',
+        'custom_attrs' => array(),
+        'custom_attr_name' => '',
+        'custom_attr_value' => '',
         't' => 'i'
     );
     if ($content['button_color_bg'] === 'default') {
@@ -144,6 +149,51 @@ foreach ($fields_args['content_button'] as $content) {
 
     if ($fields_args['download_link'] === 'yes') {
         $link_attr[] = 'download';
+    }
+    if ($content['btn_class'] !== '') {
+        $classes = preg_split('/\s+/', $content['btn_class'], -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($classes as $class) {
+            $class = preg_replace('/[^a-zA-Z0-9\-_]/', '', $class);
+            while ($class !== '' && is_numeric($class[0])) {
+                $class = substr($class, 1);
+            }
+            if ($class !== '') {
+                $link_css_clsss[] = $class;
+            }
+        }
+    }
+    if ($content['id'] !== '') {
+        $content['id'] = preg_replace('/\s+/', '-', trim($content['id']));
+        $content['id'] = preg_replace('/[^a-zA-Z0-9\-_]/', '', $content['id']);
+        while ($content['id'] !== '' && is_numeric($content['id'][0])) {
+            $content['id'] = substr($content['id'], 1);
+        }
+    }
+    if ($content['onclick'] !== '') {
+        $link_attr[] = 'onclick="' . esc_attr($content['onclick']) . '"';
+    }
+    $custom_attrs = $content['custom_attrs'];
+    if (is_string($custom_attrs) && $custom_attrs !== '') {
+        $decoded = json_decode($custom_attrs, true);
+        $custom_attrs = is_array($decoded) ? $decoded : array();
+    }
+    if (!is_array($custom_attrs)) {
+        $custom_attrs = array();
+    }
+    if ($custom_attrs === array() && $content['custom_attr_name'] !== '') {
+        $custom_attrs[] = array(
+            'name' => $content['custom_attr_name'],
+            'value' => $content['custom_attr_value']
+        );
+    }
+    $used_custom_attrs = array();
+    foreach ($custom_attrs as $custom_attr) {
+        $custom_attr_name = isset($custom_attr['name']) ? preg_replace('/\s+/', '-', trim((string) $custom_attr['name'])) : '';
+        $custom_attr_name = preg_replace('/[^a-zA-Z0-9_:\-.]/', '', $custom_attr_name);
+        if ($custom_attr_name !== '' && preg_match('/^[a-zA-Z_:][-a-zA-Z0-9_:.]*$/', $custom_attr_name) && !isset($used_custom_attrs[$custom_attr_name])) {
+            $used_custom_attrs[$custom_attr_name] = true;
+            $link_attr[] = esc_attr($custom_attr_name) . '="' . esc_attr(isset($custom_attr['value']) ? $custom_attr['value'] : '') . '"';
+        }
     }
     $icon = $content['t'] !== 'l' ? ($content['icon'] ? themify_get_icon($content['icon']) : '') : themify_get_lottie($content, 'parent');
     if ($icon !== '') {

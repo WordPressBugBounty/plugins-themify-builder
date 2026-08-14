@@ -192,16 +192,19 @@ $isGsPost=Themify_Global_Styles::$isGlobalEditPage===true?' gs_post':'';
             </ul>
 
             <div class="save_wrap">
-                <?php if (get_post_status($post_id) !== 'auto-draft'): ?>
-                    <?php if ($is_admin === true): ?>
-                        <a href="<?php echo get_permalink($post_id) ?>#builder_active" id="frontend" class="switch"><?php echo themify_get_icon('arrow-right', 'ti') ?><span><?php _e('Frontend', 'themify'); ?></span></a>
-                    <?php else: ?>
-                        <a href="<?php echo get_edit_post_link($post_id); ?>#builder_active" id="backend" class="switch"><?php echo themify_get_icon('arrow-left', 'ti') ?><span><?php esc_html_e('Backend', 'themify'); ?></span></a>
+                <ul class="menu flex">
+                    <?php if (get_post_status($post_id) !== 'auto-draft'): ?>
+                        <?php if ($is_admin === true): ?>
+                            <li><a href="<?php echo get_permalink($post_id) ?>#builder_active" id="frontend" class="tb_tooltip switch btn"><?php echo themify_get_icon('arrow-right', 'ti') ?><span><?php _e('Frontend', 'themify'); ?></span></a></li>
+                        <?php else: ?>
+                            <li><a href="<?php echo get_edit_post_link($post_id); ?>#builder_active" id="backend" class="tb_tooltip switch btn"><?php echo themify_get_icon('arrow-left', 'ti') ?><span><?php esc_html_e('Backend', 'themify'); ?></span></a></li>
+                        <?php endif; ?>
                     <?php endif; ?>
-                <?php endif; ?>
-                <?php if ($is_admin===false): ?>
-                    <button type="button" class="tb_tooltip tf_close" title="<?php _e('ESC', 'themify') ?>"><span><?php _e('Close', 'themify'); ?></span></button>
-                <?php endif; ?>
+                    <li><button type="button" class="tb_tooltip clear_layout btn"><?php echo themify_get_icon('trash', 'ti') ?><span><?php _e('Clear Layout', 'themify'); ?></span></button></li>
+                    <?php if ($is_admin===false): ?>
+                        <li><button type="button" class="tb_tooltip tf_close btn" title="<?php _e('ESC', 'themify') ?>"><?php echo themify_get_icon('close', 'ti') ?><span><?php _e('Close', 'themify'); ?></span></button></li>
+                    <?php endif; ?>
+                </ul>
                 <div class="save_btn_wrap tf_rel">
                     <button type="button" class="save save_btn" title="<?php _e('Ctrl + S', 'themify') ?>"><?php _e('Save', 'themify'); ?></button>
                     <div tabindex="-1" class="revision_btn">

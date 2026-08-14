@@ -317,9 +317,13 @@ final class Themify_Get_Image_Size{
         // Read block size and skip ahead to begin cycling through blocks in search of SOF marker
         $block_size = unpack('H*', $chars[$i] . $chars[$i+1]);
         $block_size = hexdec($block_size[1]);
+        if ( $block_size < 2 ) {
+            return false;
+        }
         // New block detected, check for SOF marker
         $sof_marker = array("\xC0", "\xC1", "\xC2", "\xC3", "\xC5", "\xC6", "\xC7", "\xC8", "\xC9", "\xCA", "\xCB", "\xCD", "\xCE", "\xCF");
-        while(!feof(self::$handle)) {
+        $max_loops = 256;
+        while(!feof(self::$handle) && $max_loops-- > 0) {
             $i += $block_size;
             $chars .= fread(self::$handle, $block_size);
             if(isset($chars[$i]) && $chars[$i]==="\xFF") {//SOF flag
@@ -334,9 +338,14 @@ final class Themify_Get_Image_Size{
                 } else {
                     // Skip block marker and read block size
                     $i += 2;
-                    if (isset($chars[$i + 1], $chars[$i + 1])) {
+                    if (isset($chars[$i], $chars[$i + 1])) {
                         $block_size = unpack('H*', $chars[$i] . $chars[$i+1]);
                         $block_size = hexdec($block_size[1]);
+                        if ( $block_size < 2 ) {
+                            return false;
+                        }
+                    } else {
+                        return false;
                     }
                 }
             } 

@@ -43,11 +43,21 @@
                     );
                   //allPromisses.push(Themify.loadJs(moduleUrl+'tree'));
                 }
-                if(!Themify.isTouch){
-                    setTimeout(()=>{
-                        Themify.loadJs(componentUrl + 'right-click');
-                     //   Themify.loadJs(componentUrl + 'drop-files');
-                    },1000);
+                const loadRightClick=()=>{
+                    Themify.loadJs(componentUrl + 'right-click');
+                 //   Themify.loadJs(componentUrl + 'drop-files');
+                };
+                if(Themify.isMouse || !Themify.isTouch){
+                    setTimeout(loadRightClick,1000);
+                }
+                else{
+                    const detectMouse=e=>{
+                        if(e.pointerType==='mouse'){
+                            document.tfOff('pointermove pointerdown',detectMouse,{passive:true});
+                            loadRightClick();
+                        }
+                    };
+                    document.tfOn('pointermove pointerdown',detectMouse,{passive:true});
                 }
                 allPromisses[0].then(()=>{
                     TF_Notification.init().then(root=>{

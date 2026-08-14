@@ -35,6 +35,10 @@
                                 {
                                     value: 'slider',
                                     name: 'slider'
+                                },
+                                {
+                                    value: 'horizontal',
+                                    name: 'hrztalscl'
                                 }
                             ],
                             wrap_class: 'tb_compact_radios',
@@ -42,6 +46,7 @@
                             bindingContext : '#tb_lightbox_parent',
 							binding : {
 								slider : { hide : ['items_per_slide', 'animation_effect_tab'] },
+								horizontal : { hide : ['items_per_slide', 'animation_effect_tab'] },
 								grid : { show : ['animation_effect_tab'] },
 								showcase : { show : ['animation_effect_tab'] },
 								lightboxed : { show : ['animation_effect_tab'] }
@@ -225,7 +230,7 @@
                         },
                         {
                             type: 'group',
-                            wrap_class: 'tb_group_element_grid tb_group_element_slider',
+                            wrap_class: 'tb_group_element_grid tb_group_element_slider tb_group_element_horizontal',
                             options: [
                                 {
                                     id: 'link_opt',
@@ -361,10 +366,10 @@
                 delete settings.gallery_columns;
                 delete settings.t_columns;
                 delete settings.m_columns;
-                if (layout !== 'slider') {
+                if (layout !== 'slider' && layout !== 'horizontal') {
                     delete settings.link_opt;
                 } else {
-                    /* no Motion Effects with Slider layout */
+                    /* no Motion Effects with Slider / Horizontal Scroll layouts */
                     delete settings.motion_effects;
                 }
             }
@@ -557,7 +562,7 @@
                         if(index!==-1){
                             shortcode.splice(index,1);
                             const layout=data.layout_gallery|| 'grid',
-                                trigger=layout==='slider' || (layout==='showcase' && index===0),
+                                trigger=layout==='slider' || layout==='horizontal' || (layout==='showcase' && index===0),
                                 val=shortcode.length > 0 ? galleryField.replaceShortcode(oldVal, shortcode.join(',')) : '';
                             if(api.activeModel?.id===this.id){
                                 api.LightBox.el.querySelector('.tf_close[data-id="'+itemId+'"]')?.closest('.tb_gal_item')?.remove();
@@ -863,6 +868,70 @@
                 this.el.tfClass('tb_data_mod_name')[0].after(fr);
             }
             else{
+                return fr;
+            }
+        }
+        horizontal(images,data,addImages){
+            const fr=createDocumentFragment(),
+                args={...data},
+                showTitle=args.gallery_image_title==='yes',
+                showCaption=args.gallery_exclude_caption!=='yes',
+                scroll=createElement('','gallery-horizontal-scroll'),
+                imgWKey='thumb_w_gallery',
+                imgHKey='thumb_h_gallery';
+
+            for(let j=0;j<images.length;++j){
+                let item=images[j],
+                    wrap=createElement('','gallery-horizontal-item'),
+                    icon=createElement('','gallery-icon tf_rel'),
+                    img=this.constructor.setEditableImage(createElement('img'),'',imgWKey,imgHKey,args),
+                    src=item.full?.[0] || item.large?.[0] || item.thumbnail,
+                    {title='',caption=''}=item,
+                    thumbH=~~(args[imgHKey] || args[imgWKey] || 0),
+                    thumbW='',
+                    natW=~~(item.full?.[1] || item.large?.[1] || 0),
+                    natH=~~(item.full?.[2] || item.large?.[2] || 0);
+
+                if(thumbH>0 && natW>0 && natH>0){
+                    thumbW=Math.round(thumbH*(natW/natH));
+                }else if(!args[imgHKey]){
+                    thumbW=args[imgWKey] || '';
+                    thumbH=args[imgHKey] || '';
+                }
+                img.src=ThemifyImageResize.getCache(src,thumbW,thumbH,.8) || src;
+                img.dataset.orig = src;
+                if(data.link_opt!=='none'){
+                    let link=createElement('a');
+                    link.href='#';
+                    if(data.lightbox){
+                        link.className='themify_lightbox';
+                    }
+                    link.appendChild(img);
+                    icon.appendChild(link);
+                }else{
+                    icon.appendChild(img);
+                }
+                if(images.length>1){
+                    icon.appendChild(createElement('',{role:'button',class:'tb_del_btn tb_del_gal tf_close tb_disable_sorting','data-id':item.id,title:'Delete Image'}));
+                }
+                wrap.appendChild(icon);
+                if((title!=='' && showTitle===true) || (caption!=='' && showCaption===true)){
+                    let content=createElement('','wp-caption-text gallery-caption');
+                    if(title!=='' && showTitle===true){
+                        content.appendChild(createElement('strong','themify_image_title tf_block',title));
+                    }
+                    if(caption!=='' && showCaption===true){
+                        content.appendChild(createElement('span','themify_image_caption',caption));
+                    }
+                    wrap.appendChild(content);
+                }
+                scroll.appendChild(wrap);
+            }
+            scroll.appendChild(createElement('span',{role:'button',class:'tb_add_gal_btn tb_add_btn tf_plus_icon',title:'Add Images'}));
+            fr.appendChild(scroll);
+            if(addImages===true){
+                this.el.tfClass('gallery-horizontal-scroll')[0]?.replaceWith(scroll);
+            }else{
                 return fr;
             }
         }

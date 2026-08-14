@@ -2627,7 +2627,7 @@ window.ThemifyConstructor = {
                 }
                 let type = item.type,
                         res = this[type].render(item, this);
-                if (res !== false && type !== 'separator' && type !== 'expand' && type !== 'group') {
+                if (res !== false && type !== 'separator' && type !== 'expand' && type !== 'group' && type !== 'add_fields') {
                     let id = item.id || item.topId;
                     if (type !== 'tabs' && type !== 'multi' && type !== 'margin_opposity') {
                         if (id) {
@@ -2852,6 +2852,281 @@ window.ThemifyConstructor = {
             }
             f.appendChild(wr);
             return f;
+        }
+    },
+    add_fields: {
+        _hasValue(opt, vals) {
+            if (opt.multiple) {
+                const v = vals[opt.id];
+                if (Array.isArray(v)) {
+                    return v.length > 0;
+                }
+                if (typeof v === 'string' && v !== '') {
+                    try {
+                        const parsed = JSON.parse(v);
+                        return Array.isArray(parsed) && parsed.length > 0;
+                    } catch (e) {
+                        return false;
+                    }
+                }
+                return false;
+            }
+            if (opt.has_value) {
+                const keys = Array.isArray(opt.has_value) ? opt.has_value : [opt.has_value];
+                for (let i = keys.length - 1; i > -1; --i) {
+                    if (vals[keys[i]]) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            if (opt.type === 'multi' && opt.options) {
+                for (let i = opt.options.length - 1; i > -1; --i) {
+                    if (vals[opt.options[i].id]) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return !!vals[opt.id];
+        },
+        _sanitizeId(v) {
+            v = (v || '').trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-\_]/g, '');
+            while (v && !isNaN(v[0])) {
+                v = v.substring(1);
+            }
+            return v;
+        },
+        _sanitizeAttrName(v) {
+            v = (v || '').trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9_:\-.]/g, '');
+            while (v && !/^[a-zA-Z_:]/.test(v[0])) {
+                v = v.substring(1);
+            }
+            return v;
+        },
+        _parseCustomAttrs(vals) {
+            let list = vals.custom_attrs;
+            if (typeof list === 'string' && list !== '') {
+                try {
+                    list = JSON.parse(list);
+                } catch (e) {
+                    list = [];
+                }
+            }
+            if (!Array.isArray(list)) {
+                list = [];
+            }
+            if (!list.length && vals.custom_attr_name) {
+                list = [{
+                    name: vals.custom_attr_name,
+                    value: vals.custom_attr_value || ''
+                }];
+            }
+            return list;
+        },
+        _syncCustomAttrs(wrap, hidden, sanitizeInputs) {
+            const rows = wrap.tfClass('tb_custom_attr_row'),
+                list = [],
+                names = {};
+            for (let i = 0; i < rows.length; ++i) {
+                let nameInput = rows[i].tfClass('tb_custom_attr_name')[0],
+                    valueInput = rows[i].tfClass('tb_custom_attr_value')[0],
+                    rawName = nameInput?.value || '',
+                    name = this._sanitizeAttrName(rawName),
+                    err = nameInput?.parentNode.tfClass('tb_field_error_msg')[0];
+                if (sanitizeInputs && nameInput && rawName !== name) {
+                    nameInput.value = name;
+                }
+                if (name) {
+                    if (names[name]) {
+                        const errorText = i18n.errorAttr || i18n.errorId;
+                        if (!err) {
+                            nameInput.after(createElement('span', 'tb_field_error_msg', errorText));
+                        } else {
+                            err.textContent = errorText;
+                        }
+                        nameInput.classList.add('tb_field_error');
+                    } else {
+                        names[name] = true;
+                        err?.remove();
+                        nameInput?.classList.remove('tb_field_error');
+                        list.push({
+                            name,
+                            value: valueInput?.value || ''
+                        });
+                    }
+                } else {
+                    err?.remove();
+                    nameInput?.classList.remove('tb_field_error');
+                }
+            }
+            hidden.value = list.length ? JSON.stringify(list) : '';
+            Themify.triggerEvent(hidden, 'change');
+        },
+        _createCustomAttrRow(item, wrap, hidden) {
+            const _this = this,
+                row = createElement('', 'tb_field tb_custom_attr_row'),
+                nameWrap = createElement('', 'tb_input'),
+                valueWrap = createElement('', 'tb_input'),
+                nameInput = createElement('input', {
+                    type: 'text',
+                    class: 'tb_custom_attr_name',
+                    value: item?.name || ''
+                }),
+                valueInput = createElement('input', {
+                    type: 'text',
+                    class: 'tb_custom_attr_value',
+                    value: item?.value || ''
+                }),
+                remove = createElement('span', {
+                    role: 'button',
+                    class: 'tb_custom_attr_remove tf_close',
+                    title: i18n.delete || 'Delete'
+                });
+            nameWrap.append(
+                createElement('', 'tb_label', i18n.attrn || 'Attribute'),
+                nameInput
+            );
+            valueWrap.append(
+                createElement('', 'tb_label', i18n.val || 'Value'),
+                valueInput
+            );
+            row.append(nameWrap, valueWrap, remove);
+            nameInput.tfOn('change', e => {
+                e.currentTarget.value = _this._sanitizeAttrName(e.currentTarget.value);
+                _this._syncCustomAttrs(wrap, hidden, true);
+            });
+            nameInput.tfOn('input', () => {
+                _this._syncCustomAttrs(wrap, hidden, false);
+            }, {passive: true});
+            valueInput.tfOn('change input', () => {
+                _this._syncCustomAttrs(wrap, hidden, false);
+            }, {passive: true});
+            remove.tfOn(_CLICK_, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                row.remove();
+                _this._syncCustomAttrs(wrap, hidden, false);
+            });
+            return row;
+        },
+        _bindSanitize(field, type) {
+            const input = field.querySelector('input,textarea');
+            if (!input) {
+                return;
+            }
+            const run = () => {
+                if (type === 'custom_css') {
+                    api.Forms.getValidator('custom_css')(input);
+                } else if (type === 'id') {
+                    input.value = this._sanitizeId(input.value);
+                }
+            };
+            input.tfOn('change', run, {passive: true});
+            input.tfOn('blur', run, {passive: true});
+        },
+        render(data, self) {
+            const wrap = createElement('', 'tb_add_fields'),
+                vals = self.values || {},
+                options = data.options || [],
+                fields = [],
+                available = [],
+                multipleOpts = [];
+            if (!vals.custom_attrs && vals.custom_attr_name) {
+                vals.custom_attrs = [{
+                    name: vals.custom_attr_name,
+                    value: vals.custom_attr_value || ''
+                }];
+            }
+            for (let i = 0, len = options.length; i < len; ++i) {
+                let opt = api.Helper.cloneObject(options[i]);
+                if (opt.multiple) {
+                    multipleOpts.push(opt);
+                    continue;
+                }
+                let hasVal = this._hasValue(opt, vals);
+                opt.wrap_class = (opt.wrap_class ? opt.wrap_class + ' ' : '') + 'tb_add_field' + (hasVal ? '' : ' tf_hide');
+                fields.push(opt);
+                if (!hasVal) {
+                    available.push(opt);
+                }
+            }
+            wrap.appendChild(self.create(fields));
+            for (let i = 0; i < fields.length; ++i) {
+                let opt = fields[i],
+                    field = wrap.querySelector('.tb_field.' + opt.id);
+                if (field && opt.sanitize) {
+                    this._bindSanitize(field, opt.sanitize);
+                }
+            }
+            for (let m = 0; m < multipleOpts.length; ++m) {
+                let opt = multipleOpts[m],
+                    list = this._parseCustomAttrs(vals),
+                    container = createElement('', 'tb_custom_attrs_wrap ' + opt.id),
+                    hidden = createElement('input', {
+                        type: 'hidden',
+                        value: list.length ? JSON.stringify(list) : ''
+                    });
+                if (self.is_repeat === true) {
+                    hidden.className = 'tb_lb_option_child';
+                    hidden.dataset.inputId = opt.id;
+                } else {
+                    hidden.className = 'tb_lb_option';
+                    hidden.id = opt.id;
+                }
+                container.appendChild(hidden);
+                for (let i = 0; i < list.length; ++i) {
+                    container.appendChild(this._createCustomAttrRow(list[i], container, hidden));
+                    }
+                    wrap.appendChild(container);
+                    available.push(opt);
+                }
+                if (available.length) {
+                const tb_field = createElement('', 'tb_field tb_add_fields_plus'),
+                    plusWrap = createElement('', 'tb_input tf_rel'),
+                    plus = createElement('', {class: 'tb_ui_dropdown_label tb_sort_fields_plus tf_plus_icon', tabindex: -1}),
+                    ul = createElement('ul', 'tf_scrollbar'),
+                    _this = this;
+                for (let i = 0, len = available.length; i < len; ++i) {
+                    let opt = available[i],
+                        li = createElement('li', {'data-id': opt.id}, i18n[opt.label] || opt.label);
+                    if (opt.multiple) {
+                        li.dataset.multiple = '1';
+                    }
+                    ul.appendChild(li);
+                }
+                plus.appendChild(createElement('span', '', i18n[data.label] || data.label || i18n.addattr));
+                tb_field.append(createElement('', 'tb_label tb_empty_label'), plusWrap);
+                plusWrap.append(plus, ul);
+                wrap.appendChild(tb_field);
+                ul.tfOn(_CLICK_, function (e) {
+                    if (e.target.tagName === 'LI') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const id = e.target.dataset.id,
+                            isMultiple = e.target.dataset.multiple === '1';
+                        if (isMultiple) {
+                            const container = wrap.querySelector('.tb_custom_attrs_wrap.' + id),
+                                hidden = container?.querySelector('[data-input-id="' + id + '"],#' + id);
+                            if (container && hidden) {
+                                container.appendChild(_this._createCustomAttrRow({}, container, hidden));
+                                _this._syncCustomAttrs(container, hidden, false);
+                            }
+                            return;
+                        }
+                        const field = wrap.querySelector('.tb_field.' + id);
+                        if (field) {
+                            field.classList.remove('tf_hide');
+                        }
+                        e.target.style.display = 'none';
+                        e.target.removeAttribute('data-id');
+                        if (!this.querySelector('[data-id]')) {
+                            tb_field.classList.add('tf_hide');
+                        }
+                    }
+                });
+            }
+            return wrap;
         }
     },
     builder: {

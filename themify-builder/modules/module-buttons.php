@@ -35,7 +35,9 @@ class TB_Buttons_Module extends Themify_Builder_Component_Module {
 			'content_button' => [
 				'label' => 'LINE',
 				'link' => 'LINK',
-				'title' => 'LINE'
+				'title' => 'LINE',
+				'btn_class' => 'LINE',
+				'onclick' => 'LINE'
 			]
 		];
 	}
