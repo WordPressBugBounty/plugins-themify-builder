@@ -385,9 +385,7 @@
             
             module.className = classes.join(' ');
             if(!isSlider){
-                if(data.grid_layout_testimonial){
-                    wrap.className+=' '+data.grid_layout_testimonial;
-                }
+                wrap.className+=' '+(data.grid_layout_testimonial || 'list-post');
                 if(data.masonry==='enable'){
                     wrap.className+=' masonry';
                 }

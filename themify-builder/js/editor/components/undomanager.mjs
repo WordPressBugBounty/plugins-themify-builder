@@ -601,6 +601,7 @@
         }
         static async changes(is_undo,undoItem) {
             api.ActionBar.clearClicked();
+            api.ActionBar.clear();
             const _this = undoItem ? this.get(undoItem) : this.get();
             if (await this.prepareMainUndoRedo() === false) {
                 return;

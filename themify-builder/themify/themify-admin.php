@@ -3505,18 +3505,49 @@ function themify_load_term_cover_feature() {
 add_action( 'admin_init', 'themify_load_term_cover_feature' );
 
 function themify_gutenberg_admin_css() {
-    $screen=get_current_screen();
-    if (!empty($screen) && $screen->is_block_editor() ) {
-        echo '
-<style>
-    .wp-block-post-content{
-        padding:0 3%
+    if ( ! is_admin() ) {
+        return;
     }
-    .themify-gutenberg-editor :is(.editor-post-title,.block-editor-block-list__layout){
-        padding-inline:3%
+    $screen = get_current_screen();
+    if ( empty( $screen ) || ! $screen->is_block_editor() ) {
+        return;
     }
-</style>
-';
+    $handle = 'themify-gutenberg-content';
+    if ( ! wp_style_is( $handle, 'registered' ) ) {
+        wp_register_style( $handle, false, array(), THEMIFY_VERSION );
     }
+    wp_enqueue_style( $handle );
+    wp_add_inline_style( $handle, '
+.wp-block-post-content{
+    padding:0 3%
 }
-add_action( 'admin_head', 'themify_gutenberg_admin_css' );
+:is(.wp-block-post-title,.editor-post-title,.block-editor-block-list__layout){
+    padding-inline:3%
+}
+' );
+}
+add_action( 'enqueue_block_assets', 'themify_gutenberg_admin_css' );
+
+/**
+ * WordPress 6.2 and earlier do not route enqueue_block_assets styles into the
+ * editor canvas. Keep the previous admin-head behaviour for those versions.
+ */
+function themify_gutenberg_admin_css_legacy() {
+    global $wp_version;
+    if ( version_compare( (string) $wp_version, '6.3', '>=' ) ) {
+        return;
+    }
+    $screen = get_current_screen();
+    if ( empty( $screen ) || ! $screen->is_block_editor() ) {
+        return;
+    }
+    echo '<style>
+.wp-block-post-content{
+    padding:0 3%
+}
+.themify-gutenberg-editor :is(.editor-post-title,.block-editor-block-list__layout){
+    padding-inline:3%
+}
+</style>';
+}
+add_action( 'admin_head', 'themify_gutenberg_admin_css_legacy' );

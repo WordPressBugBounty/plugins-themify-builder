@@ -888,18 +888,26 @@
             }
             
             this.el = root.shadowRoot.tfId('small_panel');
-            doc.tfOn(_CLICK_,e=>{
+            const panelClick=e=>{
                 if(!this.el.contains(e.target) && !this.el.getRootNode().host.contains(e.target)){
-                    if(e.target.closest('.tb_column_btn_plus')){
+                    const addBtn=e.target.closest?.('.tb_column_btn_plus');
+                    if(addBtn){
                         e.stopImmediatePropagation();
                         e.preventDefault();
-                        this.show(e.target);
+                        this.show(addBtn);
                     }
                     else{
                         this.hide();
                     }
                 }
-            });
+            };
+            doc.tfOn(_CLICK_,panelClick);
+            Themify.on('themify_builder_ready',()=>{
+                const builder=api.Builder.get()?.el;
+                if(builder?.ownerDocument!==doc){
+                    builder.tfOn(_CLICK_,panelClick);
+                }
+            },true,api.is_builder_ready);
             this.initClick();
         }
         static show(item) {

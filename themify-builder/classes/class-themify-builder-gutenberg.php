@@ -44,24 +44,79 @@ if (!class_exists('Themify_Builder_Gutenberg',false)) :
             }
         }
 
+        /**
+         * WordPress 7.0 only iframes the post editor when all inserted blocks use
+         * Block API v3+. Keep the Builder block on v2 before WP 7.1 so existing
+         * sites retain the legacy non-iframed editor. WordPress 7.1+ always
+         * iframes the post editor, so use v3 there.
+         */
+        private static function get_block_api_version():int {
+            global $wp_version;
+            $version = preg_replace('/-.*/', '', (string) $wp_version);
+            return version_compare($version, '7.1', '>=') ? 3 : 2;
+        }
+
         private static function register_block():void {
             wp_register_style(
-                'builder-styles',
+                'themify-builder-style',
                 THEMIFY_BUILDER_URI . '/css/themify-builder-style.css',
                 null,
                 THEMIFY_VERSION
             );
+            $editor_style_handles = array();
+            if (is_admin()) {
+                wp_register_style(
+                    'tf_base',
+                    THEMIFY_URI . '/css/base.min.css',
+                    null,
+                    THEMIFY_VERSION
+                );
+                wp_register_style(
+                    'themify-builder-admin-ui',
+                    THEMIFY_BUILDER_URI . '/css/editor/themify-builder-admin-ui.css',
+                    array('tf_base'),
+                    THEMIFY_VERSION
+                );
+                wp_register_style(
+                    'themify-backend-mode',
+                    THEMIFY_BUILDER_URI . '/css/editor/backend-mode.css',
+                    array('themify-builder-style', 'themify-builder-admin-ui'),
+                    THEMIFY_VERSION
+                );
+                wp_register_style(
+                    'themify-backend-ui',
+                    THEMIFY_BUILDER_URI . '/css/editor/backend/backend-ui.css',
+                    array('themify-backend-mode'),
+                    THEMIFY_VERSION
+                );
+                $editor_style_handles = array(
+                    'tf_base',
+                    'themify-builder-admin-ui',
+                    'themify-backend-mode',
+                    'themify-backend-ui'
+                );
+            }
 
             register_block_type('themify-builder/canvas', array(
+                'api_version' => self::get_block_api_version(),
+                'title' => 'Themify Builder',
+                'category' => 'layout',
+                'attributes' => array(
+                    'content' => array(
+                        'type' => 'string'
+                    )
+                ),
                 'render_callback' => array(__CLASS__, 'render_builder_block'),
-                'editor_style' => 'themify-builder-style',
-                'style' => 'themify-builder-style'
+                'style_handles' => array('themify-builder-style'),
+                'editor_style_handles' => $editor_style_handles
             ));
         }
 
         public static function enqueue_editor_scripts():void {
             add_filter('themify_defer_js_exclude', array(__CLASS__, 'exclude_defer_script'));
-            themify_enque_script('themify-builder-gutenberg-block', THEMIFY_BUILDER_URI . '/js/editor/backend/themify-builder-gutenberg.js', THEMIFY_VERSION, array('wp-blocks', 'wp-i18n', 'wp-element', 'backbone'));
+            Themify_Enqueue_Assets::loadMainScript();
+            themify_enque_script('themify-builder-gutenberg-block', THEMIFY_BUILDER_URI . '/js/editor/backend/themify-builder-gutenberg.js', THEMIFY_VERSION, array('wp-blocks', 'wp-block-editor', 'wp-i18n', 'wp-element', 'backbone', 'themify-main-script'));
+            wp_add_inline_script('themify-builder-gutenberg-block', 'window.themifyBuilderBlockApiVersion=' . self::get_block_api_version() . ';', 'before');
         }
 
         public static function render_builder_block($attributes):string {

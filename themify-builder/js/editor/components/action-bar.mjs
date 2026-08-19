@@ -209,22 +209,28 @@
         
     class Bar extends HTMLElement {
         connectedCallback () {
-            const tpl=this.constructor._template.cloneNode(true),
-                menu=tpl.querySelector('.dropdown'),
-                parent=this.constructor===ModuleBar?this.parentNode.parentNode:null,
-                isSmall=parent?.offsetWidth <220;
-                if(isSmall===true){
-                    menu.classList.add('tb_small_bar');
-                    menu.children[~~(menu.childElementCount/2)].after(menu.firstElementChild);
-                }
-                parent?.classList.toggle('tb_small_bar',isSmall);
-                this.attachShadow({ mode:'open'}).appendChild(tpl);
-                menu.tfOn('pointerover',menuHover,{passive:true});
-                this.shadowRoot.tfOn(_CLICK_,shadowRootClick,{passive:true});
-               
+            if (!this.shadowRoot) {
+                const tpl=this.constructor._template.cloneNode(true),
+                    menu=tpl.querySelector('.dropdown'),
+                    parent=this.constructor===ModuleBar?this.parentNode.parentNode:null,
+                    isSmall=parent?.offsetWidth <220;
+                    if(isSmall===true){
+                        menu.classList.add('tb_small_bar');
+                        menu.children[~~(menu.childElementCount/2)].after(menu.firstElementChild);
+                    }
+                    parent?.classList.toggle('tb_small_bar',isSmall);
+                    this.attachShadow({ mode:'open'}).appendChild(tpl);
+            }
+            const menu=this.shadowRoot.querySelector('.dropdown');
+            menu.tfOff('pointerover',menuHover,{passive:true}).tfOn('pointerover',menuHover,{passive:true});
+            this.shadowRoot.tfOff(_CLICK_,shadowRootClick,{passive:true}).tfOn(_CLICK_,shadowRootClick,{passive:true});
         }
         disconnectedCallback(){
-            const menu=this.shadowRoot.tfOff(_CLICK_,shadowRootClick,{passive:true}).querySelector('.dropdown');
+            const root=this.shadowRoot;
+            if(!root){
+                return;
+            }
+            const menu=root.tfOff(_CLICK_,shadowRootClick,{passive:true}).querySelector('.dropdown');
             menu?.tfOff('pointerover',menuHover,{passive:true})
             .tfClass('nested_menu')[0]?.tfOff(_CLICK_,smallBarClick,{passive:true});
             bodyCl.remove('tb_nested_hover');
@@ -350,7 +356,7 @@
                     .tfOn('dblclick', e=>{
                         const target = e.target,
                             tagName = target.tagName;
-                        if(!doc.activeElement.isContentEditable && tagName !== 'INPUT' && tagName !== 'TEXTAREA'){
+                        if(!target.ownerDocument.activeElement?.isContentEditable && tagName !== 'INPUT' && tagName !== 'TEXTAREA'){
                             if(tagName==='DIV' &&target.classList.contains('tb_dragger')){
                                 api.EdgeDrag.openLightBox(target);
                             }
@@ -378,28 +384,29 @@
                         }
                     });
                     if(!themifyBuilder.disableShortcuts){
-                        const canvas = isFrontend ? null : doc.tfId('tb_canvas_block');
-
-                        if (canvas === null) {
-                            doc.tfOn('keydown', e=>{
+                        const onKey=e=>{
                                 this.actions(e);
-                            });
-                            topWindowDoc.tfOn('keydown', e=>{
-                                this.actions(e);
-                            });
-                        } else {
-                            canvas.tfOn('keydown', e=>{
-                                this.actions(e);
-                            });
+                            },
+                            builderEl=api.Builder.get?.(0)?.el || api.Builder.get?.()?.el,
+                            keyTarget=isFrontend?null:(builderEl || doc.tfId('tb_canvas_block'));
+                        if(keyTarget){
+                            keyTarget.tfOn('keydown',onKey);
+                        }
+                        else{
+                            doc.tfOn('keydown',onKey);
+                            if(topWindowDoc!==doc){
+                                topWindowDoc.tfOn('keydown',onKey);
+                            }
                         }
                     }
                 }
             }, true,api.is_builder_ready);
         },
         async actions(e) {
-            const target = e.target,
-                tagName = target.tagName;
-                if (tagName !== 'INPUT' && tagName !== 'TEXTAREA' && !doc.activeElement.isContentEditable && !api.LightBox.el.contains(target)  && (!isFrontend ||!api.activeModel?.el?.contains(doc.activeElement))) {
+            const target=e.target,
+                tagName=target.tagName,
+                activeElement=target.ownerDocument.activeElement;
+                if (tagName !== 'INPUT' && tagName !== 'TEXTAREA' && !activeElement?.isContentEditable && !api.LightBox.el.contains(target)  && (!isFrontend ||!api.activeModel?.el?.contains(activeElement))) {
                     const code = e.code,
                         items = api.Builder.get().el.tfClass('tb_element_clicked');
                     let len = items.length;
@@ -493,13 +500,13 @@
                             if(target.classList.contains('tb_grid_drag')){
                                 this.columnDragers(target);
                             }
-                            const actionBar=model.type==='module'?el.querySelector(':scope > .tb_'+model.type+'_action'):(target.classList.contains('tb_action_wrap')?target:null);
+                            const actionBar=model.type==='module'?el.querySelector(':scope > .tb_'+model.type+'_action'):target.closest?.('.tb_action_wrap');
                             if (actionBar) {
 								this.cid=cid;
 								let slug=  model.get('mod_name'),
                                     cl='tb_bar',
                                     t = doc.createElement('tb-'+model.type+'-bar'),
-                                    actionWrap=actionBar.tfClass('tb_action_wrap')[0];
+                                    actionWrap=actionBar.getElementsByClassName('tb_action_wrap')[0];
 								if(model.isEmpty===true){
 									cl+=' tb_disabled_module';
 								}

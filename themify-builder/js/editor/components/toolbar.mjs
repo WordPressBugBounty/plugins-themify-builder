@@ -59,7 +59,14 @@
             doc.tfId('themify-builder-admin-ui-css').before(combineCss.cloneNode(true));
             Themify.on('themify_builder_ready',()=>{
                     if(!isFrontend){
-                        (doc.tfId('tb_canvas_block') || doc.tfClass('tb_active_builder')[0]).before(root);
+                        const builderEl=api.Builder.get?.(0)?.el || api.Builder.get?.()?.el,
+                            canvas=builderEl?.closest('#tb_canvas_block') || doc.tfId('tb_canvas_block') || doc.tfClass('tb_active_builder')[0];
+                        if(canvas){
+                            canvas.before(root);
+                        }
+                        else{
+                            topBody.appendChild(root);
+                        }
                     }
                     this.isLoaded = true;
                     Themify.trigger('tb_toolbar_loaded');

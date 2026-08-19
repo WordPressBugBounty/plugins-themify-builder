@@ -5,7 +5,170 @@
         if (api.isGSPage === true) {
             return;
         }
-        let clicked;
+        const contextDoc=context.ownerDocument,
+            captureDrag=!isFrontend && contextDoc!==doc;
+        let clicked,
+            pointerDrag=null;
+        const getDragTarget=(el,path)=>{
+                let target=el?.closest?.('[draggable]');
+                /*
+                 * Row/column/subrow move controls live inside action-bar Shadow DOM.
+                 * Element.closest() cannot cross that boundary, so resolve the real
+                 * draggable Builder element from the composed event path when the
+                 * pointer originated from the action bar move control.
+                 */
+                if(!target && el?.closest?.('.tb_move') && path){
+                    for(let i=0;i<path.length;++i){
+                        const item=path[i];
+                        if(item?.nodeType===1 && item.matches?.('[draggable]')){
+                            target=item;
+                            break;
+                        }
+                    }
+                }
+                if(api.activeBreakPoint !== 'desktop' && target){
+                    target=target.closest('.module_column');
+                }
+                if(!target || (api.activeBreakPoint !== 'desktop' && target.classList.contains('active_module'))){
+                    return null;
+                }
+                return target;
+            },
+            clearPointerDrag=(state,suppressClick=false)=>{
+                if(!state){
+                    return;
+                }
+                const {sourceDoc,move,up,overlay,target}=state;
+                sourceDoc.removeEventListener('pointermove',move,true);
+                sourceDoc.removeEventListener('pointerup',up,true);
+                sourceDoc.removeEventListener('pointercancel',up,true);
+                overlay?.remove();
+                if(suppressClick && target){
+                    const stopClick=e=>{
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                    };
+                    target.addEventListener('click',stopClick,{capture:true,once:true});
+                    setTimeout(()=>target.removeEventListener('click',stopClick,true));
+                }
+                if(pointerDrag===state){
+                    pointerDrag=null;
+                }
+            },
+            preparePointerDrag=(down,target)=>{
+                const builder=api.Builder.get?.()?.el,
+                    builderDoc=builder?.ownerDocument;
+                if(isFrontend || !builder || builderDoc===doc || !target){
+                    return;
+                }
+                clearPointerDrag(pointerDrag);
+                const sourceDoc=target.ownerDocument,
+                    builderFrame=builderDoc.defaultView?.frameElement,
+                    startX=down.clientX,
+                    startY=down.clientY,
+                    dataTransfer={
+                        effectAllowed:'move',
+                        dropEffect:'move',
+                        setData(){},
+                        getData(){return '';},
+                        setDragImage(){}
+                    },
+                    makeEvent=(type,eventDoc,x,y)=>{
+                        const ev=new eventDoc.defaultView.Event(type,{bubbles:true,cancelable:true,composed:true});
+                        Object.defineProperties(ev,{
+                            clientX:{value:x},
+                            clientY:{value:y},
+                            dataTransfer:{value:dataTransfer}
+                        });
+                        ev.tbPointerDrag=true;
+                        return ev;
+                    },
+                    getCanvasPoint=e=>{
+                        if(sourceDoc===builderDoc){
+                            const clientX=e.clientX,
+                                clientY=e.clientY;
+                            return {clientX,clientY,hit:builderDoc.elementFromPoint(clientX,clientY)};
+                        }
+                        if(!builderFrame){
+                            return null;
+                        }
+                        const rect=builderFrame.getBoundingClientRect(),
+                            scaleX=rect.width?builderFrame.offsetWidth/rect.width:1,
+                            scaleY=rect.height?builderFrame.offsetHeight/rect.height:1,
+                            clientX=((e.clientX-rect.left)*scaleX)-builderFrame.clientLeft,
+                            clientY=((e.clientY-rect.top)*scaleY)-builderFrame.clientTop;
+                        if(clientX<0 || clientY<0 || clientX>builderDoc.documentElement.clientWidth || clientY>builderDoc.documentElement.clientHeight){
+                            return null;
+                        }
+                        return {clientX,clientY,hit:builderDoc.elementFromPoint(clientX,clientY)};
+                    };
+                let overlay=null;
+                if(sourceDoc!==builderDoc && builderFrame){
+                    const rect=builderFrame.getBoundingClientRect();
+                    overlay=sourceDoc.createElement('div');
+                    overlay.className='tb_iframe_pointer_bridge';
+                    Object.assign(overlay.style,{
+                        position:'fixed',
+                        left:rect.left+'px',
+                        top:rect.top+'px',
+                        width:rect.width+'px',
+                        height:rect.height+'px',
+                        zIndex:'2147483646',
+                        background:'transparent',
+                        pointerEvents:'auto'
+                    });
+                    sourceDoc.body.appendChild(overlay);
+                }
+                const state={sourceDoc,target,builder,builderDoc,builderFrame,overlay,dataTransfer,started:false,lastHit:null,move:null,up:null};
+                state.move=e=>{
+                    if(e.pointerId!==down.pointerId){
+                        return;
+                    }
+                    if(state.overlay && state.builderFrame){
+                        const rect=state.builderFrame.getBoundingClientRect();
+                        Object.assign(state.overlay.style,{left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});
+                    }
+                    if(!state.started){
+                        if(Math.abs(e.clientX-startX)<5 && Math.abs(e.clientY-startY)<5){
+                            return;
+                        }
+                        state.started=true;
+                        clicked=target;
+                        target.dispatchEvent(makeEvent('dragstart',sourceDoc,e.clientX,e.clientY));
+                    }
+                    e.preventDefault();
+                    const point=getCanvasPoint(e);
+                    if(point?.hit && builder.contains(point.hit)){
+                        state.lastHit=point.hit;
+                        point.hit.dispatchEvent(makeEvent('dragover',builderDoc,point.clientX,point.clientY));
+                    }
+                };
+                state.up=e=>{
+                    if(e.pointerId!==down.pointerId){
+                        return;
+                    }
+                    const started=state.started;
+                    if(started){
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        const point=getCanvasPoint(e),
+                            dropped=builder.querySelector('[data-pos]') || (point?.hit && builder.contains(point.hit)?point.hit:state.lastHit);
+                        if(dropped){
+                            const rect=dropped.getBoundingClientRect(),
+                                x=point?.clientX ?? (rect.left+rect.width/2),
+                                y=point?.clientY ?? (rect.top+rect.height/2);
+                            dropped.dispatchEvent(makeEvent('drop',builderDoc,x,y));
+                        }
+                        target.dispatchEvent(makeEvent('dragend',sourceDoc,e.clientX,e.clientY));
+                    }
+                    clearPointerDrag(state,started);
+                    clicked=null;
+                };
+                pointerDrag=state;
+                sourceDoc.addEventListener('pointermove',state.move,{capture:true,passive:false});
+                sourceDoc.addEventListener('pointerup',state.up,{capture:true,passive:false});
+                sourceDoc.addEventListener('pointercancel',state.up,{capture:true,passive:false});
+            };
         context.tfOn('pointerdown', e => {
             if (e.button === 0 && !api.isPreview && !e.target.closest('.tb_dragger,.tb_disable_sorting,.tb_editor_on')) {
                 clicked = e.target;
@@ -20,14 +183,22 @@
                         clicked=null;
                     }
                 }
+                if(clicked){
+                    preparePointerDrag(e,getDragTarget(clicked,e.composedPath?.()));
+                }
             } else {
                 clicked = null;
             }
         }, {
-            passive: true
+            passive: true,
+            capture:captureDrag
         })
         .tfOn('dragstart', function (e) {
             if(api.isPreview===true){
+                return;
+            }
+            if(pointerDrag && !e.tbPointerDrag){
+                e.preventDefault();
                 return;
             }
             if(!clicked || e.target.nodeType === Node.TEXT_NODE){
@@ -35,11 +206,8 @@
                 clicked = null;
                 return;
             }
-            let target =  e.target.closest('[draggable]'); 
-            if(api.activeBreakPoint !== 'desktop' && target){
-                target=target.closest('.module_column');
-            }
-            if(!target || (api.activeBreakPoint !== 'desktop' && target.classList.contains('active_module'))){
+            let target = getDragTarget(e.target);
+            if(!target){
                 e.preventDefault();
                 clicked = null;
                 return;
@@ -71,6 +239,16 @@
                     scrollReq,
                     topScroll = [ToolBar.el.getRootNode().host, topWindowDoc.tfId('tb_fixed_bottom_scroll')],
                     builder = api.Builder.get().el,
+                    builderDoc=builder.ownerDocument,
+                    builderBody=builderDoc.body,
+                    builderFrame=builderDoc.defaultView?.frameElement,
+                    sourceDoc=target.ownerDocument,
+                    isIframeBuilder=!isFrontend && builderDoc!==doc,
+                    dragUiBody=sourceDoc===builderDoc?builderBody:body,
+                    dragBridge=null,
+                    crossFrameDrag=null,
+                    builderDrop=null,
+                    dragStarted=false,
                     classItems=[topBody],
                     ghost = createElement('','tb_sortable_helper tf_box tf_overflow');
             const _FRAME_ = 5,
@@ -238,7 +416,7 @@
                                                         if(left<0){
                                                             st.marginLeft='10px';
                                                         }
-                                                        else if(left>=doc.documentElement.clientWidth){
+                                                        else if(left>=builderDoc.documentElement.clientWidth){
                                                             st.marginRight='10px';
                                                         }
                                                     }
@@ -332,6 +510,10 @@
                         }
                     },
                     onDragStart = function (e) {
+                        if(dragStarted){
+                            return;
+                        }
+                        dragStarted=true;
                         Themify.trigger('disableInline');
                         e.stopImmediatePropagation();
                         classItems.push(api.MainPanel.el,ToolBar.el.getRootNode().host);
@@ -368,30 +550,39 @@
                         e.stopImmediatePropagation();
                     },
                     onDrop =  async e=> {
-                        if (e.target) {
+                        const eventTarget=e?.target?.nodeType===1?e.target:null;
+                        if (eventTarget) {
                             e.preventDefault();
                             e.stopImmediatePropagation();
                         }
                         isDropped = true;
-                        let dropped = e.target || e;
+                        let dropped=eventTarget || (e?.nodeType===1?e:null);
+                        if(!dropped){
+                            target.classList.remove('tb_draggable_item');
+                            return;
+                        }
                         if (dropped.classList.contains('module_column') || dropped.classList.contains('tb_col_side')) {
                             dropped = isColumnMove ? dropped.closest('.module_column') : dropped.querySelector('[data-pos]');
                         } 
                         else if (isColumnMove) {
                             dropped = null;
-                            for (let items = doc.tfClass('tb_column_drag_inner'), i = items.length - 1; i > -1; --i) {
+                            for (let items = builderDoc.getElementsByClassName('tb_column_drag_inner'), i = items.length - 1; i > -1; --i) {
                                 items[i].classList.remove('tb_column_drag_inner');
                             }
                         } 
                         else if(dropped.classList.contains('tb_active_builder')){
                             const row=dropped.firstElementChild;
-                            dropped=row.dataset.pos?row:dropped.lastElementChild.previousElementSibling;
+                            dropped=row?.dataset.pos?row:dropped.lastElementChild?.previousElementSibling;
                         }
                         else if (dropped.classList.contains('tb_dragger')) {
                             dropped = dropped.closest('[draggable]');
                         }
+                        if(!dropped){
+                            target.classList.remove('tb_draggable_item');
+                            return;
+                        }
                         if (dropped === holder || dropped.classList.contains('tb_sortable_placeholder')) {
-                            dropped = dropped?.closest('.tb_active_builder')?.querySelector('[data-pos]');
+                            dropped = dropped.closest('.tb_active_builder')?.querySelector('[data-pos]');
                             if (dropped?.classList.contains('tb_sortable_placeholder')) {
                                 dropped = dropped.closest('.tb_holder');
                             }
@@ -490,7 +681,7 @@
                     ghostClone.style.width = b.width + 'px';
                     ghostClone.style.left = b.left + 'px';
                     ghostClone.innerHTML = 'Row';
-                    body.appendChild(ghostClone);
+                    dragUiBody.appendChild(ghostClone);
                     ghostCloneH = ghostClone.offsetHeight / 2;
                 }else{
                     ghost.innerHTML = 'Row';
@@ -526,25 +717,83 @@
             }
             ghost.style.top='-1000px';
             ghost.tfClass('add_module_btn')[0]?.remove();
-            body.appendChild(ghost);
+            dragUiBody.appendChild(ghost);
 
             e.dataTransfer.effectAllowed='move';
             e.dataTransfer.setData('Text', 'id');//required for touch dnd
             e.dataTransfer.setDragImage(ghost, (ghost.offsetWidth / 2) + 2, (ghost.offsetHeight / 2));
 
+            if(isIframeBuilder && sourceDoc!==builderDoc && builderFrame && !e.tbPointerDrag){
+                const frameRect=builderFrame.getBoundingClientRect(),
+                    bridge=doc.createElement('div'),
+                    bridgeStyle=bridge.style,
+                    toCanvasEvent=(e,stopSource=true)=>{
+                        const rect=builderFrame.getBoundingClientRect(),
+                            scaleX=rect.width?builderFrame.offsetWidth/rect.width:1,
+                            scaleY=rect.height?builderFrame.offsetHeight/rect.height:1,
+                            clientX=((e.clientX-rect.left)*scaleX)-builderFrame.clientLeft,
+                            clientY=((e.clientY-rect.top)*scaleY)-builderFrame.clientTop,
+                            hit=clientX>=0 && clientY>=0 && clientX<=builderDoc.documentElement.clientWidth && clientY<=builderDoc.documentElement.clientHeight
+                                ?builderDoc.elementFromPoint(clientX,clientY)
+                                :null;
+                        return {
+                            target:hit,
+                            clientX,
+                            clientY,
+                            dataTransfer:e.dataTransfer,
+                            preventDefault:()=>stopSource&&e.preventDefault(),
+                            stopImmediatePropagation:()=>stopSource&&e.stopImmediatePropagation()
+                        };
+                    },
+                    bridgeOver=e=>onDragOver(toCanvasEvent(e)),
+                    bridgeDrop=e=>onDrop(toCanvasEvent(e));
+                bridge.className='tb_iframe_drag_bridge';
+                bridgeStyle.position='fixed';
+                bridgeStyle.left=frameRect.left+'px';
+                bridgeStyle.top=frameRect.top+'px';
+                bridgeStyle.width=frameRect.width+'px';
+                bridgeStyle.height=frameRect.height+'px';
+                bridgeStyle.zIndex='2147483646';
+                bridgeStyle.background='transparent';
+                bridgeStyle.pointerEvents='auto';
+                bridge.tfOn('dragover',bridgeOver).tfOn('drop',bridgeDrop);
+                body.appendChild(bridge);
+                dragBridge={el:bridge,over:bridgeOver,drop:bridgeDrop};
+                crossFrameDrag=e=>{
+                    if(e.clientX===0 && e.clientY===0){
+                        return;
+                    }
+                    const rect=builderFrame.getBoundingClientRect();
+                    if(e.clientX>=rect.left && e.clientX<=rect.right && e.clientY>=rect.top && e.clientY<=rect.bottom){
+                        onDragOver(toCanvasEvent(e,false));
+                    }
+                };
+                target.tfOn('drag',crossFrameDrag,{passive:false});
+            }
+
             target.tfOn('dragend', function (e) {
                 e.stopImmediatePropagation();
-                body.tfOff('dragover', onDragOver);
+                if(isIframeBuilder){
+                    builderDoc.removeEventListener('dragover',onDragOver,true);
+                    builderDoc.removeEventListener('drop',builderDrop,true);
+                }
+                else{
+                    builderBody.removeEventListener('dragover',onDragOver);
+                    builder.tfOff('drop',onDrop,{once:true});
+                }
                 builder.tfOff(['dragenter', 'dragleave','pointermove','pointerover','pointerout','pointerenter','pointerleave','mousemove','mouseover','mouseout','mouseenter','mouseleave'], mouseEvent, {
                     passive: true
-                })
-                .tfOff('drop', onDrop, {
-                    once: true
                 });
-                this.tfOff('drag', onDragStart, {
-                    once: true,
-                    passive: true
-                });
+                if(isIframeBuilder){
+                    this.tfOff('drag',onDragStart,{once:true,passive:true});
+                }
+                else{
+                    this.tfOff('drag',onDragStart,{once:true,passive:true});
+                }
+                if(crossFrameDrag){
+                    this.tfOff('drag',crossFrameDrag,{passive:false});
+                    crossFrameDrag=null;
+                }
                 if (!isDropped) {
                     const dropped = builder.querySelector('[data-pos]');
                     if (dropped) {
@@ -552,21 +801,25 @@
                     }
                 }
                 ActionBar.disable=null;
+                if(dragBridge){
+                    dragBridge.el.tfOff('dragover',dragBridge.over).tfOff('drop',dragBridge.drop).remove();
+                    dragBridge=null;
+                }
                 ghost.remove();
                 ghostClone?.remove();
                 holder?.remove();
-                for (let items = doc.querySelectorAll('[data-drag-w],[data-drag-area],[data-pos]'), i = items.length - 1; i > -1; --i) {
+                for (let items = builderDoc.querySelectorAll('[data-drag-w],[data-drag-area],[data-pos]'), i = items.length - 1; i > -1; --i) {
                     items[i].removeAttribute('data-pos');
                     items[i].removeAttribute('data-drag-w');
                     items[i].removeAttribute('data-drag-area');
                 }
-                for (let items = doc.querySelectorAll('.tb_hide_drag_col_right,.tb_drag_one_column,.tb_drag_side_column,.tb_column_drag_inner'), i = items.length - 1; i > -1; --i) {
+                for (let items = builderDoc.querySelectorAll('.tb_hide_drag_col_right,.tb_drag_one_column,.tb_drag_side_column,.tb_column_drag_inner'), i = items.length - 1; i > -1; --i) {
                     items[i].classList.remove('tb_hide_drag_col_right', 'tb_drag_one_column', 'tb_drag_side_column', 'tb_column_drag_inner');
                 }
                 this.classList.remove('tb_draggable_item', 'tb_drag_one_column', 'tb_drag_side_column');
                 dragScroll(true);
                 if (!isFrontend) {
-                    for(let drops=doc.tfClass('is-drop-target'),i=drops.length-1;i>-1;--i){
+                    for(let drops=builderDoc.getElementsByClassName('is-drop-target'),i=drops.length-1;i>-1;--i){
                         drops[i].classList.remove('is-drop-target');
                     }
                 }
@@ -576,13 +829,16 @@
                         classItems[i].classList.remove(cl[1]);
                     }
                 }
-                holder = isDropped = clicked = target = targetCl = prevItem = ghost = ghostClone = ghostCloneH =  builder = x = y = cl = type  = isColumnMove = classItems = null;
+                holder = isDropped = clicked = target = targetCl = prevItem = ghost = ghostClone = ghostCloneH = builder = builderDoc = builderBody = builderFrame = sourceDoc = dragUiBody = dragBridge = crossFrameDrag = builderDrop = x = y = cl = type = isColumnMove = classItems = null;
             }, {
                 once: true,
                 passive: true
             });
 
-            if (isFrontend) {
+            if (builderBody!==topBody) {
+                classItems.push(builderBody);
+            }
+            if (isFrontend && body!==builderBody) {
                 classItems.push(body);
             }
 
@@ -592,23 +848,35 @@
                     classItems[i].classList.add(cl[1]);
                 }
             }
-            target.tfOn('drag', onDragStart, {
-                once: true,
-                passive: true
-            });
-            body.tfOn('dragover', onDragOver);
+            if(isIframeBuilder){
+                onDragStart.call(target,e);
+                builderDrop=ev=>{
+                    if(builder.contains(ev.target)){
+                        onDrop(ev);
+                    }
+                };
+                builderDoc.addEventListener('dragover',onDragOver,{capture:true,passive:false});
+                builderDoc.addEventListener('drop',builderDrop,{capture:true,once:true,passive:false});
+            }
+            else{
+                target.tfOn('drag', onDragStart, {
+                    once: true,
+                    passive: true
+                });
+                builderBody.addEventListener('dragover', onDragOver);
+                builder.tfOn('drop', onDrop, {
+                    once: true
+                });
+            }
             builder.tfOn('dragenter dragleave', mouseEvent, {
                 passive: true
-            })
-            .tfOn('drop', onDrop, {
-                once: true
             });
             if(!Themify.isTouch){
                 builder.tfOn(['pointermove','pointerover','pointerout','pointerenter','pointerleave','mousemove','mouseover','mouseout','mouseenter','mouseleave'], mouseEvent, {
                     passive: true
                 });
             }
-        });
+        },{capture:captureDrag});
     };
     api.columnResize= class{
         start(e){

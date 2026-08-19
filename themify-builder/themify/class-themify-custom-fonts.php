@@ -324,11 +324,21 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
             return !empty($data['variable']);
         }
 
-        /**
-         * Normalize legacy weight keywords to numeric values
-         */
         private static function normalize_weight($weight): string {
-            return (string) str_replace(array('normal', 'bold'), array('400', '700'), $weight);
+            $weight = str_replace(array('italic', 'oblique', 'regular', 'normal', 'bold'), array('', '', '400', '400', '700'), (string) $weight);
+            $weight = preg_replace('/[^0-9]/', '', $weight);
+            return $weight === '' ? '400' : $weight;
+        }
+
+        private static function variant_key($weight, $style = 'normal'): string {
+            $weight = (string) $weight;
+            if ($style === 'italic') {
+                return $weight . 'i';
+            }
+            if (!empty($style) && $style !== 'normal') {
+                return $weight . $style;
+            }
+            return $weight;
         }
 
         /**
@@ -365,23 +375,23 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
             $vars = array();
             if (!empty($variants) && is_array($variants)) {
                 foreach ($variants as $var) {
+                    $style = !empty($var['style']) ? $var['style'] : 'normal';
                     list($min, $max) = self::get_weight_range($var);
                     if (self::is_variable($var)) {
                         for ($w = $min; $w <= $max; $w += 100) {
-                            $weight = (string) $w;
-                            if ($weight === '400') {
-                                array_unshift($vars, $weight);
+                            $key = self::variant_key($w, $style);
+                            if ((string) $w === '400' && $style === 'normal') {
+                                array_unshift($vars, $key);
                             } else {
-                                $vars[] = $weight;
+                                $vars[] = $key;
                             }
                         }
                     } else {
-                        $weight = (string) $min;
-                        /* 400 is "normal" weight, always show first */
-                        if ($weight === '400') {
-                            array_unshift($vars, $weight);
+                        $key = self::variant_key($min, $style);
+                        if ((string) $min === '400' && $style === 'normal') {
+                            array_unshift($vars, $key);
                         } else {
-                            $vars[] = $weight;
+                            $vars[] = $key;
                         }
                     }
                 }
@@ -502,12 +512,10 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
                             }
                             if (!empty($variations)) {
                                 foreach ($variations as $var) {
-                                    $var = self::normalize_weight($var);
                                     foreach ($cf_fonts[$font_family]['data'] as $k => $v) {
                                         if (self::matches_weight($var, $v)) {
                                             $font_css .= self::get_font_face_from_data($font_family, $cf_fonts[$font_family]['data'][$k]) . PHP_EOL;
                                             unset($cf_fonts[$font_family]['data'][$k]);
-                                            break;
                                         }
                                     }
                                 }

@@ -224,7 +224,6 @@ if (!class_exists('Themify_Builder',false)) :
 
             //convert old data to new grid data,can be removed after updates
 
-            add_action('wp_ajax_nopriv_tb_update_old_data', array(__CLASS__, 'convert_data'), 10);
             add_action('wp_ajax_tb_update_old_data', array(__CLASS__, 'convert_data'), 10);
         }
 
@@ -519,6 +518,9 @@ if (!class_exists('Themify_Builder',false)) :
             check_ajax_referer('tf_nonce', 'nonce');
             if (!empty($_POST['data']) && !empty($_POST['bid'])) {
                 $id = (int) $_POST['bid'];
+                if (!current_user_can('edit_post', $id)) {
+                    wp_send_json_error();
+                }
                 $builder_data = ThemifyBuilder_Data_Manager::get_data($id);
                 if (is_array($builder_data)) {
                     $convert = json_decode(stripslashes_deep($_POST['data']), true);

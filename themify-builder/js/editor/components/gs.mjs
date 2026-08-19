@@ -317,9 +317,12 @@
     }
     class GSShadow extends HTMLElement {
         disconnectedCallback(){
-            this.el._destroy();
+            this.el?._destroy();
         }
         connectedCallback () {
+            if (this.shadowRoot) {
+                return;
+            }
             const tpl = gsTpl.cloneNode(true),
                 input = ThemifyConstructor.hidden.render({
                     id: api.GS.key,
