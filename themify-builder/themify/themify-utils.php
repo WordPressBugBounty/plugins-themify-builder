@@ -737,6 +737,69 @@ function themify_sanitize_builder_custom_css( $css ) {
 }
 
 /**
+ * Google / custom font family names used by the builder.
+ * Letters, numbers, spaces, and a short punctuation set. No quotes or markup.
+ */
+function themify_sanitize_builder_font_family( $name ) {
+    $name = trim( wp_strip_all_tags( (string) $name ) );
+    $name = preg_replace( '/[\x00-\x1F\x7F]/', '', $name );
+    if ( $name === '' || ! preg_match( '/^[\p{L}\p{N}][\p{L}\p{N} +._-]{0,100}$/u', $name ) ) {
+        return '';
+    }
+    return $name;
+}
+
+/**
+ * Font weight / variant token stored next to a builder font family.
+ */
+function themify_sanitize_builder_font_weight( $weight ) {
+    $weight = trim( (string) $weight );
+    if ( preg_match( '/^(?:normal|bold|regular|italic|r|i|[1-9]00(?:i|italic)?)$/i', $weight ) ) {
+        return $weight;
+    }
+    return '';
+}
+
+/**
+ * fonts / cf_fonts maps from tb_generate_on_fly. Keys are family names.
+ *
+ * @param mixed $fonts
+ * @return array
+ */
+function themify_sanitize_builder_font_map( $fonts ) {
+    if ( ! is_array( $fonts ) ) {
+        return array();
+    }
+    $out = array();
+    foreach ( $fonts as $family => $weights ) {
+        $family = themify_sanitize_builder_font_family( $family );
+        if ( $family === '' ) {
+            continue;
+        }
+        $clean = array();
+        if ( ! is_array( $weights ) ) {
+            $weights = ( $weights === '' || $weights === null ) ? array() : array( $weights );
+        }
+        foreach ( $weights as $weight ) {
+            $weight = themify_sanitize_builder_font_weight( $weight );
+            if ( $weight !== '' ) {
+                $clean[] = $weight;
+            }
+        }
+        $out[ $family ] = $clean;
+    }
+    return $out;
+}
+
+/**
+ * A single Google Fonts family query (family, or family:weight,weight).
+ */
+function themify_is_safe_google_font_request( $font ) {
+    $font = (string) $font;
+    return $font !== '' && (bool) preg_match( '/^[\p{L}\p{N}][\p{L}\p{N} +._:,-]{0,180}$/u', $font );
+}
+
+/**
  * Sanitize builder custom JS before printing on the page.
  *
  * @since 7.0
@@ -1348,7 +1411,7 @@ function themify_post_video(string $url = '', bool $echo = true) {
 }
 
 function themify_get_embed(string $url, array $args):string {
-    $reg = '#(vimeo\.com|youtu(be\.com|\.be|be))\/(shorts\/|video\/|embed\/|watch\?v=|v\/)?([A-Za-z0-9._%-]*)(\&\S+)?\/?([A-Za-z0-9._%-]*)(\&\S+)?#i';
+    $reg = '#(vimeo\.com|youtu(be\.com|\.be|be))\/(shorts\/|video\/|embed\/|watch\?v=|v\/|live\/)?([A-Za-z0-9._%-]*)(\&\S+)?\/?([A-Za-z0-9._%-]*)(\&\S+)?#i';
     preg_match($reg, $url, $m);
     if (!empty($m) && isset($m[1], $m[4])) {
         $type = ($m[1] === 'youtube.com' || strpos($m[1], 'youtu') !== false) ? 'youtube' : ($m[1] === 'vimeo.com' || strpos($m[1], 'vimeo') ? 'vimeo' : false);
@@ -1437,6 +1500,31 @@ function themify_get_embed(string $url, array $args):string {
             $class=isset($args['class'])?$args['class']:'tf_abs tf_w tf_h';
             return '<iframe' . $lazy . ' src="' . esc_url( $src ) . '" allow="' . $allow . '" class="'.$class.'"></iframe>';
         }
+    }
+    if (preg_match('#(?:dailymotion\.com/(?:embed/)?video/|dai\.ly/)([A-Za-z0-9]+)#i', $url, $dm)) {
+        $id = $dm[1];
+        $query_args = array(
+            'playsinline' => 1
+        );
+        if (!empty($args['hide_controls'])) {
+            $query_args['controls'] = 0;
+        }
+        if (!empty($args['loop'])) {
+            $query_args['loop'] = 1;
+        }
+        if (!empty($args['autoplay'])) {
+            $query_args['autoplay'] = 1;
+        }
+        if (!empty($args['muted'])) {
+            $query_args['mute'] = 1;
+        }
+        if (!empty($args['start'])) {
+            $query_args['startTime'] = (float) $args['start'];
+        }
+        $lazy = !empty($args['disable_lazy']) ? ' data-no-script' : '';
+        $src = 'https://www.dailymotion.com/embed/video/' . $id . '?' . http_build_query($query_args);
+        $class=isset($args['class'])?$args['class']:'tf_abs tf_w tf_h';
+        return '<iframe' . $lazy . ' src="' . esc_url( $src ) . '" allow="autoplay;fullscreen;picture-in-picture" class="'.$class.'"></iframe>';
     }
     return '';
 }
@@ -2368,11 +2456,34 @@ function themify_get_lottie(array $arr, string $sel = '') {
     return '';
 }
 
+function themify_disable_min_assets():bool {
+    static $is = null;
+    if ($is === null) {
+        $is = themify_is_dev_mode() || defined('THEMIFY_DISABLE_MIN') || (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG);
+    }
+    return $is;
+}
+
 /**
  * Load/Check minified file is exist
  */
 function themify_enque(string $url, bool $check = false, bool $cdn = true) {//backward
-    return $check===true?false:$url;
+    if ($check === true) {
+        return false;
+    }
+    if (!themify_disable_min_assets() || !preg_match('/\.min\.(js|css)(\?|#|$)/', $url)) {
+        return $url;
+    }
+    $is_tf = (defined('THEMIFY_URI') && strpos($url, THEMIFY_URI) !== false)
+        || (defined('THEME_URI') && strpos($url, THEME_URI) !== false)
+        || (defined('THEMIFY_BUILDER_URI') && strpos($url, THEMIFY_BUILDER_URI) !== false);
+    if ($is_tf) {
+        $unmin = preg_replace('/\.min\.(js|css)(\?|#|$)/', '.$1$2', $url, 1);
+        if ($unmin !== $url && class_exists('Themify_Filesystem', false) && Themify_Filesystem::get_file_content($unmin, true)) {
+            return $unmin;
+        }
+    }
+    return $url;
 }
 
 function themify_is_minify_enabled():bool{//backward

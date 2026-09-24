@@ -74,6 +74,13 @@
                     wrap_class: 'tb_field_error_msg tb_group_element_google'
                 },
                 {
+                    id: 'openstreetmap_map_api_key',
+                    type: 'check_map_api',
+                    map: 'openstreetmap',
+                    label: '',
+                    wrap_class: 'tb_field_error_msg tb_group_element_openstreetmap'
+                },
+                {
                     id: 'azure_map_key',
                     type: 'check_map_api',
                     map: 'azure',

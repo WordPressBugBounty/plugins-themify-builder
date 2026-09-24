@@ -334,6 +334,9 @@
                 }
                 else if(type==='vimeo'){
                     imgUrl='https://vumbnail.com/'+provider.id+'.jpg';
+                }
+                else if(type==='dailymotion'){
+                    imgUrl='https://www.dailymotion.com/thumbnail/video/'+provider.id;
                 }else if(setting.o_i){
                     imgUrl=setting.o_i;
                 }
@@ -451,7 +454,7 @@
             if(url){
                 const provider = Themify.parseVideo(url),
                     type=provider.type,
-                    isLocal=type!== 'youtube' && type !== 'vimeo',
+                    isLocal=type!== 'youtube' && type !== 'vimeo' && type !== 'dailymotion',
                     isOverlay=data.o_i && ~~data.o_i_c===1;
                 
                 if(data.css_video){
@@ -540,7 +543,13 @@
                             queryArgs.end = parseFloat(data.ext_end);
                         }
                         src += '.com/embed/' + provider.id;
-                    } 
+                    }
+                    else if (type === 'dailymotion') {
+                        src = 'https://www.dailymotion.com/embed/video/' + provider.id;
+                        if (data.ext_start) {
+                            queryArgs.startTime = parseFloat(data.ext_start);
+                        }
+                    }
                     else {
                         src = 'https://player.vimeo.com/video/' +provider.id;
                         
@@ -566,6 +575,9 @@
                         queryArgs.loop = 1;
                         queryArgs.playlist = provider.id;
                     }
+                    if (type === 'dailymotion') {
+                        delete queryArgs.playlist;
+                    }
                     if (data.autoplay_video==='yes' || queryArgs.autoplay==='1') {
                         allow += ';autoplay';
                         queryArgs.autoplay = 1;
@@ -576,6 +588,10 @@
                         } else {
                             queryArgs.muted = 1;
                         }
+                    }
+                    if (type === 'dailymotion' && queryArgs.muted) {
+                        queryArgs.mute = 1;
+                        delete queryArgs.muted;
                     }
                     noscript.appendChild(createElement('iframe',{src:src+'?'+(new URLSearchParams(queryArgs)).toString(),class:'tf_abs tf_w tf_h',allow:allow,'data-no-script':1}));
                     wrap.appendChild(noscript);

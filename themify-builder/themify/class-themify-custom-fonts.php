@@ -307,10 +307,20 @@ if (!class_exists('Themify_Custom_Fonts',false)) :
             $fonts = self::get_posts(array('limit' => -1));
             foreach ($fonts as $slug => $font) {
                 if (!empty($font['family']) && !empty($font['variants'])) {
+                    $is_variable = false;
+                    if (!empty($font['data']) && is_array($font['data'])) {
+                        foreach ($font['data'] as $var) {
+                            if (self::is_variable($var)) {
+                                $is_variable = true;
+                                break;
+                            }
+                        }
+                    }
                     $list[] = array(
                         'value' => $slug,
                         'name' => $font['family'],
-                        'variant' => $font['variants']
+                        'variant' => $font['variants'],
+                        'variable' => $is_variable,
                     );
                 }
             }

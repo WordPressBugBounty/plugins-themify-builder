@@ -69,7 +69,7 @@ if(!empty( $list_categories )){
     <ul class="post-filter tf_textc"<?php echo $attrs ?> data-post_type="<?php echo esc_attr( isset( $args['post_type'] ) ? $args['post_type'] : 'post' ); ?>">
         <?php echo $list_categories ?>
         <?php if ( isset( $args['ajax_sort'] ) ) : ?>
-            <li data-init="1" data-p="<?php echo esc_attr( $ajax_filter_next_page ); ?>" class="cat-item cat-item-all active"><?php _e( 'All','themify' ) ?></li>
+            <li data-init="1" data-p="<?php echo esc_attr( $ajax_filter_next_page ); ?>" class="cat-item cat-item-all tf_hide"></li>
             <li class="tf_ajax_sort tf_rel">
                 <a href="#" tabindex="-1" class="tf_ajax_sort_icon"><?php echo themify_get_icon( 'menu-alt','ti',false,false,array('aria-label'=>__( 'sort','themify' )) ); ?></a>
                 <div class="tf_ajax_sort_dropdown tf_abs tf_hide tf_box">
@@ -96,8 +96,6 @@ if(!empty( $list_categories )){
                     </ul>
                 </div>
             </li>
-        <?php elseif ( isset( $args['ajax_filter'] ) ) : ?>
-            <li data-init="1" data-p="<?php echo esc_attr( $ajax_filter_next_page ); ?>" class="cat-item cat-item-all active"><?php _e( 'All', 'themify' ); ?></li>
         <?php endif; ?>
     </ul>
     <?php

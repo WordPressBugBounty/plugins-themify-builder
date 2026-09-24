@@ -555,19 +555,13 @@ class Themify_Metabox {
         }
 
         $type = ! empty( $_POST['type'] ) && $_POST['type'] === 'gradients' ? 'gradients' : 'colors';
-        $new_data = stripcslashes( $_POST['data'] );
-        $new_data = is_serialized( $new_data ) ? unserialize( $new_data, [ 'allowed_classes' => false ] ) : json_decode( $new_data, true );
-        if ( $new_data !== null ) {
-            $end = end( $new_data );
-            $end = ! empty( $end['uid'] );
-            if ( ( $end === true && 'colors' === $type ) || ( $end === false && 'gradients' === $type ) ) {
-                $option_key = 'themify_saved_' . $type;
-                $currentSwatches = unserialize( get_option( $option_key, serialize( array() ) ), [ 'allowed_classes' => false ] );
-                $new_data = $currentSwatches + $new_data;
-                delete_option( $option_key );
-                add_option( $option_key, serialize( $new_data ), '', false );
-                wp_send_json_success( $new_data );
-            }
+        $raw = isset( $_POST['data'] ) ? wp_unslash( $_POST['data'] ) : '';
+        $new_data = self::sanitize_swatches( self::decode_swatch_value( $raw ), $type );
+        if ( $new_data !== array() ) {
+            $option_key = 'themify_saved_' . $type;
+            $new_data = self::load_swatches( $option_key, $type, array() ) + $new_data;
+            self::store_swatches( $option_key, $new_data );
+            wp_send_json_success( $new_data );
         }
 
         wp_send_json_error();
@@ -583,14 +577,178 @@ class Themify_Metabox {
             die;
         }
 
-        $type = $_POST['type'];
-        $colors = !empty( $_POST['colors'] ) && is_array($_POST['colors']) ? serialize( $_POST['colors'] ) : serialize( array() );
-        $_key='themify_saved_' . $type;
-        delete_option($_key);
-        add_option( $_key,$colors, '', false );
+        $type = ! empty( $_POST['type'] ) && $_POST['type'] === 'gradients' ? 'gradients' : 'colors';
+        $colors = ! empty( $_POST['colors'] ) && is_array( $_POST['colors'] ) ? wp_unslash( $_POST['colors'] ) : array();
+        self::store_swatches( 'themify_saved_' . $type, self::sanitize_swatches( $colors, $type ) );
         $response['status'] = 'success';
         wp_send_json( $response );
         wp_die();
+    }
+
+    /**
+     * Decode imported swatch data without instantiating objects.
+     *
+     * @param mixed $raw
+     * @return mixed
+     */
+    private static function decode_swatch_value( $raw ) {
+        if ( is_array( $raw ) ) {
+            return $raw;
+        }
+        if ( ! is_string( $raw ) || $raw === '' ) {
+            return null;
+        }
+
+        $json = json_decode( $raw, true );
+        if ( is_array( $json ) ) {
+            return $json;
+        }
+
+        // Legacy exports used PHP serialize; never instantiate classes.
+        if ( is_serialized( $raw ) ) {
+            return @unserialize( $raw, array( 'allowed_classes' => false ) );
+        }
+
+        return null;
+    }
+
+    /**
+     * Keep only scalar swatch fields so incomplete objects cannot be re-serialized.
+     *
+     * @param mixed  $data
+     * @param string $type
+     * @return array
+     */
+    private static function sanitize_swatches( $data, $type ) {
+        if ( ! is_array( $data ) ) {
+            return array();
+        }
+
+        return $type === 'gradients' ? self::sanitize_gradient_swatches( $data ) : self::sanitize_color_swatches( $data );
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    private static function sanitize_color_swatches( $data ) {
+        $clean = array();
+        foreach ( $data as $key => $swatch ) {
+            if ( ! is_array( $swatch ) || empty( $swatch['color'] ) || ! is_scalar( $swatch['color'] ) ) {
+                continue;
+            }
+            $uid = isset( $swatch['uid'] ) ? $swatch['uid'] : $key;
+            if ( ! is_scalar( $uid ) ) {
+                continue;
+            }
+            $uid = sanitize_text_field( (string) $uid );
+            if ( $uid === '' ) {
+                continue;
+            }
+            $clean[ $uid ] = array(
+                'color' => sanitize_text_field( (string) $swatch['color'] ),
+                'opacity' => isset( $swatch['opacity'] ) && is_scalar( $swatch['opacity'] ) ? sanitize_text_field( (string) $swatch['opacity'] ) : '1',
+                'uid' => $uid,
+            );
+        }
+        return $clean;
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    private static function sanitize_gradient_swatches( $data ) {
+        $clean = array();
+        foreach ( $data as $key => $swatch ) {
+            if ( ! is_array( $swatch ) || empty( $swatch['setting'] ) || ! is_array( $swatch['setting'] ) ) {
+                continue;
+            }
+            $id = isset( $swatch['id'] ) ? $swatch['id'] : $key;
+            if ( ! is_scalar( $id ) ) {
+                continue;
+            }
+            $id = sanitize_text_field( (string) $id );
+            if ( $id === '' ) {
+                continue;
+            }
+            $setting = $swatch['setting'];
+            $clean[ $id ] = array(
+                'id' => $id,
+                'setting' => array(
+                    'angle' => isset( $setting['angle'] ) ? (int) $setting['angle'] : 180,
+                    'circle' => ! empty( $setting['circle'] ),
+                    'type' => ( isset( $setting['type'] ) && $setting['type'] === 'radial' ) ? 'radial' : 'linear',
+                    'gradient' => isset( $setting['gradient'] ) && is_scalar( $setting['gradient'] ) ? sanitize_text_field( (string) $setting['gradient'] ) : '',
+                ),
+                'gradient' => isset( $swatch['gradient'] ) && is_scalar( $swatch['gradient'] ) ? sanitize_text_field( (string) $swatch['gradient'] ) : '',
+                'css' => isset( $swatch['css'] ) && is_scalar( $swatch['css'] ) ? sanitize_text_field( (string) $swatch['css'] ) : '',
+            );
+        }
+        return $clean;
+    }
+
+    /**
+     * @param mixed $data
+     * @return bool
+     */
+    private static function swatches_contain_object( $data ) {
+        if ( is_object( $data ) ) {
+            return true;
+        }
+        if ( ! is_array( $data ) ) {
+            return false;
+        }
+        foreach ( $data as $value ) {
+            if ( self::swatches_contain_object( $value ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Read an option without WordPress's unrestricted maybe_unserialize().
+     *
+     * @param string $option_key
+     * @return string|null
+     */
+    private static function get_raw_option_value( $option_key ) {
+        global $wpdb;
+        wp_cache_delete( $option_key, 'options' );
+        $value = $wpdb->get_var( $wpdb->prepare(
+            "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+            $option_key
+        ) );
+        return $value === null ? null : $value;
+    }
+
+    /**
+     * @param string $option_key
+     * @param array  $data
+     */
+    private static function store_swatches( $option_key, array $data ) {
+        delete_option( $option_key );
+        add_option( $option_key, $data, '', false );
+    }
+
+    /**
+     * @param string $option_key
+     * @param string $type
+     * @param mixed  $default
+     * @return mixed
+     */
+    private static function load_swatches( $option_key, $type, $default = array() ) {
+        $raw = self::get_raw_option_value( $option_key );
+        if ( $raw === null ) {
+            return $default;
+        }
+        $data = self::decode_swatch_value( $raw );
+        $clean = self::sanitize_swatches( $data, $type );
+        if ( self::swatches_contain_object( $data ) ) {
+            self::store_swatches( $option_key, $clean );
+        }
+        return $clean;
     }
 
     /**
@@ -716,16 +874,14 @@ class Themify_Metabox {
         );
         // Pre-created gradients (from themify.org/dev/test/preset-gradients/)
         $default['gradients'] = self::get_default_gradients();
-        // validate colors value
-        $colors = maybe_unserialize( get_option( 'themify_saved_colors', serialize( $default['colors'] ) ) );
-        if(is_array($colors) && !empty($colors)){
-            $test_color = current($colors);
-            $colors = is_array($test_color) && !empty($test_color['color']) ? $colors : $default['colors'];
-        }elseif(!is_array($colors)){
+        $colors = self::load_swatches( 'themify_saved_colors', 'colors', $default['colors'] );
+        if ( is_array( $colors ) && ! empty( $colors ) ) {
+            $test_color = current( $colors );
+            $colors = is_array( $test_color ) && ! empty( $test_color['color'] ) ? $colors : $default['colors'];
+        } elseif ( ! is_array( $colors ) ) {
             $colors = $default['colors'];
         }
-        // validate gradients value
-        $grads = maybe_unserialize( get_option( 'themify_saved_gradients', serialize( $default['gradients'] ) ) );
+        $grads = self::load_swatches( 'themify_saved_gradients', 'gradients', $default['gradients'] );
         if ( is_array( $grads ) && ! empty( $grads ) ) {
             $test_grad = current( $grads );
             $grads = is_array( $test_grad ) && ! empty( $test_grad['setting'] ) ? $grads : $default['gradients'];

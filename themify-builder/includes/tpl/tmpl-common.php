@@ -282,8 +282,8 @@ $isGsPost=Themify_Global_Styles::$isGlobalEditPage===true?' gs_post':'';
 <template id="tmpl-builder_column_item">
     <div class="tb_col_side tb_col_side_left tf_abs_t tf_box tf_hide"></div>
     <div class="tb_col_side tb_col_side_right tf_abs_t tf_box tf_hide"></div>
-    <div class="tb_grid_drag tb_drag_right tf_abs_t tf_h tf_hide" draggable></div>
-    <div class="tb_grid_drag tb_drag_left tf_abs_t tf_h tf_hide" draggable></div>
+    <div class="tb_grid_drag tb_drag_right tf_abs_t tf_h tf_hide"></div>
+    <div class="tb_grid_drag tb_drag_left tf_abs_t tf_h tf_hide"></div>
     <div class="tb_holder"></div>
     <div class="tf_plus_icon tb_column_btn_plus tb_disable_sorting"></div>
     <div class="tb_action_wrap tb_column_action tf_abs_t tf_box tf_hide"><?php echo $grip?></div>

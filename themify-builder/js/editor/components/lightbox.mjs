@@ -84,6 +84,7 @@
                         action = el.tfClass('tb_lightbox_actions_wrap')[0],
                         save = createElement('button',{class:'builder_button builder_save_button',title:i18n.ctr_save,type:'button'},i18n.done),
                         activeModel=api.activeModel;
+                    api.Module.injectBackendLightboxCss?.(el.ownerDocument);
                             
                     el.classList.add('tf_hide');
                     if(activeModel){
@@ -151,7 +152,7 @@
                     Themify.trigger('tb_opened_lightbox');
                     api.Spinner.showLoader('spinhide');
                     api.SmallPanel.hide();
-                    el.focus();
+                    el.focus({preventScroll:true});
                     resolve(el);
                 };
 

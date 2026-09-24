@@ -118,24 +118,148 @@
         }
         return el;
       }
-      static async loadBackendLightbox(type) {
-        const isLoaded = !!window.TB_BuilderContentLightbox;
-        try {
-          if (!isLoaded) {
-            if (type !== "preload") {
-              api.Spinner.showLoader();
+      static injectBackendLightboxCss(targetDoc) {
+        if (!targetDoc || targetDoc === doc) {
+          return;
+        }
+        const head = targetDoc.head || targetDoc.documentElement,
+          roots = [],
+          collect = sourceDoc => {
+            if (!sourceDoc || roots.includes(sourceDoc)) {
+              return;
             }
-            await Promise.all([
-              Themify.loadCss(
-                Themify.builder_url +
-                  "css/editor/components/builder-content-lightbox"
-              ),
+            roots.push(sourceDoc);
+            for (const id of [
+              "tb_main_toolbar_root",
+              "tb_main_panel_root",
+              "tb_small_panel_root"
+            ]) {
+              const host = sourceDoc.getElementById?.(id);
+              const sr =
+                host?.shadowRoot || host?.querySelector("template")?.content;
+              if (sr && !roots.includes(sr)) {
+                roots.push(sr);
+              }
+            }
+          },
+          find = (id, hrefPart) => {
+            for (const root of roots) {
+              const byId = id && root.getElementById?.(id);
+              if (byId) {
+                return byId;
+              }
+              if (hrefPart) {
+                const byHref = root.querySelector?.(
+                  'link[href*="' + hrefPart + '"]'
+                );
+                if (byHref) {
+                  return byHref;
+                }
+              }
+            }
+          },
+          copy = (id, hrefPart, fallbackHref) => {
+            if (
+              (id && targetDoc.getElementById(id)) ||
+              (hrefPart &&
+                targetDoc.querySelector('link[href*="' + hrefPart + '"]'))
+            ) {
+              return;
+            }
+            const source = find(id, hrefPart);
+            if (source) {
+              const clone = source.cloneNode(true);
+              if (clone.rel === "preload") {
+                clone.rel = "stylesheet";
+              }
+              head.appendChild(clone);
+              return;
+            }
+            if (fallbackHref) {
+              const link = targetDoc.createElement("link");
+              link.rel = "stylesheet";
+              if (id) {
+                link.id = id;
+              }
+              link.href = fallbackHref;
+              head.appendChild(link);
+            }
+          };
+        collect(doc);
+        collect(window.top?.document);
+        const editorHref =
+          find("editor-css", "/css/editor.")?.href ||
+          (typeof tinyMCEPreInit !== "undefined" && tinyMCEPreInit.baseURL
+            ? tinyMCEPreInit.baseURL.replace(
+                /\/js\/tinymce\/?$/,
+                "/css/editor.min.css"
+              )
+            : "");
+        const tbpScript = doc.querySelector(
+          'script[src*="themify-builder-pro"]'
+        );
+        const tbpHref =
+          find("tbp-active", "tbp-active")?.href ||
+          find("tbp-active-css", "tbp-active")?.href ||
+          (tbpScript
+            ? tbpScript.src.split("themify-builder-pro")[0] +
+              "themify-builder-pro/editor/css/tbp-active.css"
+            : "");
+        const wpIncludes = (
+          editorHref ||
+          find("dashicons-css", "dashicons")?.href ||
+          ""
+        ).replace(/\/css\/[^/]+$/, "/css/");
+        copy("tb_builder_content_lightbox", "builder-content-lightbox");
+        copy("module_form_fields_style");
+        copy("themify-builder-lightbox-css", "/components/lightbox.");
+        copy("themify-builder-lightbox-inline-css");
+        copy("tbp-active", "tbp-active", tbpHref);
+        copy("tbp-active-css", "tbp-active");
+        copy("editor-css", "/css/editor.", editorHref);
+        copy(
+          "buttons-css",
+          "/css/buttons.",
+          wpIncludes ? wpIncludes + "buttons.min.css" : ""
+        );
+        copy("dashicons-css", "dashicons");
+        const formFields = targetDoc.getElementById("module_form_fields_style"),
+          lightboxCss =
+            targetDoc.getElementById("themify-builder-lightbox-css") ||
+            targetDoc.querySelector('link[href*="/components/lightbox."]');
+        if (formFields && lightboxCss) {
+          formFields.after(lightboxCss);
+        }
+        const lightboxInline = targetDoc.getElementById(
+          "themify-builder-lightbox-inline-css"
+        );
+        if (lightboxInline) {
+          (lightboxCss || formFields)?.after(lightboxInline);
+        }
+      }
+      static async loadBackendLightbox(type) {
+        const isLoaded = !!window.TB_BuilderContentLightbox,
+          cssId = "tb_builder_content_lightbox",
+          cssHref =
+            Themify.builder_url +
+            "css/editor/components/builder-content-lightbox";
+        try {
+          if (!isLoaded && type !== "preload") {
+            api.Spinner.showLoader();
+          }
+          const prms = [Themify.loadCss(cssHref, cssId)];
+          if (!isLoaded) {
+            prms.push(
               Themify.loadJs(
                 api.componentsURL + "builder-content-lightbox",
                 window.TB_BuilderContentLightbox
-              ),
-            ]);
+              )
+            );
           }
+          await Promise.all(prms);
+          this.injectBackendLightboxCss(
+            (api.Builder.get?.(0) || api.Builder.get?.())?.el?.ownerDocument
+          );
         } catch (e) {
           throw e;
         } finally {

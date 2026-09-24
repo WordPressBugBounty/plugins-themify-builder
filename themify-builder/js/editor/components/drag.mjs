@@ -174,6 +174,7 @@
                 clicked = e.target;
                 if (clicked.classList.contains('tb_grid_drag')) {
                     clicked=null;
+                    e.preventDefault();
                     const obj=new api.columnResize();
                     obj.start(e);
                 }
@@ -190,7 +191,7 @@
                 clicked = null;
             }
         }, {
-            passive: true,
+            passive: false,
             capture:captureDrag
         })
         .tfOn('dragstart', function (e) {
@@ -882,19 +883,22 @@
         start(e){
             let _this=this,
                 target = e.target,
+                ownerDoc = target.ownerDocument,
+                ownerWin = ownerDoc.defaultView || window,
+                cs = node => (node.ownerDocument.defaultView || ownerWin).getComputedStyle(node),
                 dragIndexes = [],
                 dragNextIndexes = [],
                 el = target.parentNode,
                 row_inner = el.parentNode,
-                computed = getComputedStyle(row_inner),
+                computed = cs(row_inner),
                 childs=api.Utils.getColumns(row_inner),
                 childCount = childs.length,
                 row_w = row_inner.offsetWidth,
                 dir = target.classList.contains('tb_drag_right') ? 'w' : 'e',
                 rtlDir=Themify.isRTL?(dir==='w'?'e':'w'):dir,
-                tooltip1 = createElement('', 'tb_grid_drag_tooltip'),
-                tooltip2 = tooltip1.cloneNode(false),
-                dragColName = getComputedStyle(el).getPropertyValue('grid-area').split('/')[0].replace('"', '').trim(),
+                tooltip1 = ownerDoc.createElement('div'),
+                tooltip2,
+                dragColName = cs(el).getPropertyValue('grid-area').split('/')[0].replace('"', '').trim(),
                 area = dragColName && dragColName !== 'auto' && dragColName !== 'initial' && dragColName !== 'none'? computed.getPropertyValue('--area').replace(/[\r\n]/gm, '').replace(/  +/g, ' ').trim().split('" "') : '',
                 gutterVal = computed.getPropertyValue('column-gap'),
                 gutter = parseFloat(gutterVal) || 0,
@@ -904,6 +908,8 @@
                 summFr = 0,
                 summEM = 0,
                 summPx = 0;
+            tooltip1.className='tb_grid_drag_tooltip';
+            tooltip2=tooltip1.cloneNode(false);
             Themify.trigger('disableInline');
             if(cols==='none'){
                 cols='';
@@ -969,7 +975,7 @@
                         }
                     }
                     for (let i = childs.length - 1; i > -1; --i) {
-                        if (el !== childs[i] && dragNextColName === getComputedStyle(childs[i]).getPropertyValue('grid-area').split('/')[0].replace('"', '').trim()) {
+                        if (el !== childs[i] && dragNextColName === cs(childs[i]).getPropertyValue('grid-area').split('/')[0].replace('"', '').trim()) {
                             cell = childs[i];
                             break;
                         }
@@ -1073,30 +1079,64 @@
             _this.row_inner=row_inner;
             _this.dir=dir;
             _this.isSame=Registry.get(row_inner.closest('[data-cid]').dataset.cid).isLightboxOpen();
-            _this.elComputed=getComputedStyle(el);
-            _this.cellComputed=getComputedStyle(cell);
+            _this.elComputed=cs(el);
+            _this.cellComputed=cell?cs(cell):null;
             _this.gutterPX=gutterPX;
-            if(e instanceof Event){
+            if(typeof e.clientX === 'number'){
                 e.stopPropagation();
-                _this.startX= e.clientX;
-                const onDrag=e=>{
-                    e.stopImmediatePropagation();
-                    _this.drag(e.clientX);
-                };
-                target.tfOn('lostpointercapture', e=> {
-                    e.stopImmediatePropagation();
-                    target.tfOff('pointermove', onDrag, {
-                        passive: true
-                    });
-                    _this.end();
-                }, {
-                    once: true,
-                    passive: true
-                })
-                .tfOn('pointermove', onDrag, {
-                    passive: true
-                })
-                .setPointerCapture(e.pointerId);
+                target.removeAttribute('draggable');
+                const isIframe=ownerDoc!==doc,
+                    frame=isIframe?ownerWin.frameElement:null,
+                    pointerId=e.pointerId;
+                let ended=false;
+                const toCanvasX=ev=>{
+                        if(!isIframe || ev.target?.ownerDocument===ownerDoc || ev.view===ownerWin){
+                            return ev.clientX;
+                        }
+                        if(!frame){
+                            return ev.clientX;
+                        }
+                        const rect=frame.getBoundingClientRect(),
+                            scaleX=rect.width?frame.offsetWidth/rect.width:1;
+                        return ((ev.clientX-rect.left)*scaleX)-frame.clientLeft;
+                    },
+                    onDrag=ev=>{
+                        if(pointerId!=null && ev.pointerId!==pointerId){
+                            return;
+                        }
+                        ev.stopImmediatePropagation();
+                        _this.drag(toCanvasX(ev));
+                    },
+                    onEnd=ev=>{
+                        if(ended || (pointerId!=null && ev.pointerId!==pointerId)){
+                            return;
+                        }
+                        ended=true;
+                        ownerDoc.removeEventListener('pointermove',onDrag,true);
+                        ownerDoc.removeEventListener('pointerup',onEnd,true);
+                        ownerDoc.removeEventListener('pointercancel',onEnd,true);
+                        if(isIframe){
+                            doc.removeEventListener('pointermove',onDrag,true);
+                            doc.removeEventListener('pointerup',onEnd,true);
+                            doc.removeEventListener('pointercancel',onEnd,true);
+                        }
+                        try{
+                            target.releasePointerCapture(pointerId);
+                        }catch(err){}
+                        _this.end();
+                    };
+                _this.startX=toCanvasX(e);
+                ownerDoc.addEventListener('pointermove',onDrag,{capture:true,passive:true});
+                ownerDoc.addEventListener('pointerup',onEnd,{capture:true,passive:true});
+                ownerDoc.addEventListener('pointercancel',onEnd,{capture:true,passive:true});
+                if(isIframe){
+                    doc.addEventListener('pointermove',onDrag,{capture:true,passive:true});
+                    doc.addEventListener('pointerup',onEnd,{capture:true,passive:true});
+                    doc.addEventListener('pointercancel',onEnd,{capture:true,passive:true});
+                }
+                try{
+                    target.setPointerCapture(pointerId);
+                }catch(err){}
             }
         }
         drag(clientX){

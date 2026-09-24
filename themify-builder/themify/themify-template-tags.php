@@ -2161,3 +2161,292 @@ if (!function_exists('themify_comment_list')) {
         );
     }
     
+
+if ( ! function_exists( 'themify_search_filter_terms_tree' ) ) {
+	function themify_search_filter_terms_tree( $terms, $parent = 0, $depth = 0 ) {
+		$out = array();
+		foreach ( $terms as $term ) {
+			if ( (int) $term->parent === (int) $parent ) {
+				$term->tf_sf_depth = $depth;
+				$out[] = $term;
+				$children = themify_search_filter_terms_tree( $terms, $term->term_id, $depth + 1 );
+				if ( ! empty( $children ) ) {
+					$out = array_merge( $out, $children );
+				}
+			}
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'themify_search_filter_meta_values' ) ) {
+	function themify_search_filter_meta_values( $meta_key, $args = array() ) {
+		global $wpdb;
+		$meta_key = is_string( $meta_key ) ? $meta_key : '';
+		if ( $meta_key === '' ) {
+			return array();
+		}
+		$orderby = ! empty( $args['orderby'] ) ? $args['orderby'] : 'name';
+		$order = ! empty( $args['order'] ) && strtoupper( $args['order'] ) === 'DESC' ? 'DESC' : 'ASC';
+		$post_type = ! empty( $args['post_type'] ) ? $args['post_type'] : 'post';
+		if ( is_array( $post_type ) ) {
+			$post_type = reset( $post_type );
+		}
+		$post_type = sanitize_key( $post_type );
+		if ( $post_type === '' ) {
+			$post_type = 'post';
+		}
+		$sql = "SELECT pm.meta_value AS value, COUNT(DISTINCT p.ID) AS cnt
+			FROM {$wpdb->postmeta} pm
+			INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+			WHERE pm.meta_key = %s
+				AND pm.meta_value <> ''
+				AND p.post_status = 'publish'
+				AND p.post_type = %s
+			GROUP BY pm.meta_value";
+		if ( $orderby === 'count' ) {
+			$sql .= ' ORDER BY cnt ' . $order . ', value ASC';
+		} else {
+			$sql .= ' ORDER BY value ' . $order;
+		}
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $meta_key, $post_type ) );
+		return is_array( $rows ) ? $rows : array();
+	}
+}
+
+if ( ! function_exists( 'themify_search_filter_enabled' ) ) {
+	/**
+	 * Whether Search & Filter is enabled for a module.
+	 */
+	function themify_search_filter_enabled( $fields_args ) {
+		return ! empty( $fields_args['search_filter'] )
+			&& $fields_args['search_filter'] === 'yes'
+			&& ! empty( $fields_args['search_filter_fields'] )
+			&& is_array( $fields_args['search_filter_fields'] );
+	}
+}
+
+if ( ! function_exists( 'themify_search_filter_is_request' ) ) {
+	/**
+	 * Whether the current request is a Search & Filter query (ajax or GET).
+	 */
+	function themify_search_filter_is_request() {
+		return ( ! empty( $_POST['action'] ) && $_POST['action'] === 'themify_ajax_load_more' && ! empty( $_POST['tf_sf'] ) )
+			|| ! empty( $_GET['tf_sf_s'] )
+			|| ! empty( $_GET['tf_sf_tax'] )
+			|| ! empty( $_GET['tf_sf_meta'] );
+	}
+}
+
+if ( ! function_exists( 'themify_search_filter_render' ) ) {
+	/**
+	 * Render Search & Filter form for a module.
+	 */
+	function themify_search_filter_render( $fields_args, $extra = array() ) {
+		if ( ! themify_search_filter_enabled( $fields_args ) ) {
+			return false;
+		}
+		$args = array_merge( array(
+			'fields' => $fields_args['search_filter_fields'],
+			'layout' => ! empty( $fields_args['search_filter_layout'] ) ? $fields_args['search_filter_layout'] : 'horizontal',
+			'mobile_layout' => ! empty( $fields_args['search_filter_mobile_layout'] ) ? $fields_args['search_filter_mobile_layout'] : '',
+			'collapse_text' => ! empty( $fields_args['search_filter_collapse_text'] ) ? $fields_args['search_filter_collapse_text'] : '',
+			'active_filters' => ! empty( $fields_args['search_filter_active'] ) ? $fields_args['search_filter_active'] : 'yes',
+			'tax_relation' => ! empty( $fields_args['search_filter_tax_relation'] ) ? $fields_args['search_filter_tax_relation'] : 'OR',
+			'submit' => ! empty( $fields_args['search_filter_submit'] ) ? $fields_args['search_filter_submit'] : 'no',
+			'submit_text' => ! empty( $fields_args['search_filter_submit_text'] ) ? $fields_args['search_filter_submit_text'] : '',
+			'reset' => ! empty( $fields_args['search_filter_reset'] ) ? $fields_args['search_filter_reset'] : 'no',
+		), $extra );
+		themify_get_template( 'includes/search-filter', '', $args );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'themify_search_filter_apply_query' ) ) {
+	/**
+	 * Apply Search & Filter params (Ajax POST or GET fallback) to WP_Query args.
+	 */
+	function themify_search_filter_apply_query( &$args ) {
+		$is_ajax = ! empty( $_POST['action'] ) && $_POST['action'] === 'themify_ajax_load_more' && ! empty( $_POST['tf_sf'] );
+		$has_get = ! empty( $_GET['tf_sf_s'] ) || ! empty( $_GET['tf_sf_tax'] ) || ! empty( $_GET['tf_sf_meta'] );
+		if ( ! $is_ajax && ! $has_get ) {
+			return;
+		}
+
+		$src = $is_ajax ? $_POST : $_GET;
+
+		$s = isset( $src['tf_sf_s'] ) ? sanitize_text_field( wp_unslash( $src['tf_sf_s'] ) ) : '';
+		if ( $s !== '' ) {
+			$by = isset( $src['tf_sf_by'] ) ? sanitize_text_field( wp_unslash( $src['tf_sf_by'] ) ) : 'title|content';
+			$by = array_values( array_filter( explode( '|', $by ) ) );
+			$cf = isset( $src['tf_sf_cf'] ) ? sanitize_text_field( wp_unslash( $src['tf_sf_cf'] ) ) : '';
+			$GLOBALS['tf_sf_search'] = array(
+				's' => $s,
+				'by' => $by,
+				'cf' => $cf,
+			);
+			add_filter( 'posts_search', 'themify_search_filter_posts_search', 10, 2 );
+			add_filter( 'posts_join', 'themify_search_filter_posts_join', 10, 2 );
+			add_filter( 'posts_distinct', 'themify_search_filter_posts_distinct', 10, 2 );
+			$args['s'] = $s;
+		}
+
+		if ( ! empty( $src['tf_sf_tax'] ) && is_array( $src['tf_sf_tax'] ) ) {
+			$rel = isset( $src['tf_sf_tax_rel'] ) ? strtoupper( sanitize_text_field( wp_unslash( $src['tf_sf_tax_rel'] ) ) ) : 'OR';
+			if ( $rel !== 'AND' ) {
+				$rel = 'OR';
+			}
+			$operator = $rel === 'AND' ? 'AND' : 'IN';
+
+			$sf_tax = array();
+			foreach ( $src['tf_sf_tax'] as $tax => $terms ) {
+				$tax = sanitize_key( $tax );
+				if ( ! taxonomy_exists( $tax ) ) {
+					continue;
+				}
+				$term_ids = array_values( array_filter( array_map( 'absint', (array) $terms ) ) );
+				if ( empty( $term_ids ) ) {
+					continue;
+				}
+				$sf_tax[] = array(
+					'taxonomy' => $tax,
+					'field' => 'term_id',
+					'terms' => $term_ids,
+					'operator' => $operator,
+				);
+			}
+			if ( ! empty( $sf_tax ) ) {
+				if ( count( $sf_tax ) > 1 ) {
+					$sf_tax['relation'] = $rel;
+				}
+				if ( ! empty( $args['tax_query'] ) && is_array( $args['tax_query'] ) ) {
+					$args['tax_query'] = array(
+						'relation' => 'AND',
+						$args['tax_query'],
+						$sf_tax,
+					);
+				} else {
+					$args['tax_query'] = $sf_tax;
+				}
+			}
+		}
+
+		if ( empty( $src['tf_sf_meta'] ) || ! is_array( $src['tf_sf_meta'] ) ) {
+			return;
+		}
+
+		$sf_meta = array();
+		foreach ( $src['tf_sf_meta'] as $meta_key => $values ) {
+			$meta_key = sanitize_text_field( wp_unslash( $meta_key ) );
+			if ( $meta_key === '' ) {
+				continue;
+			}
+			$meta_values = array();
+			foreach ( (array) $values as $v ) {
+				$v = sanitize_text_field( wp_unslash( $v ) );
+				if ( $v !== '' ) {
+					$meta_values[] = $v;
+				}
+			}
+			$meta_values = array_values( array_unique( $meta_values ) );
+			if ( empty( $meta_values ) ) {
+				continue;
+			}
+			if ( count( $meta_values ) === 1 ) {
+				$sf_meta[] = array(
+					'key' => $meta_key,
+					'value' => $meta_values[0],
+					'compare' => '=',
+				);
+			} else {
+				$sf_meta[] = array(
+					'key' => $meta_key,
+					'value' => $meta_values,
+					'compare' => 'IN',
+				);
+			}
+		}
+		if ( empty( $sf_meta ) ) {
+			return;
+		}
+		if ( count( $sf_meta ) > 1 ) {
+			$sf_meta['relation'] = 'AND';
+		}
+		if ( ! empty( $args['meta_query'] ) && is_array( $args['meta_query'] ) ) {
+			$args['meta_query'] = array(
+				'relation' => 'AND',
+				$args['meta_query'],
+				$sf_meta,
+			);
+		} else {
+			$args['meta_query'] = $sf_meta;
+		}
+	}
+}
+
+if ( ! function_exists( 'themify_search_filter_posts_search' ) ) {
+	function themify_search_filter_posts_search( $search, $query ) {
+		global $wpdb, $tf_sf_search;
+		if ( empty( $tf_sf_search['s'] ) || ! $query->get( 's' ) ) {
+			return $search;
+		}
+		$like = '%' . $wpdb->esc_like( $tf_sf_search['s'] ) . '%';
+		$by = ! empty( $tf_sf_search['by'] ) ? $tf_sf_search['by'] : array( 'title', 'content' );
+		$parts = array();
+		if ( in_array( 'title', $by, true ) ) {
+			$parts[] = $wpdb->prepare( "{$wpdb->posts}.post_title LIKE %s", $like );
+		}
+		if ( in_array( 'content', $by, true ) ) {
+			$parts[] = $wpdb->prepare( "{$wpdb->posts}.post_content LIKE %s", $like );
+		}
+		$search_all_cf = in_array( 'all_custom_fields', $by, true );
+		$search_cf = $search_all_cf || ( in_array( 'custom_field', $by, true ) && ! empty( $tf_sf_search['cf'] ) );
+		if ( $search_cf ) {
+			$parts[] = $wpdb->prepare( 'tf_sf_meta.meta_value LIKE %s', $like );
+		}
+		if ( empty( $parts ) ) {
+			return $search;
+		}
+		return ' AND (' . implode( ' OR ', $parts ) . ') ';
+	}
+}
+
+if ( ! function_exists( 'themify_search_filter_posts_join' ) ) {
+	function themify_search_filter_posts_join( $join, $query ) {
+		global $wpdb, $tf_sf_search;
+		if ( empty( $tf_sf_search['s'] ) || empty( $tf_sf_search['by'] ) || ! $query->get( 's' ) ) {
+			return $join;
+		}
+		$by = $tf_sf_search['by'];
+		$search_all_cf = in_array( 'all_custom_fields', $by, true );
+		$search_cf = $search_all_cf || ( in_array( 'custom_field', $by, true ) && ! empty( $tf_sf_search['cf'] ) );
+		if ( ! $search_cf ) {
+			return $join;
+		}
+		if ( $search_all_cf ) {
+			$join .= " LEFT JOIN {$wpdb->postmeta} AS tf_sf_meta ON ({$wpdb->posts}.ID = tf_sf_meta.post_id AND tf_sf_meta.meta_key NOT LIKE '\\_%') ";
+		} else {
+			$join .= $wpdb->prepare(
+				" LEFT JOIN {$wpdb->postmeta} AS tf_sf_meta ON ({$wpdb->posts}.ID = tf_sf_meta.post_id AND tf_sf_meta.meta_key = %s) ",
+				$tf_sf_search['cf']
+			);
+		}
+		return $join;
+	}
+}
+
+if ( ! function_exists( 'themify_search_filter_posts_distinct' ) ) {
+	function themify_search_filter_posts_distinct( $distinct, $query ) {
+		global $tf_sf_search;
+		if ( empty( $tf_sf_search['s'] ) || empty( $tf_sf_search['by'] ) || ! $query->get( 's' ) ) {
+			return $distinct;
+		}
+		$by = $tf_sf_search['by'];
+		$search_all_cf = in_array( 'all_custom_fields', $by, true );
+		$search_cf = $search_all_cf || ( in_array( 'custom_field', $by, true ) && ! empty( $tf_sf_search['cf'] ) );
+		if ( ! $search_cf ) {
+			return $distinct;
+		}
+		return 'DISTINCT';
+	}
+}

@@ -51,6 +51,14 @@ $fields_args=$args['mod_settings']+array(
 
 $post_filter_enabled = isset($fields_args[$mod_name . '_filter']) ? $fields_args[$mod_name . '_filter'] : (isset($fields_args['post_filter']) ? $fields_args['post_filter'] : false);
 $post_filter_enabled = !empty($post_filter_enabled) && $post_filter_enabled !== 'no';
+$search_filter_enabled = function_exists( 'themify_search_filter_enabled' ) && themify_search_filter_enabled( $fields_args );
+$search_filter_request = $search_filter_enabled && function_exists( 'themify_search_filter_is_request' ) && themify_search_filter_is_request();
+if ( $search_filter_enabled ) {
+    $post_filter_enabled = false;
+}
+if ( $search_filter_request ) {
+    $fields_args['nav_type'] = 'ajax';
+}
 $ajax_filter_enabled = false;
 if (true === $post_filter_enabled && $fields_args['layout_' . $mod_name] !== 'auto_tiles') {
     $ajax_filter_enabled = isset($fields_args['ajax_filter']) && $fields_args['ajax_filter'] === 'yes';
@@ -86,6 +94,12 @@ if (!empty($fields_args['global_styles']) && Themify_Builder::$frontedit_active 
 }
 if (!empty($fields_args['auto_fullwidth_' . $mod_name]) && $fields_args['auto_fullwidth_' . $mod_name]) {
     $container_class[] = 'tb_fullwidth_image';
+}
+if ( $search_filter_enabled && ( $fields_args['search_filter_layout'] ?? '' ) === 'vertical' ) {
+    $container_class[] = 'tf_sf_layout_vertical';
+    $is_sf_vertical = true;
+} else {
+    $is_sf_vertical = false;
 }
 
 $container_props = apply_filters('themify_builder_module_container_props', self::parse_animation_effect($fields_args, array(
@@ -128,16 +142,16 @@ $args = array(
     'ignore_sticky_posts' => true
 );
 
-if ( 'all' === $fields_args['term_type'] ) {
+if ( 'post_slug' !== $fields_args['term_type'] ) {
+    if ( 'all' !== $fields_args['term_type'] ) {
+        $terms = $mod_name === 'post' && isset( $fields_args["{$mod_name_query}_post"] ) ? $fields_args["{$mod_name_query}_post"] : $fields_args['category_' . $mod_name];
+
+        if ( ! ( $is_ajax_filter && $ajax_filter_term > 0 && ! $ajax_filter_within ) ) {
+            Themify_Builder_Model::parseTermsQuery( $args, $terms, $base_query_taxonomy );
+        }
+    }
     if ( $fields_args["sticky_{$mod_name}"] === 'yes' ) {
         $args['ignore_sticky_posts'] = false;
-    }
-}
-elseif ( 'post_slug' !== $fields_args['term_type'] ) {
-    $terms = $mod_name === 'post' && isset( $fields_args["{$mod_name_query}_post"] ) ? $fields_args["{$mod_name_query}_post"] : $fields_args['category_' . $mod_name];
-
-    if ( ! ( $is_ajax_filter && $ajax_filter_term > 0 && ! $ajax_filter_within ) ) {
-        Themify_Builder_Model::parseTermsQuery( $args, $terms, $base_query_taxonomy );
     }
 }
 elseif ( ! empty( $fields_args['query_slug_' . $mod_name] ) ) {
@@ -174,6 +188,9 @@ if ($mod_name === 'post' && !isset($args['post__in']) && false !== ($id = get_th
 }
 
 Themify_Builder_Model::parse_query_filter($fields_args, $args);
+if ( $search_filter_enabled ) {
+    themify_search_filter_apply_query( $args );
+}
 if ( $ajax_filter_enabled ) {
     if ( $is_ajax_filter && $ajax_filter_term > 0 && ! $ajax_filter_within ) {
         unset( $args['post__in'] );
@@ -186,7 +203,7 @@ set_query_var( 'tf_query_tax', $tf_masonry_terms_taxonomy );
 $the_query = self::query($args);
 $posts = $the_query->posts;
 
-if (empty($posts) && $fields_args['hide_empty'] === 'yes' && Themify_Builder::$frontedit_active === false) {
+if (empty($posts) && $fields_args['hide_empty'] === 'yes' && Themify_Builder::$frontedit_active === false && empty( $_POST['tf_sf'] )) {
     return;
 }
 
@@ -272,7 +289,14 @@ if (isset($themify) && !empty($posts)) {
     }
     $themify->lightboxed_permalink = $posts_in_lightbox;
 }
-if ( true === $post_filter_enabled && function_exists( 'themify_masonry_filter' ) ) {
+if ( $search_filter_enabled ) {
+    themify_search_filter_render( $fields_args, array(
+        'el_id' => $element_id,
+        'builder_id' => $builder_id,
+        'post_type' => $args['post_type'],
+        'limit' => $args['posts_per_page'],
+    ) );
+} elseif ( true === $post_filter_enabled && function_exists( 'themify_masonry_filter' ) ) {
     if (isset($themify)) {
         $themify->post_filter = 'yes';
     }
@@ -317,7 +341,9 @@ $class[] = 'tf_clear tf_clearfix';
 $container_props = apply_filters('themify_builder_blog_container_props', array(
     'class' => $class
     ), $fields_args['post_type_' . $mod_name], $fields_args['layout_' . $mod_name], $fields_args, $mod_name);
-if ('ajax' === $fields_args['nav_type'] || true === $is_ajax_filter) {
+if ( $search_filter_enabled ) {
+    $container_props['data-id'] = $element_id;
+} elseif ('ajax' === $fields_args['nav_type'] || true === $is_ajax_filter) {
     $container_props['class'][] = 'tb_ajax_pagination';
     $container_props['data-id'] = $element_id;
 }
@@ -329,6 +355,7 @@ if (!empty($fields_args['masonry_align']) && 'yes' === $fields_args['masonry_ali
 }
 $container_props['class'] = implode(' ', $container_props['class']);
 ?>
+    <?php if ( $search_filter_enabled ) : ?><div class="tf_sf_content"><?php endif; ?>
     <div <?php echo themify_get_element_attributes($container_props); ?>>
     <?php
     $container_props=$class=null;
@@ -507,8 +534,8 @@ $container_props['class'] = implode(' ', $container_props['class']);
             }
             ?>
     </div><!-- .builder-posts-wrap -->
-        <?php if ('yes' !== $fields_args['hide_page_nav_' . $mod_name]): ?>
-            <?php if ('ajax' === $fields_args['nav_type']): ?>
+        <?php if ( $search_filter_request || $ajax_filter_enabled || 'yes' !== $fields_args['hide_page_nav_' . $mod_name] ): ?>
+            <?php if ('ajax' === $fields_args['nav_type'] || $search_filter_request || $ajax_filter_enabled ): ?>
                 <?php
                 if ($the_query->max_num_pages > $args['paged']) {
                     if (Themify_Builder::$frontedit_active === false) {
@@ -523,6 +550,7 @@ $container_props['class'] = implode(' ', $container_props['class']);
             <?php echo self::get_pagination('', '', $the_query, $offset) ?>
         <?php endif; ?>
     <?php endif; ?>
+    <?php if ( $search_filter_enabled ) : ?></div><!-- .tf_sf_content --><?php endif; ?>
     <?php
     do_action('themify_builder_after_template_content_render');
     ?>

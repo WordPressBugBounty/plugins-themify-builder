@@ -105,7 +105,7 @@ self::sticky_element_props($container_props, $fields_args);
             'menu_class' => 'ui tf_clearfix nav tf_rel tf_scrollbar ' . $fields_args['layout_menu'],
             'container_class' => 'module-menu-container'
         );
-        if ( $fields_args['layout_menu'] !== 'vertical' && $fields_args['mega'] === 'y' ) {
+        if ( $fields_args['mega'] === 'y' ) {
             $args['walker'] = 'Themify_Mega_Menu_Walker';
             $args['container_class'] .= ' tb_mega_menu';
             Themify_Builder_Model::load_module_self_style( $mod_name, 'mega' );

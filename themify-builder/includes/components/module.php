@@ -103,10 +103,20 @@ class Themify_Builder_Component_Module {
 
     public static function get_styles_json():array {
         $keys=array();
+        $abs=static function(string $url):string{
+            $url=set_url_scheme($url);
+            if($url!=='' && !preg_match('#^https?://#i',$url)){
+                $url=home_url($url);
+            }
+            return $url;
+        };
         $loadFiles=apply_filters('tb_json_files', []);
-        $res=[THEMIFY_BUILDER_URI.'/json/style.json?ver='.THEMIFY_VERSION];
+        $res=[$abs(THEMIFY_BUILDER_URI.'/json/style.json').'?ver='.THEMIFY_VERSION];
         foreach($loadFiles as $file){
-            $res[]=$file['f'].'?ver='.$file['v'];
+            if(empty($file['f'])){
+                continue;
+            }
+            $res[]=$abs($file['f']).'?ver='.($file['v']??THEMIFY_VERSION);
         }
         unset($loadFiles);
         $modules=self::load_modules();
@@ -139,7 +149,7 @@ class Themify_Builder_Component_Module {
                             $hasError=true;
                             $jsonData=null;
                         }
-                        $fallback[]=$file['f'].'?ver='.$file['v'];
+                        $fallback[]=$abs($file['f']).'?ver='.$file['v'];
                     }
                     if($hasError===false){
                         $tmpF=THEMIFY_BUILDER_DIR.$jsonDir. uniqid('tmp_');
@@ -158,12 +168,15 @@ class Themify_Builder_Component_Module {
                     unset($fallback);
                 }
                 if($hasError===false){
-                    $res[]=THEMIFY_BUILDER_URI.$jsonName.'?ver='.THEMIFY_VERSION;
+                    $res[]=$abs(THEMIFY_BUILDER_URI.$jsonName).'?ver='.THEMIFY_VERSION;
                 }
             }
             else{
                 foreach($files as $file){
-                    $res[]=$file['f'].'?ver='.$file['v'];
+                    if(empty($file['f'])){
+                        continue;
+                    }
+                    $res[]=$abs($file['f']).'?ver='.$file['v'];
                 }
             }
         }
@@ -791,8 +804,6 @@ class Themify_Builder_Component_Module {
             $sticky_posts = get_option('sticky_posts');
             if (empty($sticky_posts)) {
                 $hasSticky = false;
-            } else {
-                $sticky_posts = array_slice($sticky_posts, 0, $maxPage);
             }
         }
         if ($hasSticky === true && $isPaged === false) {

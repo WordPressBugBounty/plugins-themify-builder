@@ -69,6 +69,7 @@ final class Themify_Builder_Stylesheet {
                             'nonce' => wp_create_nonce('tf_nonce'),
                             'ajaxurl' => admin_url('admin-ajax.php'),
                             'google' => themify_get_google_web_fonts_list(),
+                            'var_fonts' => array_keys( themify_get_variable_fonts_list() ),
                             'cf' => Themify_Custom_Fonts::get_list(),
                             'cf_api_url' => Themify_Custom_Fonts::$api_url
                         ));
@@ -316,7 +317,10 @@ final class Themify_Builder_Stylesheet {
         }
         foreach (array('fonts', 'cf_fonts') as $k) {
             if (!empty($data[$k]) && is_array($data[$k])) {
-                $out[$k] = $data[$k];
+                $fonts = themify_sanitize_builder_font_map($data[$k]);
+                if ($fonts) {
+                    $out[$k] = $fonts;
+                }
             }
         }
         return $out;
@@ -448,8 +452,8 @@ final class Themify_Builder_Stylesheet {
                 }
             }
             foreach (array_keys($fonts) as $ftype) {
-                if (!empty($data[$ftype])) {
-                    foreach ($data[$ftype] as $f => $w) {
+                if (!empty($data[$ftype]) && is_array($data[$ftype])) {
+                    foreach (themify_sanitize_builder_font_map($data[$ftype]) as $f => $w) {
                         $v = 'fonts' === $ftype ? str_replace(' ', '+', $f) : $f;
                         if (!empty($w)) {
                             $v .= ':' . implode(',', $w);

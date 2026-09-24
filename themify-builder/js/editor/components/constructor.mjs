@@ -72,6 +72,9 @@ window.ThemifyConstructor = {
                         variants[j] = typeof variants[j] === 'string' ? variants[j].replace('i', 'italic').replace('r', 'regular') : variants[j].toString();
                     }
                     font_select.google[fonts[i].value] = {n: fonts[i].name, v: variants};
+                    if (fonts[i].variable) {
+                        font_select.var_fonts.add(fonts[i].value);
+                    }
                 }
             }
         } else {
@@ -90,12 +93,12 @@ window.ThemifyConstructor = {
                     for (let j = variants.length - 1; j > -1; --j) {
                         variants[j] = typeof variants[j] === 'string' ? variants[j].replace('i', 'italic').replace('r', 'regular') : variants[j].toString();
                     }
-                    font_select.cf[fonts[i].value] = {n: fonts[i].name, v: variants};
+                    font_select.cf[fonts[i].value] = {n: fonts[i].name, v: variants, variable: !!fonts[i].variable};
                 }
             }
         } else {
             for (let k in fonts) {
-                font_select.cf[k] = {n: fonts[k].n, v: [...fonts[k].v]};
+                font_select.cf[k] = {n: fonts[k].n, v: [...fonts[k].v], variable: !!fonts[k].variable};
                 for (let variants = font_select.cf[k].v, j = variants.length - 1; j > -1; --j) {
                     variants[j] = typeof variants[j] === 'string' ? variants[j].replace('i', 'italic').replace('r', 'regular') : variants[j].toString();
                 }
@@ -105,6 +108,35 @@ window.ThemifyConstructor = {
     },
     getEl(id) {
         return api.LightBox.el.querySelector('#' + id);
+    },
+    _openSingleFieldGroupAcc() {
+        const tab = this.getEl('tb_options_setting');
+        if (!tab) {
+            return;
+        }
+        const css = tab.querySelector(':scope > .tb_field_group_css');
+        if (!css) {
+            return;
+        }
+        let group = null,
+            count = 0;
+        for (let el = tab.firstElementChild; el && el !== css; el = el.nextElementSibling) {
+            if (el.classList.contains('tb_field_group_acc')) {
+                group = el;
+                ++count;
+                if (count > 1) {
+                    return;
+                }
+            }
+        }
+        if (count === 1) {
+            const label = group.tfClass('tb_style_toggle')[0],
+                content = group.tfClass('tb_field_group_content')[0];
+            if (label && content && label.classList.contains('tb_closed')) {
+                label.classList.remove('tb_closed');
+                content.classList.remove('tf_hide');
+            }
+        }
     },
     getOptions(data) {
         const isObject = typeof data !== 'string',
@@ -960,6 +992,8 @@ window.ThemifyConstructor = {
             for (let i = 6; i > 0; --i) {
                 this.static.h_tags['h' + i] = 'H' + i;
             }
+            this.static.h_tags.div = 'divt';
+            this.static.h_tags.p = 'pa';
             const sticky = {};
             for (let bps = this.breakpointsReverse, i = bps.length - 1; i > -1; --i) {
                 let bp = bps[i],
@@ -1581,6 +1615,9 @@ window.ThemifyConstructor = {
             } else {
                 const provider = Themify.parseVideo(val);
                 logic = provider.type === 'youtube' || provider.type === 'vimeo' ? binding.external : binding.local;
+                if (provider.type === 'dailymotion') {
+                    logic = binding.external;
+                }
             }
         } else if (!val && binding.empty !== undefined) {
             logic = binding.empty;
@@ -1874,27 +1911,53 @@ window.ThemifyConstructor = {
                 messages[i].id = 'wp-message';
             }
             // add quicktags
-            if (typeof topWindow.QTags === 'function') {
-                topWindow.quicktags({
-                    id: id
-                });
-                topWindow.QTags._buttonsInit();
-            }
-            if (typeof tinyMCE !== 'undefined') {
-                if (tinymce.editors[ id ] !== undefined) { // clear the prev editor
-                    tinyMCE.execCommand('mceRemoveEditor', true, id);
+            const ownerDoc = el.ownerDocument,
+                hostDoc = topWindow.document,
+                withOwnerDoc = fn => {
+                    if (!ownerDoc || ownerDoc === hostDoc) {
+                        return fn();
+                    }
+                    const origGet = hostDoc.getElementById,
+                        tinyDom = typeof tinymce !== 'undefined' ? tinymce.DOM : null,
+                        origTinyDoc = tinyDom?.doc;
+                    hostDoc.getElementById = function(lookupId) {
+                        return origGet.call(hostDoc, lookupId) || ownerDoc.getElementById(lookupId);
+                    };
+                    if (tinyDom) {
+                        tinyDom.doc = ownerDoc;
+                    }
+                    try {
+                        return fn();
+                    } finally {
+                        hostDoc.getElementById = origGet;
+                        if (tinyDom && origTinyDoc) {
+                            tinyDom.doc = origTinyDoc;
+                        }
+                    }
+                };
+            withOwnerDoc(() => {
+                if (typeof topWindow.QTags === 'function') {
+                    topWindow.quicktags({
+                        id: id
+                    });
+                    topWindow.QTags._buttonsInit();
                 }
-                const settings = tinyMCEPreInit.mceInit.tb_lb_hidden_editor;
-                settings.target = ThemifyConstructor.getEl(id.replace('#', ''));
-                // Creates a new editor instance
-                const ed = new tinyMCE.Editor(id, settings, tinyMCE.EditorManager);
-                is_widget = el.classList.contains('wp-editor-area') ? (el.closest('#instance_widget') !== null) : false;
-                ed.render();
-                ed.on('change', callback);
-                if (!is_widget) {
-                    ed.on('keyup', callback);
+                if (typeof tinyMCE !== 'undefined') {
+                    if (tinymce.editors[ id ] !== undefined) { // clear the prev editor
+                        tinyMCE.execCommand('mceRemoveEditor', true, id);
+                    }
+                    const settings = Object.assign({}, tinyMCEPreInit.mceInit.tb_lb_hidden_editor);
+                    settings.target = el;
+                    delete settings.selector;
+                    const ed = new tinyMCE.Editor(id, settings, tinyMCE.EditorManager);
+                    is_widget = el.classList.contains('wp-editor-area') ? (el.closest('#instance_widget') !== null) : false;
+                    ed.render();
+                    ed.on('change', callback);
+                    if (!is_widget) {
+                        ed.on('keyup', callback);
+                    }
                 }
-            }
+            });
             el.tfOn('change keyup', callback, {passive: true});
         },
         layout(el, args) {
@@ -2095,6 +2158,7 @@ window.ThemifyConstructor = {
     _setUpEditors() {
         if (this.clicked === 'setting') {
             const editors=this._editors;
+            api.Module.injectBackendLightboxCss?.(editors[0]?.el?.ownerDocument || api.LightBox.el?.ownerDocument);
             for (let i = editors.length - 1; i > -1; --i) {
                 this._initControl(editors[i].el, editors[i].data);
             }
@@ -2179,6 +2243,11 @@ window.ThemifyConstructor = {
             }
             // generate html output from the options
             fr.appendChild(_this.create(options));
+            if (index === 'setting') {
+                _this.afterRun.push(() => {
+                    _this._openSingleFieldGroupAcc();
+                });
+            }
             if (index === 'styling') {
                 const reset = createElement('a',{href:'#',class:'reset-styling'}),
                         icon = createElement('i','tf_close');
@@ -4255,6 +4324,50 @@ window.ThemifyConstructor = {
                 self.is_sort = self.is_repeat = orig = null;
             }
 
+            if (type === 'terms' && !el.classList.contains('current')) {
+                const taxSel = wrap.querySelector('select[data-input-id="taxonomy"]');
+                if (taxSel && self.select?.cache) {
+                    let pt = 'post';
+                    if (self.type.includes('product')) {
+                        pt = 'product';
+                    } else if (self.type.includes('portfolio')) {
+                        pt = 'portfolio';
+                    } else {
+                        const search = api.LightBox.el?.querySelector('#post_type_post, #post_type');
+                        pt = search?.dataset?.value
+                            || self.getStyleVal('post_type_post')
+                            || self.getStyleVal('post_type')
+                            || self.values?.post_type_post
+                            || self.values?.post_type
+                            || 'post';
+                    }
+                    for (const k of self.select.cache.keys()) {
+                        if (String(k).startsWith('taxonomy')) {
+                            self.select.cache.delete(k);
+                        }
+                    }
+                    const taxWrap = taxSel.parentNode,
+                        cur = taxSel.value;
+                    taxWrap.classList.add('tf_lazy');
+                    api.LocalFetch({
+                        action: 'tb_get_ajax_data',
+                        dataset: 'taxonomy',
+                        args: { post_type: pt }
+                    }).then(res => {
+                        if (res.success) {
+                            self.select.cache.set('taxonomy' + JSON.stringify({ post_type: pt }), res.data);
+                            self.select.populate(res.data, taxSel, self, cur);
+                            if (cur && ![...taxSel.options].some(o => o.value === cur) && taxSel.options[0]) {
+                                taxSel.value = taxSel.options[0].value;
+                                Themify.triggerEvent(taxSel, 'change');
+                            }
+                        }
+                    }).finally(() => {
+                        taxWrap.classList.remove('tf_lazy');
+                    });
+                }
+            }
+
             if (!el.classList.contains('current')) {
                 el.classList.add('current');
                 const _close = function (e) {
@@ -4337,7 +4450,9 @@ window.ThemifyConstructor = {
                                 self.control.preview(item, null, {repeat: true});
                             }
                         } else if (li.classList.contains('tb_sort_fields_item') && li.dataset.type) {
-                            this._edit(self, data, values, li);
+                            if (!(li.classList.contains('current') && e.target.closest('.tb_sort_field_dropdown'))) {
+                                this._edit(self, data, values, li);
+                            }
                         }
                     }
                 }
@@ -7977,6 +8092,7 @@ window.ThemifyConstructor = {
             }
         },
         populate(data, select, self, v) {
+            select.replaceChildren();
             if (data.optgroup) {
                 const optgroups = self.getOptions(data);
                 for (let k in optgroups) {
@@ -8031,9 +8147,13 @@ window.ThemifyConstructor = {
             }
             if (data.setOptions !== false) {
                 if (key !== undefined) {
+                    let datasetArgs = data.dataset_args;
+                    if (typeof datasetArgs === 'function') {
+                        datasetArgs = datasetArgs.call(self, data);
+                    }
                     let cache_key = key;
-                    if (data.dataset_args) {
-                        cache_key += JSON.stringify(data.dataset_args);
+                    if (datasetArgs) {
+                        cache_key += JSON.stringify(datasetArgs);
                     }
                     if (this.cache.has(cache_key)) {
                         this.populate(this.cache.get(cache_key), select, self, v);
@@ -8043,8 +8163,8 @@ window.ThemifyConstructor = {
                             dataset: key
                         };
                         /* additional parameters to send to tb_get_ajax_data */
-                        if (data.dataset_args) {
-                            ajaxData.args = data.dataset_args;
+                        if (datasetArgs) {
+                            ajaxData.args = datasetArgs;
                         }
                         select_wrap.className += ' tf_lazy';
                         api.LocalFetch(ajaxData).then(res => {
@@ -8084,7 +8204,11 @@ window.ThemifyConstructor = {
         fonts: {},
         safe: {},
         google: {},
+        var_fonts: new Set(themifyBuilder.var_fonts || []),
         cf: {},
+        isVariableFont(value) {
+            return this.var_fonts.has(value) || !!(this.cf[value]?.variable);
+        },
         updateFontVariant(value, weight, self, type) {
             if (!weight) {
                 return;
@@ -8113,19 +8237,46 @@ window.ThemifyConstructor = {
             }
             weight.replaceChildren(fr);
         },
+        _getVariableFontCss2Param(name) {
+            const enc = name.split(' ').join('+'),
+                wdth = themifyBuilder.var_fonts_wdth?.[name],
+                wdthMin = wdth?.[0] ?? 75,
+                wdthMax = wdth?.[1] ?? 125;
+            return 'family=' + enc + ':ital,wdth,wght@0,' + wdthMin + '..' + wdthMax + ',100..900;1,' + wdthMin + '..' + wdthMax + ',100..900';
+        },
+        _loadVariableGoogleFonts(families, isFrontend) {
+            if (!families.length) {
+                return;
+            }
+            const url = window.location.protocol + '//fonts.googleapis.com/css2?' + families.map(f => this._getVariableFontCss2Param(f)).join('&') + '&display=swap';
+            Themify.loadCss(url, null, false);
+            if (isFrontend) {
+                topThemify.loadCss(url, null, false);
+            }
+        },
         loadGoogleFonts(fontFamilies) {
             fontFamilies = [...new Set((fontFamilies.split('|')))];
-            const result = {google: [], cf: []},
+            const result = {google: [], googleVar: [], cf: []},
                 loaded_fonts=this.loaded_fonts,
                 isFrontend=api.isFrontend;
             for (let i = fontFamilies.length - 1; i > -1; --i) {
                 let font=fontFamilies[i];
                 if (font && font !== 'default' && this.safe[font]===undefined) {
                     let req = font.split(':'),
-                        type = this.cf[req[0]] !== undefined ? 'cf' : 'google',
-                        weight = ('regular' === req[1] || 'normal' === req[1] || 'italic' === req[1] || ~~req[1]) ? req[1] : '400,700',
-                        f = req[0].split(' ').join('+') + ':' + weight;
-                    if(this.safe[req[0]]===undefined){
+                        family = req[0],
+                        type = this.cf[family] !== undefined ? 'cf' : 'google';
+                    if ('google' === type && this.isVariableFont(family)) {
+                        const wdth = themifyBuilder.var_fonts_wdth?.[family],
+                            cacheKey = 'css2:' + family + ':' + (wdth?.[0] ?? 75) + '-' + (wdth?.[1] ?? 125);
+                        if (!loaded_fonts.has(cacheKey) && !result.googleVar.includes(family)) {
+                            loaded_fonts.add(cacheKey);
+                            result.googleVar.push(family);
+                        }
+                        continue;
+                    }
+                    let weight = ('regular' === req[1] || 'normal' === req[1] || 'italic' === req[1] || ~~req[1]) ? req[1] : '400,700',
+                        f = family.split(' ').join('+') + ':' + weight;
+                    if(this.safe[family]===undefined){
                         if( 'google' === type){
                             f+=':latin,latin-ext';
                         }
@@ -8135,6 +8286,9 @@ window.ThemifyConstructor = {
                         }
                     }
                 }
+            }
+            if (result.googleVar.length > 0) {
+                this._loadVariableGoogleFonts(result.googleVar, isFrontend);
             }
             if (result.google.length > 0) {
                 const url = window.location.protocol + '//fonts.googleapis.com/css?family=' + encodeURI(result.google.join('|')) + '&display=swap';
@@ -8175,6 +8329,14 @@ window.ThemifyConstructor = {
                     }
                     if (tab) {
                         _this.updateFontVariant(value, tab.tfClass('font-weight-select')[0], self, type);
+                        const stretchEl = tab.querySelector('[id$="_stretch"]');
+                        if (stretchEl) {
+                            const isVar = _this.isVariableFont(value);
+                            stretchEl.closest('.tb_field').classList.toggle('_tb_hide_binding', !isVar);
+                            if (!isVar) {
+                                stretchEl.value = '';
+                            }
+                        }
                     }
                     setTimeout(() => {
                         Themify.triggerEvent(select, 'change');
@@ -8209,7 +8371,9 @@ window.ThemifyConstructor = {
                                         if (type && type !== 'webfont') {
                                             let url = '';
                                             if ('google' === type) {
-                                                url = window.location.protocol + '//fonts.googleapis.com/css?family=' + encodeURI(value) + '&display=swap';
+                                                url = _this.isVariableFont(value)
+                                                    ? window.location.protocol + '//fonts.googleapis.com/css2?' + _this._getVariableFontCss2Param(value) + '&display=swap'
+                                                    : window.location.protocol + '//fonts.googleapis.com/css?family=' + encodeURI(value) + '&display=swap';
                                             } else if ('cf' === type) {
                                                 url = themifyBuilder.cf_api_url + encodeURI(value);
                                             }
@@ -8254,22 +8418,30 @@ window.ThemifyConstructor = {
                 this.updateFontVariant(v, select.closest('.tb_tab').tfClass('font-weight-select')[0], self);
                 if (select.dataset.init === undefined) {
                     const groups = select.tfTag('optgroup'),
-                            opt = createElement('option',{value:v,selected:''});
-                    for(let i=2;i>-1;--i){
+                            opt = createElement('option',{value:v,selected:''}),
+                            cfEmpty = Object.keys(this.cf).length < 1,
+                            idxVar = cfEmpty ? 0 : 1,
+                            idxGoogle = cfEmpty ? 1 : 2,
+                            idxSafe = cfEmpty ? 2 : 3,
+                            idxCf = 0;
+                    for (let i = groups.length - 1; i > -1; --i) {
                         groups[i]?.replaceChildren();
                     }
                     if (this.safe[v] !== undefined) {
                         opt.textContent = this.safe[v];
-                        groups[0].appendChild(opt);
+                        groups[idxSafe]?.appendChild(opt);
+                    } else if (this.var_fonts.has(v) && this.google[v] !== undefined) {
+                        opt.textContent = this.google[v].n;
+                        groups[idxVar]?.appendChild(opt);
                     } else if (this.google[v] !== undefined) {
                         opt.textContent = this.google[v].n;
-                        groups[1].appendChild(opt);
+                        groups[idxGoogle]?.appendChild(opt);
                     } else if (this.cf[v] !== undefined) {
                         opt.textContent = this.cf[v].n;
-                        groups[2].appendChild(opt);
+                        groups[idxCf]?.appendChild(opt);
                     } else {
                         opt.textContent = v;
-                        groups[0].appendChild(opt);
+                        groups[idxSafe]?.appendChild(opt);
                     }
                 }
                 else {
@@ -8288,7 +8460,7 @@ window.ThemifyConstructor = {
                     d = createDocumentFragment(),
                     v = self.getStyleVal(data.id),
                     _this = this,
-                    group = {safe: i18n.safe_fonts, google: i18n.google_fonts},
+                    group = {safe: i18n.safe_fonts, google: i18n.google_fonts, var: i18n.google_var_fonts},
                     cfEmpty = Object.keys(this.cf).length < 1;
             if (false === cfEmpty) {
                 group.cf = i18n.cf_fonts;
@@ -8297,25 +8469,30 @@ window.ThemifyConstructor = {
             if (data.class !== undefined) {
                 select.className += ' ' + data.class;
             }
-            const groupKeys = ['google', 'safe'];
-            if (false === cfEmpty) {
-                groupKeys.push('cf');
-            }
-            for (let i = groupKeys.length - 1; i > -1; --i) {
+            const groupKeys = cfEmpty ? ['var', 'google', 'safe'] : ['cf', 'var', 'google', 'safe'];
+            for (let i = 0; i < groupKeys.length; ++i) {
                 let optgroup = createElement('optgroup',{label:group[groupKeys[i]]});
                 if (v !== undefined) {
                     let txt;
                     if ('safe' === groupKeys[i] && this.safe[v] !== undefined) {
                         txt = this.safe[v];
-                    } else if ('google' === groupKeys[i] && this.google[v] !== undefined) {
+                    } else if ('var' === groupKeys[i] && this.var_fonts.has(v) && this.google[v] !== undefined) {
                         txt = this.google[v].n;
-                    } else {
+                    } else if ('google' === groupKeys[i] && !this.var_fonts.has(v) && this.google[v] !== undefined) {
+                        txt = this.google[v].n;
+                    } else if ('cf' === groupKeys[i]) {
                         txt = this.cf[v]?.n ?? v;
                     }
-                    optgroup.appendChild(createElement('option',{value:v,selected:''},txt));
+                    if (txt !== undefined) {
+                        optgroup.appendChild(createElement('option',{value:v,selected:''},txt));
+                    }
                 }
                 d.appendChild(optgroup);
             }
+            const idxVar = cfEmpty ? 0 : 1,
+                    idxGoogle = cfEmpty ? 1 : 2,
+                    idxSafe = cfEmpty ? 2 : 3,
+                    idxCf = 0;
             const focusIn = function () {
                 this.tfOff('focusin tf_init', focusIn, {once: true, passive: true});
                 const fonts = _this.safe,
@@ -8335,23 +8512,37 @@ window.ThemifyConstructor = {
                     }
                     f.appendChild(opt);
                 }
-                groups[cfEmpty ? 0 : 1].appendChild(f);
-                const extGroups = ['google'];
+                groups[idxSafe].appendChild(f);
                 if (false === cfEmpty) {
-                    extGroups.unshift('cf');
-                }
-                for (let g = extGroups.length - 1; g > -1; --g) {
-                    let ff = _this[extGroups[g]],
-                            fr = createDocumentFragment();
-                    for (let i in ff) {
-                        let opt =createElement('option',{value:i,'data-type':extGroups[g]},ff[i].n);
+                    let ffCf = _this.cf, frCf = createDocumentFragment(),
+                            cfKeys = Object.keys(ffCf).sort((a, b) => String(ffCf[a].n).localeCompare(String(ffCf[b].n), undefined, {sensitivity: 'base'}));
+                    for (let k = 0; k < cfKeys.length; ++k) {
+                        let i = cfKeys[k],
+                                opt = createElement('option',{value:i,'data-type':'cf'},ffCf[i].n);
                         if (v === i) {
                             opt.selected = true;
                         }
-                        fr.appendChild(opt);
+                        frCf.appendChild(opt);
                     }
-                    groups['cf' === extGroups[g] ? 0 : cfEmpty ? 1 : 2].appendChild(fr);
+                    groups[idxCf].appendChild(frCf);
                 }
+                let frVar = createDocumentFragment(),
+                        frGoogle = createDocumentFragment(),
+                        gKeys = Object.keys(_this.google).sort((a, b) => String(_this.google[a].n).localeCompare(String(_this.google[b].n), undefined, {sensitivity: 'base'}));
+                for (let k = 0; k < gKeys.length; ++k) {
+                    let i = gKeys[k],
+                            opt = createElement('option',{value:i,'data-type':'google'},_this.google[i].n);
+                    if (v === i) {
+                        opt.selected = true;
+                    }
+                    if (_this.var_fonts.has(i)) {
+                        frVar.appendChild(opt);
+                    } else {
+                        frGoogle.appendChild(opt);
+                    }
+                }
+                groups[idxVar].appendChild(frVar);
+                groups[idxGoogle].appendChild(frGoogle);
                 _this._controlChange(sel, preview, pw, self);
             };
             select.appendChild(d);
@@ -8359,10 +8550,36 @@ window.ThemifyConstructor = {
             wrapper.tfOn('focusin tf_init', focusIn, {once: true, passive: true})
                 .append(self._initControl(select, data), preview);
             self.afterRun.push(() => {
-                const weight = self.create([{type: 'select', options: {}, label: 'f_w', selector: data.selector, class: 'font-weight-select', id: data.id + '_w', prop: 'font-weight'}]),
-                        weightParent = weight.querySelector('.tb_field');
-                wrapper.closest('.tb_field').after(weight);
-                _this.updateFontVariant(v, weightParent.tfClass('font-weight-select')[0], self);
+                const fontField = wrapper.closest('.tb_field');
+                if (!fontField || fontField.parentNode?.querySelector('#' + data.id + '_w')) {
+                    return;
+                }
+                let fontSel = data.selector;
+                if (Array.isArray(fontSel) && fontSel.indexOf(' .tb_text_wrap') === -1) {
+                    fontSel = fontSel.concat([' .tb_text_wrap']);
+                }
+                const weight = self.create([{type: 'select', options: {}, label: 'f_w', selector: fontSel, class: 'font-weight-select', id: data.id + '_w', prop: 'font-weight'}]),
+                        weightField = weight.querySelector('.tb_field'),
+                        weightSelect = weightField?.tfClass('font-weight-select')[0];
+                if (!weightField) {
+                    return;
+                }
+                fontField.after(weightField);
+                _this.updateFontVariant(v, weightSelect, self);
+                const stretch = self.create([{
+                        type: 'range',
+                        label: 'font_width',
+                        selector: fontSel,
+                        id: data.id + '_stretch',
+                        prop: 'font-stretch',
+                        units: {'%': {min: 50, max: 200, increment: 1}},
+                        default_unit: '%'
+                    }]),
+                        stretchField = stretch.querySelector('.tb_field');
+                if (stretchField) {
+                    stretchField.classList.toggle('_tb_hide_binding', !_this.isVariableFont(v));
+                    weightField.after(stretchField);
+                }
             });
             data.label??= 'f_f';
             return wrapper;
@@ -8775,7 +8992,7 @@ window.ThemifyConstructor = {
                                                 label: 'sticky_first',
                                                 id: data.sticky_id,
                                                 options: 'simple',
-                                                wrap_class: 'tb_group_element_all'
+                                                wrap_class: 'tb_group_element_all tb_group_element_category'
                                             }]);
                                         parent.parentNode.parentNode.appendChild(sticky);
                                     }
@@ -12626,13 +12843,354 @@ window.ThemifyConstructor = {
     },
     post_filter: {
         render(data, self) {
-            const filterPostType = self.type.includes('product') ? 'product' : (self.type.includes('portfolio') ? 'portfolio' : 'post'),
-                defaultFilterTax = filterPostType === 'product' ? 'product_cat' : (filterPostType === 'portfolio' ? 'portfolio-category' : 'category');
+            const getFilterPostType = () => {
+                    if (self.type.includes('product')) {
+                        return 'product';
+                    }
+                    if (self.type.includes('portfolio')) {
+                        return 'portfolio';
+                    }
+                    const search = api.LightBox.el?.querySelector('#post_type_post, #post_type');
+                    if (search?.dataset?.value) {
+                        return search.dataset.value;
+                    }
+                    return self.getStyleVal('post_type_post')
+                        || self.getStyleVal('post_type')
+                        || self.values?.post_type_post
+                        || self.values?.post_type
+                        || 'post';
+                },
+                defaultTaxFor = (pt) => pt === 'product' ? 'product_cat' : (pt === 'portfolio' ? 'portfolio-category' : 'category'),
+                filterPostType = getFilterPostType(),
+                defaultFilterTax = defaultTaxFor(filterPostType),
+                getTermsFieldOptions = (fixedTax) => {
+                    const opts = [
+                        {
+                            id: 'label',
+                            type: 'text',
+                            label: 'label'
+                        },
+                        {
+                            id: 'display_as',
+                            type: 'select',
+                            label: 'dispas',
+                            default: 'checkbox',
+                            options: {
+                                checkbox: 'chbox',
+                                select: 'select',
+                                radio: 'radio'
+                            }
+                        }
+                    ];
+                    if (!fixedTax) {
+                        opts.push({
+                            type: 'select',
+                            label: 'query_tax_id',
+                            dataset: 'taxonomy',
+                            dataset_args: () => ({ post_type: getFilterPostType() }),
+                            id: 'taxonomy',
+                            default: defaultTaxFor(getFilterPostType())
+                        });
+                    }
+                    opts.push(
+                        {
+                            id: 'hierarchy',
+                            type: 'toggle_switch',
+                            label: 'sf_hierarchy',
+                            options: 'simple',
+                            default: 'off'
+                        },
+                        {
+                            type: 'select',
+                            label: 'orderby',
+                            id: 'orderby',
+                            options: {
+                                name: 'name',
+                                count: 'count',
+                                slug: 'slug',
+                                term_order: 'cus'
+                            }
+                        },
+                        {
+                            type: 'select',
+                            label: 'order',
+                            id: 'order',
+                            order: true
+                        },
+                        {
+                            id: 'columns',
+                            type: 'select',
+                            label: 'clmns',
+                            default: '1',
+                            options: {
+                                1: '1',
+                                2: '2',
+                                3: '3'
+                            }
+                        }
+                    );
+                    return opts;
+                },
+                sfFieldOptions = {
+                    search: {
+                        label: 'search',
+                        no_global_options: true,
+                        options: [
+                            {
+                                id: 'label',
+                                type: 'text',
+                                label: 'label'
+                            },
+                            {
+                                id: 'search_by',
+                                type: 'checkbox',
+                                label: 'sf_searchby',
+                                option_js: true,
+                                options: [
+                                    { name: 'title', value: 'title' },
+                                    { name: 'content', value: 'content' },
+                                    { name: 'custom_field', value: 'cfield' },
+                                    { name: 'all_custom_fields', value: 'sf_allcf' }
+                                ]
+                            },
+                            {
+                                id: 'custom_field',
+                                type: 'autocomplete',
+                                dataset: 'custom_fields',
+                                label: 'cfield',
+                                wrap_class: 'tb_checkbox_element_custom_field'
+                            }
+                        ]
+                    },
+                    terms: {
+                        label: 'terms',
+                        no_global_options: true,
+                        options: getTermsFieldOptions()
+                    },
+                    custom_field: {
+                        label: 'cfield',
+                        no_global_options: true,
+                        options: [
+                            {
+                                id: 'label',
+                                type: 'text',
+                                label: 'label'
+                            },
+                            {
+                                id: 'custom_field',
+                                type: 'autocomplete',
+                                dataset: 'custom_fields',
+                                label: 'cfield'
+                            },
+                            {
+                                id: 'display_as',
+                                type: 'select',
+                                label: 'dispas',
+                                default: 'checkbox',
+                                options: {
+                                    checkbox: 'chbox',
+                                    select: 'select',
+                                    radio: 'radio'
+                                }
+                            },
+                            {
+                                type: 'select',
+                                label: 'orderby',
+                                id: 'orderby',
+                                default: 'name',
+                                options: {
+                                    name: 'alphabetical',
+                                    count: 'count'
+                                }
+                            },
+                            {
+                                type: 'select',
+                                label: 'order',
+                                id: 'order',
+                                order: true
+                            },
+                            {
+                                id: 'columns',
+                                type: 'select',
+                                label: 'clmns',
+                                default: '1',
+                                options: {
+                                    1: '1',
+                                    2: '2',
+                                    3: '3'
+                                }
+                            }
+                        ]
+                    }
+                };
+            self.afterRun.push(() => {
+                const ptInput = api.LightBox.el?.querySelector('#post_type_post, #post_type');
+                if (!ptInput || !self.select?.cache) {
+                    return;
+                }
+                const refreshTaxonomySelects = () => {
+                    for (const k of self.select.cache.keys()) {
+                        if (String(k).startsWith('taxonomy')) {
+                            self.select.cache.delete(k);
+                        }
+                    }
+                    const taxSelects = api.LightBox.el.querySelectorAll('select[data-input-id="taxonomy"], #post_filter_tax');
+                    const pt = getFilterPostType();
+                    for (let i = taxSelects.length - 1; i > -1; --i) {
+                        const sel = taxSelects[i],
+                            wrap = sel.parentNode,
+                            cur = sel.value;
+                        wrap.classList.add('tf_lazy');
+                        api.LocalFetch({
+                            action: 'tb_get_ajax_data',
+                            dataset: 'taxonomy',
+                            args: { post_type: pt }
+                        }).then(res => {
+                            if (res.success) {
+                                self.select.cache.set('taxonomy' + JSON.stringify({ post_type: pt }), res.data);
+                                self.select.populate(res.data, sel, self, cur);
+                                if (cur && ![...sel.options].some(o => o.value === cur) && sel.options[0]) {
+                                    sel.value = sel.options[0].value;
+                                    Themify.triggerEvent(sel, 'change');
+                                }
+                            }
+                        }).finally(() => {
+                            wrap.classList.remove('tf_lazy');
+                        });
+                    }
+                };
+                ptInput.tfOn('selectElement', refreshTaxonomySelects, { passive: true });
+            });
             return self.create([{
                 type: 'group',
-                label: 'postf',
+                label: 'searchf',
                 display: 'accordion',
                 options: [
+                    {
+                        id: 'search_filter',
+                        type: 'toggle_switch',
+                        label: 'searchf',
+                        options: 'simple',
+                        default: 'off',
+                        binding: {
+                            checked: {
+                                show: 'search_filter_wrap',
+                                hide: 'post_filter_opts_wrap'
+                            },
+                            not_checked: {
+                                hide: 'search_filter_wrap',
+                                show: 'post_filter_opts_wrap'
+                            }
+                        }
+                    },
+                    {
+                        type: 'group',
+                        wrap_class: 'search_filter_wrap tf_w',
+                        options: [
+                            {
+                                id: 'search_filter_fields',
+                                type: 'sortable_fields',
+                                label: 'sf_fields',
+                                options: sfFieldOptions
+                            },
+                            {
+                                id: 'search_filter_active',
+                                type: 'toggle_switch',
+                                label: 'sf_active',
+                                help: 'sf_activeh',
+                                options: {
+                                    on: {
+                                        name: 'yes',
+                                        value: 's'
+                                    },
+                                    off: {
+                                        name: 'no',
+                                        value: 'hi'
+                                    }
+                                },
+                                default: 'on'
+                            },
+                            {
+                                id: 'search_filter_tax_relation',
+                                type: 'select',
+                                label: 'sf_taxrel',
+                                help: 'sf_taxrelh',
+                                default: 'OR',
+                                options: {
+                                    OR: 'OR',
+                                    AND: 'AND'
+                                }
+                            },
+                            {
+                                id: 'search_filter_layout',
+                                type: 'select',
+                                label: 'sf_layout',
+                                default: 'horizontal',
+                                options: {
+                                    horizontal: 'hrztal',
+                                    vertical: 'vertical'
+                                }
+                            },
+                            {
+                                id: 'search_filter_mobile_layout',
+                                type: 'select',
+                                label: 'sf_mlayout',
+                                options: {
+                                    sticky: 'msticky',
+                                    collapsible: 'collaps'
+                                },
+                                binding: {
+                                    empty: {
+                                        hide: 'search_filter_collapse_text'
+                                    },
+                                    sticky: {
+                                        hide: 'search_filter_collapse_text'
+                                    },
+                                    collapsible: {
+                                        show: 'search_filter_collapse_text'
+                                    }
+                                }
+                            },
+                            {
+                                id: 'search_filter_collapse_text',
+                                type: 'text',
+                                label: 'sf_fbtntxt',
+                                class: 'medium'
+                            },
+                            {
+                                id: 'search_filter_submit',
+                                type: 'toggle_switch',
+                                label: 'submitbtn',
+                                options: 'simple',
+                                default: 'off',
+                                binding: {
+                                    checked: {
+                                        show: ['search_filter_submit_text', 'search_filter_reset']
+                                    },
+                                    not_checked: {
+                                        hide: ['search_filter_submit_text', 'search_filter_reset']
+                                    }
+                                }
+                            },
+                            {
+                                id: 'search_filter_submit_text',
+                                type: 'text',
+                                label: 'sf_btntxt',
+                                class: 'medium'
+                            },
+                            {
+                                id: 'search_filter_reset',
+                                type: 'toggle_switch',
+                                label: 'resetbtn',
+                                options: 'simple',
+                                default: 'off'
+                            }
+                        ]
+                    },
+                    {
+                        type: 'group',
+                        wrap_class: 'post_filter_opts_wrap tf_w',
+                        options: [
                     {
                         id: 'post_filter',
                         type: 'toggle_switch',
@@ -12649,6 +13207,7 @@ window.ThemifyConstructor = {
                                 ],
                                 hide: [
                                     'filter_hashtag',
+                                    'ajax_filter',
                                     'ajax_filter_wrap'
                                 ]
                             },
@@ -12660,6 +13219,7 @@ window.ThemifyConstructor = {
                                 ],
                                 show: [
                                     'filter_hashtag',
+                                    'ajax_filter',
                                     'ajax_filter_wrap'
                                 ]
                             }
@@ -12680,9 +13240,9 @@ window.ThemifyConstructor = {
                                 type : 'select',
                                 label : 'filter_tax_id',
                                 dataset : 'taxonomy',
-                                dataset_args : { post_type: filterPostType },
+                                dataset_args : () => ({ post_type: getFilterPostType() }),
                                 id : 'post_filter_tax',
-                                default : defaultFilterTax
+                                default : defaultTaxFor(getFilterPostType())
                             },
                             {
                                 type : 'select',
@@ -12785,6 +13345,8 @@ window.ThemifyConstructor = {
                                     }
                                 ]
                             }
+                        ]
+                    }
                         ]
                     },
                     {

@@ -735,6 +735,19 @@ final class Themify_Builder_Model {
         return \themify_builder_get('setting-google_map_key', 'builder_settings_google_map_key');
     }
 
+    public static function getOsmMapKey():?string {
+        return \themify_builder_get('setting-openstreetmap_map_key', 'builder_settings_openstreetmap_map_key');
+    }
+
+    public static function getOsmTileUrl():string {
+        $url = apply_filters( 'themify_builder_osm_tile_url', 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' );
+        $key = wp_strip_all_tags( self::getOsmMapKey() ?: '' );
+        if ( $key !== '' && str_contains( $url, 'cartocdn.com' ) && ! str_contains( $url, 'key=' ) ) {
+            $url .= ( str_contains( $url, '?' ) ? '&' : '?' ) . 'key=' . rawurlencode( $key );
+        }
+        return $url;
+    }
+
     /**
      * Get Builder Settings
      */

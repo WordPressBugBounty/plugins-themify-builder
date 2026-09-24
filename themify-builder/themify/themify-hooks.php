@@ -245,6 +245,8 @@ function themify_product_title_start_hook( $template_name ) {
         do_action( 'themify_product_title_start' );
     } else if ( $template_name === 'single-product/tabs/tabs.php' ) {
         do_action( 'themify_before_product_tabs' );
+    } else if ( $template_name === 'single-product/tabs/description.php' ) {
+        do_action( 'themify_before_product_description' );
     }
 }
 function themify_product_title_end_hook( $template_name ) {
@@ -252,6 +254,8 @@ function themify_product_title_end_hook( $template_name ) {
         do_action( 'themify_product_title_end' );
     } else if ( $template_name === 'single-product/tabs/tabs.php' ) {
         do_action( 'themify_after_product_tabs' );
+    } else if ( $template_name === 'single-product/tabs/description.php' ) {
+        do_action( 'themify_after_product_description' );
     }
 }
 function themify_before_product_title_hook() {

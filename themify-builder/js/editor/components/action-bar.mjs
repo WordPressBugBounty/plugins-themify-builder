@@ -289,7 +289,16 @@
                 topHead.prepend(formFields.cloneNode(true));
             }
             else{
-                topHead.appendChild(formFields.cloneNode(true));
+                const formFieldsStyle=formFields.cloneNode(true);
+                topHead.appendChild(formFieldsStyle);
+                const lightboxCss=topWindowDoc.getElementById('themify-builder-lightbox-css') || topHead.querySelector('link[href*="/components/lightbox."]');
+                if(lightboxCss){
+                    formFieldsStyle.after(lightboxCss);
+                    const lightboxInline=topWindowDoc.getElementById('themify-builder-lightbox-inline-css');
+                    if(lightboxInline){
+                        lightboxCss.after(lightboxInline);
+                    }
+                }
             }
             if (api.isGSPage === true) {
                 return;

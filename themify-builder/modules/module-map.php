@@ -50,6 +50,12 @@ class TB_Map_Module extends Themify_Builder_Component_Module {
             $values['azure_api_err'] = sprintf( __('Please enter the required <a href="%s" target="_blank">Azure subscription key</a>.','themify'), $url );
         }
 
+        $osmAPI = themify_builder_get( 'setting-openstreetmap_map_key', 'builder_settings_openstreetmap_map_key' );
+        $values['openstreetmap_api'] = !empty( $osmAPI );
+        if ( ! $values['openstreetmap_api'] ) {
+            $values['openstreetmap_api_err'] = sprintf( __('Please enter the required <a href="%s" target="_blank">OpenStreetMap API key</a>.','themify'), $url );
+        }
+
         return $values;
     }
 

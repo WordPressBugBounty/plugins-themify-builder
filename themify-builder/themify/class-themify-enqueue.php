@@ -71,9 +71,12 @@ class Themify_Enqueue_Assets {
         if (!wp_next_scheduled('themify_cron_clear_css')) {
             wp_schedule_event(time() + WEEK_IN_SECONDS * 4, 'four_week', 'themify_cron_clear_css');
         }
+        add_filter('script_loader_src', array(__CLASS__, 'unmin_loader_src'), 1);
+        add_filter('style_loader_src', array(__CLASS__, 'unmin_loader_src'), 1);
     }
 
     public static function lazy_init() {
+        self::disable_gzip_output_for_dev();
         if (!is_admin() && !themify_is_login_page()) {
             remove_action('wp_head', 'wp_resource_hints', 2);
             if (self::$themeVersion !== null) {
@@ -281,6 +284,7 @@ class Themify_Enqueue_Assets {
     }
 
     public static function add_css(string $handle, string $src,?array $deps,?string $ver,?string $media = '',bool $in_footer = false) {
+        $src = themify_enque($src, false, false);
         if (!isset(self::$css[$handle], self::$done[$src])) {
             self::$done[$src] = true;
             if (!$media) {
@@ -449,12 +453,29 @@ class Themify_Enqueue_Assets {
     public static function style_header_tag(string $tag, string $handle,string $href,string $media):string {
         $src = strtok($href, '?');
         unset(self::$preLoadMedia[$src]);
+        if (self::skip_style_preload($tag, $handle, $href, $media)) {
+            return $tag;
+        }
         $preload = '<link rel="preload" href="' . $href . '" as="style"';
         if ($media !== 'all' && $media) {
             $preload .= ' media="' . $media . '"';
         }
         $preload .= '>' . $tag;
         return $preload;
+    }
+
+    /**
+     * Skip stylesheet preload wrapping (deferred CSS / plugin exclusions).
+     */
+    private static function skip_style_preload(string $tag, string $handle, string $href, string $media):bool {
+        $skip = $media === 'print'
+            || strpos($tag, 'onload=') !== false
+            || strpos($tag, 'rel="preload"') !== false
+            || strpos($tag, "rel='preload'") !== false
+            || strpos($tag, 'data-borlabs-cookie-deferred-style') !== false
+            || strpos($handle, 'borlabs-cookie') !== false
+            || strpos($href, 'borlabs-cookie') !== false;
+        return true === apply_filters('themify_skip_style_preload', $skip, $handle, $tag, $href, $media);
     }
 
     /**
@@ -1209,9 +1230,27 @@ class Themify_Enqueue_Assets {
                 return Themify_Filesystem::put_contents($htaccess_file, trim($rules));
             }
         }
+        return false;
+    }
+
+    private static function disable_gzip_output_for_dev() {
+        if (!themify_is_dev_mode() || themify_get_server() === 'nginx') {
+            return;
+        }
+        $htaccess_file = self::getHtaccessFile();
+        if (!is_file($htaccess_file)) {
+            return;
+        }
+        $rules = Themify_Filesystem::get_contents($htaccess_file);
+        if (is_string($rules) && strpos($rules, '#BEGIN_GZIP_OUTPUT_BY_THEMIFY') !== false) {
+            self::rewrite_htaccess(true, !themify_check('setting-webp', true), true);
+        }
     }
 
     public static function getHtaccessFile():string{
+        if (!function_exists('get_home_path')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
         $f=get_home_path() . '.htaccess';
         if(!is_file($f)){
             $f=ABSPATH . '.htaccess';
@@ -1224,6 +1263,7 @@ class Themify_Enqueue_Assets {
             return false;
         }
         if (!isset(self::$css[$handle])) {
+            $src = themify_enque($src, false, false);
             if ($position === false) {
                 self::$css[$handle] = array('s' => $src, 'v' => $ver);
             } elseif (isset(self::$css[$position])) {
@@ -1254,6 +1294,9 @@ class Themify_Enqueue_Assets {
     }
 
     public static function addPreLoadMedia(string $src, string $rel = 'preload', string $type = 'image', $ver = '', $m = 'all', string $importance = ''):array {
+        if ($type === 'style' || $type === 'script') {
+            $src = themify_enque($src, false, false);
+        }
 
         if(!isset(self::$done[$src]) && ($rel!=='prefetch' || !isset(self::$preLoadMedia[$src]))){
             self::$preLoadMedia[$src] = array('t' => $type, 'r' => $rel);
@@ -1277,7 +1320,11 @@ class Themify_Enqueue_Assets {
     }
 
     public static function add_js($handle, $src, $deps, $ver, $in_footer = true) {
-        wp_enqueue_script($handle, $src, $deps, $ver, $in_footer);
+        wp_enqueue_script($handle, themify_enque($src, false, false), $deps, $ver, $in_footer);
+    }
+
+    public static function unmin_loader_src($src) {
+        return is_string($src) ? themify_enque($src, false, false) : $src;
     }
 
     public static function getKnownJs():array {
@@ -1376,7 +1423,8 @@ class Themify_Enqueue_Assets {
                 'map_key' => wp_strip_all_tags( themify_builder_get('setting-google_map_key', 'builder_settings_google_map_key') ?: '' ),
                 'bing_map_key' =>wp_strip_all_tags( themify_builder_get('setting-bing_map_key', 'builder_settings_bing_map_key') ?: '' ),
                 'azure_key' => wp_strip_all_tags( themify_builder_get('setting-azure_map_key', 'builder_settings_azure_map_key') ?: '' ),
-                'osm_tile_url' => apply_filters( 'themify_builder_osm_tile_url', 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' ),
+                'osm_map_key' => wp_strip_all_tags( Themify_Builder_Model::getOsmMapKey() ?: '' ),
+                'osm_tile_url' => Themify_Builder_Model::getOsmTileUrl(),
                 'osm_tile_attribution' => apply_filters( 'themify_builder_osm_tile_attribution', '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' ),
                 'menu_tooltips' => [],
                 'plugin_url'=>rtrim(plugins_url(),'/'),
@@ -1450,6 +1498,9 @@ class Themify_Enqueue_Assets {
             }
             if (!self::$localiztion['map_key']) {
                 unset(self::$localiztion['map_key']);
+            }
+            if (!self::$localiztion['osm_map_key']) {
+                unset(self::$localiztion['osm_map_key']);
             }
         }
     }
@@ -1551,7 +1602,7 @@ class Themify_Enqueue_Assets {
             $fonts = apply_filters('themify_google_fonts', self::$googleFonts);
             $res = array();
             foreach ($fonts as $font) {
-                if (!empty($font) && preg_match('/^\w/', $font)) {
+                if (themify_is_safe_google_font_request($font)) {
                     /* fix the delimiter with multiple weight variants, it should use `,` and not `:`
                       reset the delimiter between font name and first variant */
                     $font = preg_replace('/,/', ':', str_replace(':', ',', $font), 1);
@@ -1573,6 +1624,55 @@ class Themify_Enqueue_Assets {
                 }
             }
             if (!empty($res)) {
+                $var_fonts = array_keys( themify_get_variable_fonts_list() );
+                $var_keys = array();
+                foreach ( array_keys( $res ) as $raw_key ) {
+                    $name = str_replace( '+', ' ', $raw_key );
+                    if ( in_array( $name, $var_fonts, true ) ) {
+                        $var_keys[] = $name;
+                        unset( $res[ $raw_key ] );
+                    }
+                }
+                $var_css = '';
+                if ( ! empty( $var_keys ) ) {
+                    $css2_query = implode( '&', array_map( 'themify_get_variable_font_css2_param', $var_keys ) ) . '&display=swap';
+                    $css2_path = '://fonts.googleapis.com/css2?' . $css2_query;
+                    $css2_key = Themify_Storage::getHash( 'css2:' . $css2_query );
+                    $var_css = Themify_Storage::get( $css2_key, 'tf_fg_css_' );
+                    if ( ! $var_css ) {
+                        $resp = function_exists( 'themify_safe_remote_get_with_ssl_fallback' )
+                            ? themify_safe_remote_get_with_ssl_fallback( 'https' . $css2_path, array(
+                                'httpversion' => '2',
+                                'timeout' => 10,
+                                'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+                            ) )
+                            : wp_remote_get( 'https' . $css2_path, array(
+                                'sslverify' => false,
+                                'httpversion' => '2',
+                                'timeout' => 10,
+                                'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+                            ) );
+                        $var_css = wp_remote_retrieve_body( $resp );
+                        $content_type = wp_remote_retrieve_header( $resp, 'content-type' );
+                        if ( is_wp_error( $var_css ) || strpos( $content_type, 'text/css' ) === false || strpos( $var_css, 'fonts.gstatic' ) === false ) {
+                            $var_css = '';
+                        } else {
+                            $var_css = str_replace( array( "\r\n", "\n", "\r", "\t" ), '', $var_css );
+                            $var_css = preg_replace( '!\s+!', ' ', $var_css );
+                            Themify_Storage::set( $css2_key, $var_css, MONTH_IN_SECONDS * 6, 'tf_fg_css_' );
+                        }
+                        unset( $resp );
+                    }
+                    if ( $var_css ) {
+                        $var_css = '<style id="tf_gf_var_fonts_style">' . $var_css . '</style>';
+                    } else {
+                        $css2_href = ( is_ssl() ? 'https' : 'http' ) . $css2_path;
+                        $var_css = '<link id="themify-google-var-fonts-css" rel="stylesheet" href="' . esc_url( $css2_href ) . '">';
+                    }
+                }
+                if ( empty( $res ) ) {
+                    return $var_css ?: null;
+                }
                 $fonts = array();
                 foreach ($res as $k => $v) {
                     $fonts[] = $k . ':' . implode(',', array_keys( array_flip($v)));
@@ -1749,7 +1849,7 @@ class Themify_Enqueue_Assets {
                     $path = ( is_ssl() ? 'https' : 'http' ) . $path;
                     // Use font-display=optional to prevent FOUT: browser uses fallback font rather than
                     // showing a flash if the font is not cached. Swap &display=swap for &display=optional.
-                    $path_optional = str_replace( '&display=swap', '&display=optional', $path );
+                    $path_optional = esc_url( str_replace( '&display=swap', '&display=optional', $path ) );
                     $preconnect = '<link rel="preconnect" href="https://fonts.googleapis.com">'
                         . '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
                     $css = $preconnect
@@ -1759,7 +1859,7 @@ class Themify_Enqueue_Assets {
                 else{
                     $css='<style id="tf_gf_fonts_style">'.$css.'</style>';
                 }
-                return $css;
+                return ( $var_css ?? '' ) . $css;
             }
         }
         return null;
@@ -1779,6 +1879,7 @@ class Themify_Enqueue_Assets {
     }
 
     public static function addMobileMenuCss(string $handler, string $src) {
+        $src = themify_enque($src, false, false);
         if (!isset(self::$css['mobile_concate'][$handler]) && !isset(self::$done[$src])) {
             self::$done[$src] = true;
             self::$css['mobile_concate'][$handler] = $src;

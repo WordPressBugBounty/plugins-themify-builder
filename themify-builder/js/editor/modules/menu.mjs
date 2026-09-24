@@ -38,8 +38,7 @@
                             show:'mega'
                         },
                         vertical: {
-                            show: 'accordion',
-                            hide : 'mega'
+                            show: ['accordion', 'mega']
                         }
                     },
                     control: {
@@ -263,8 +262,6 @@
             }
             if(settings.layout_menu!=='vertical'){
                 delete settings.accordion;
-            } else {
-                delete settings.mega;
             }
             if(!settings.allow_menu_breakpoint){
                 delete settings.menu_breakpoint;

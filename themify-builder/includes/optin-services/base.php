@@ -63,6 +63,7 @@ abstract class Builder_Optin_Service {
             'getresponse' => 'Builder_Optin_Service_GetResponse',
             'mailerlite' => 'Builder_Optin_Service_MailerLite',
             'newsletter' => 'Builder_Optin_Service_Newsletter',
+            'brevo' => 'Builder_Optin_Service_Brevo',
         );
         $providers=[];
         $providersList = apply_filters('builder_optin_services',$coreList);

@@ -715,7 +715,7 @@
                                 Themify.triggerEvent(clicked,_CLICK_);
                             }
                             delete _this.tab;
-                            lbEl.focus();
+                            lbEl.focus({preventScroll:true});
                         }
                         return lbEl;
                     }
@@ -755,7 +755,7 @@
 					slug : slug
 				} );
                 await lb.open(data,_this);
-                lbEl.focus();
+                lbEl.focus({preventScroll:true});
                 el.classList.add('tb_current_module');
                 setTimeout(()=>{
                     if(el){

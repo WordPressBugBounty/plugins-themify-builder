@@ -83,21 +83,28 @@
                 const fetchArgs={
                     method: 'GET'
                 },
-                prms=[];
-                for(let files=themifyBuilder.style_json,i=files.length-1;i>-1;--i){
-                    prms.push(new Promise(async (resolve,reject)=>{
+                prms=[],
+                origin=window.location.origin,
+                files=themifyBuilder.style_json||[];
+                for(let i=files.length-1;i>-1;--i){
+                    if(!files[i]){
+                        continue;
+                    }
+                    prms.push(new Promise(async resolve=>{
                         try{
-                            const f=new URL(files[i]),
-                                origin=window.location.origin;
+                            const f=new URL(files[i],origin);
                             if(f.origin!==origin){
-                                f.origin=origin;
+                                f.protocol=window.location.protocol;
+                                f.host=window.location.host;
                             }
                             const res=await Themify.fetch('', null, fetchArgs,f.toString() );
-                            Object.assign(this.styleData,res);
+                            if(res){
+                                Object.assign(this.styleData,res);
+                            }
                             resolve();
                         }
                         catch(e){
-                            reject(e);
+                            resolve();
                         }
                     }));
                 }

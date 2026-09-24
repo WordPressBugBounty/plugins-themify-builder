@@ -220,6 +220,8 @@ class Themify_Builder_Active{
                 'cf_api_url' => Themify_Custom_Fonts::$api_url,
                 'safe' => themify_get_web_safe_font_list(),
                 'google' => themify_get_google_web_fonts_list(),
+                'var_fonts' => array_keys( themify_get_variable_fonts_list() ),
+                'var_fonts_wdth' => themify_get_variable_fonts_wdth_ranges(),
                 'cf' => Themify_Custom_Fonts::get_list(),
                 'ticks' => Themify_Builder_Model::get_transient_time(),
                 'memory' => (int) (wp_convert_hr_to_bytes(WP_MEMORY_LIMIT) * MB_IN_BYTES),
@@ -276,6 +278,9 @@ class Themify_Builder_Active{
                 return false;
             }
             if ( get_post_meta( $id, 'page_layout', true ) !== 'sidebar-none' ) {
+                return false;
+            }
+            if ( get_post_meta( $id, 'hide_page_title', true ) !== 'yes' ) {
                 return false;
             }
             return ! self::is_full_width_layout( $id );
@@ -937,8 +942,13 @@ class Themify_Builder_Active{
 
             if ($dataset === 'taxonomy') {
                 $post_type = '';
-                if (!empty($_POST['args']['post_type'])) {
-                    $post_type = sanitize_key(wp_unslash($_POST['args']['post_type']));
+                $args = $_POST['args'] ?? null;
+                if (is_string($args)) {
+                    $decoded = json_decode(wp_unslash($args), true);
+                    $args = is_array($decoded) ? $decoded : null;
+                }
+                if (is_array($args) && !empty($args['post_type'])) {
+                    $post_type = sanitize_key(wp_unslash($args['post_type']));
                 }
                 $result = $post_type !== ''
                     ? Themify_Builder_Model::get_public_taxonomies_for_post_type($post_type)

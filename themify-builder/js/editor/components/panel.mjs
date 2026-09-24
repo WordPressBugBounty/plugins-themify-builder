@@ -312,7 +312,12 @@
             el.style.display = '';
             api.SmallPanel.hide();
             requestAnimationFrame(()=>{
-                el.tfClass('panel_search')[0].focus();
+                const lb = api.LightBox?.el;
+                if (e === true && lb && !lb.classList.contains('tf_hide')) {
+                    lb.focus();
+                } else {
+                    el.tfClass('panel_search')[0].focus();
+                }
             });
         }
         static closeFloat(e) {
@@ -1136,6 +1141,9 @@
                     lb.classList.remove('tb_float_xsmall', 'tb_float_small', 'tb_float_large');
                     api.MainPanel.setResponsiveTabs();
                     Themify.trigger('tb_resize_lightbox');
+                    if (!lb.classList.contains('tf_hide')) {
+                        lb.focus();
+                    }
                     return true;
                 }
             }

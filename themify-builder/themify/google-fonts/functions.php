@@ -35,6 +35,112 @@ function themify_get_google_fonts_file() {
     return $url;
 }
 
+function themify_get_variable_fonts_list() {
+    return apply_filters( 'themify_variable_fonts_list', array(
+        'Advent Pro'          => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Anek Latin'          => [ 100, 200, 300, 'r', 500, 600, 700, 800 ],
+        'Anybody'             => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Archivo'             => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Asap'                => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'BioRhyme'            => [ 200, 300, 'r', 500, 600, 700, 800 ],
+        'Bricolage Grotesque' => [ 200, 300, 'r', 500, 600, 700, 800 ],
+        'Cabin'               => [ 'r', 500, 600, 700, 'i', '500i', '600i', '700i' ],
+        'DynaPuff'            => [ 'r', 500, 600, 700 ],
+        'Encode Sans'         => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900 ],
+        'Fredoka'             => [ 300, 'r', 500, 600, 700 ],
+        'Georama'             => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Google Sans Flex'    => [ 1, 100, 200, 300, 'r', 500, 600, 700, 800, 900, 1000 ],
+        'Hubot Sans'          => [ 200, 300, 'r', 500, 600, 700, 800, 900, '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'IBM Plex Sans'       => [ 100, 200, 300, 'r', 500, 600, 700, '100i', '200i', '300i', 'i', '500i', '600i', '700i' ],
+        'Inconsolata'         => [ 200, 300, 'r', 500, 600, 700, 800, 900 ],
+        'Instrument Sans'     => [ 'r', 500, 600, 700, 'i', '500i', '600i', '700i' ],
+        'Kalnia'              => [ 100, 200, 300, 'r', 500, 600, 700 ],
+        'League Gothic'       => [ 'r' ],
+        'M PLUS Code Latin'   => [ 100, 200, 300, 'r', 500, 600, 700 ],
+        'Martian Mono'        => [ 100, 200, 300, 'r', 500, 600, 700, 800 ],
+        'Merriweather'        => [ 300, 'r', 500, 600, 700, 800, 900, '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Mona Sans'           => [ 200, 300, 'r', 500, 600, 700, 800, 900, '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Mozilla Headline'    => [ 200, 300, 'r', 500, 600, 700 ],
+        'Noto Sans'           => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Noto Serif'          => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Noto Serif Display'  => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Noto Sans Mono'      => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900 ],
+        'Nunito Sans'         => [ 200, 300, 'r', 500, 600, 700, 800, 900, 1000, '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i', '1000i' ],
+        'Open Sans'           => [ 300, 'r', 500, 600, 700, 800, '300i', 'i', '500i', '600i', '700i', '800i' ],
+        'Pathway Extreme'     => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Playfair'            => [ 300, 'r', 500, 600, 700, 800, 900, '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Pliant'              => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Roboto'              => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Roboto Serif'        => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Saira'               => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Saira Stencil'       => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Science Gothic'      => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900 ],
+        'Sour Gummy'          => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Special Gothic'      => [ 'r', 500, 600, 700 ],
+        'Strichpunkt Sans'    => [ 'r', 500, 600, 700, 800, 900 ],
+        'Tektur'              => [ 'r', 500, 600, 700, 800, 900 ],
+        'TikTok Sans'         => [ 300, 'r', 500, 600, 700, 800, 900 ],
+        'Tourney'             => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+        'Trispace'            => [ 100, 200, 300, 'r', 500, 600, 700, 800 ],
+        'Truculenta'          => [ 100, 200, 300, 'r', 500, 600, 700, 800, 900 ],
+        'Ubuntu Sans'         => [ 100, 200, 300, 'r', 500, 600, 700, 800, '100i', '200i', '300i', 'i', '500i', '600i', '700i', '800i' ],
+        'Zalando Sans'        => [ 200, 300, 'r', 500, 600, 700, 800, 900, '200i', '300i', 'i', '500i', '600i', '700i', '800i', '900i' ],
+    ) );
+}
+
+function themify_get_variable_fonts_wdth_ranges() {
+    $fonts = array_keys( themify_get_variable_fonts_list() );
+    $cached = get_transient( 'themify_var_fonts_wdth' );
+    if ( is_array( $cached ) ) {
+        return array_intersect_key( $cached, array_flip( $fonts ) );
+    }
+
+    $ranges = array();
+    $response = wp_remote_get(
+        'https://fonts.google.com/metadata/fonts',
+        array(
+            'timeout' => 15,
+            'user-agent' => 'Mozilla/5.0 (compatible; Themify/1.0)',
+        )
+    );
+
+    if ( ! is_wp_error( $response ) ) {
+        $body = wp_remote_retrieve_body( $response );
+        $data = json_decode( $body, true );
+        if ( is_array( $data ) && ! empty( $data['familyMetadataList'] ) ) {
+            foreach ( $data['familyMetadataList'] as $family ) {
+                if ( empty( $family['family'] ) || empty( $family['axes'] ) ) {
+                    continue;
+                }
+                foreach ( $family['axes'] as $axis ) {
+                    if ( isset( $axis['tag'] ) && 'wdth' === $axis['tag'] ) {
+                        $ranges[ $family['family'] ] = array(
+                            (int) round( $axis['min'] ),
+                            (int) round( $axis['max'] ),
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if ( ! empty( $ranges ) ) {
+        set_transient( 'themify_var_fonts_wdth', $ranges, WEEK_IN_SECONDS );
+    }
+
+    return array_intersect_key( $ranges, array_flip( $fonts ) );
+}
+
+function themify_get_variable_font_css2_param( string $name ): string {
+    $wdth = themify_get_variable_fonts_wdth_ranges();
+    $wdth_min = $wdth[ $name ][0] ?? 75;
+    $wdth_max = $wdth[ $name ][1] ?? 125;
+    $enc = str_replace( ' ', '+', $name );
+
+    return 'family=' . $enc . ':ital,wdth,wght@0,' . $wdth_min . '..' . $wdth_max . ',100..900;1,' . $wdth_min . '..' . $wdth_max . ',100..900';
+}
+
 /**
  * Returns a list of Google Web Fonts
  * @return array
@@ -42,11 +148,19 @@ function themify_get_google_fonts_file() {
  */
 function themify_get_google_web_fonts_list() {
     $google_fonts_list = array(
-        array( 'value' => '', 'name' => '' ),
-        array(
-            'value' => '',
-            'name' => '--- ' . __( 'Google Fonts', 'themify' ) . ' ---'
-        )
+        array( 'value' => '', 'name' => '' )
+    );
+    foreach ( themify_get_variable_fonts_list() as $k => $variants ) {
+        $google_fonts_list[] = array(
+            'value' => $k,
+            'name' => $k,
+            'variant' => $variants,
+            'variable' => true
+        );
+    }
+    $google_fonts_list[] = array(
+        'value' => '',
+        'name' => '--- ' . __( 'Google Fonts', 'themify' ) . ' ---'
     );
     $fonts = themify_get_google_font_lists();
     foreach ( $fonts as $k=>$f ) {

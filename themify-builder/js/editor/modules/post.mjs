@@ -328,6 +328,11 @@
                 nav_type: 'standard',
                 hide_empty: 'no',
                 post_filter:'no',
+                search_filter:'no',
+                search_filter_layout:'horizontal',
+                search_filter_tax_relation:'OR',
+                search_filter_submit:'no',
+                search_filter_reset:'no',
                 ajax_sort:'no',
                 filter_hashtag:'no',
                 ajax_filter:'no',
@@ -374,7 +379,7 @@
                 delete settings.term_type;
                 termType=null;
             }
-            if(termType!=='all'){
+            if(termType!=='all' && termType!=='category'){
                 delete settings['sticky_'+slug];
             }
             if(termType!=='category'){
@@ -417,6 +422,36 @@
             if(settings.ajax_filter_categories!=='include'){
                 delete settings.ajax_filter_include;
             }
+            if(!settings.search_filter){
+                delete settings.search_filter_fields;
+                delete settings.search_filter_layout;
+				delete settings.search_filter_mobile_layout;
+				delete settings.search_filter_collapse_text;
+				delete settings.search_filter_active;
+				delete settings.search_filter_tax_relation;
+				delete settings.search_filter_submit;
+				delete settings.search_filter_submit_text;
+				delete settings.search_filter_reset;
+			}
+			else {
+				delete settings.post_filter;
+				delete settings.filter_hashtag;
+				delete settings.ajax_filter;
+				delete settings.ajax_filter_categories;
+				delete settings.ajax_filter_exclude;
+				delete settings.ajax_filter_include;
+				delete settings.ajax_sort;
+				delete settings.post_filter_tax;
+				delete settings.post_filter_orderby;
+				delete settings.post_filter_order;
+				if(settings.search_filter_mobile_layout!=='collapsible'){
+					delete settings.search_filter_collapse_text;
+				}
+				if(!settings.search_filter_submit){
+					delete settings.search_filter_submit_text;
+					delete settings.search_filter_reset;
+				}
+			}
             
             if(settings['hide_feat_img_'+slug]==='yes'){
                 delete settings['img_width_'+slug];

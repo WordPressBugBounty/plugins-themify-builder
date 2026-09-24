@@ -71,6 +71,9 @@ class Themify_Builder_Admin{
        $types = Themify_Builder::builder_post_types_support();
        $all_meta_boxes = array();
        foreach ($types as $type) {
+           if (Themify_Builder_Model::is_builder_disabled_for_post_type($type)) {
+               continue;
+           }
            $all_meta_boxes[] = apply_filters('themify_builder_write_panels_meta_boxes', array(
                'name' => __('Themify Builder', 'themify'),
                'id' => 'page-builder',
@@ -96,7 +99,8 @@ class Themify_Builder_Admin{
      * Load admin js and css
      */
     public static function check_admin_interface(string $hook):void {
-        if (in_array($hook, array('post-new.php', 'post.php'), true) && in_array(get_post_type(), themify_post_types(), true) && Themify_Access_Role::check_access_backend( get_the_ID() ) ) {
+        $post_type = get_post_type();
+        if (in_array($hook, array('post-new.php', 'post.php'), true) && $post_type && !Themify_Builder_Model::is_builder_disabled_for_post_type($post_type) && in_array($post_type, themify_post_types(), true) && Themify_Access_Role::check_access_backend( get_the_ID() ) ) {
             add_action('admin_footer', array('Themify_Builder_Active', 'load_javascript_template_admin'), 10);
             add_filter('admin_body_class', array(__CLASS__, 'admin_body_class'), 10, 1);
             add_filter('mce_css', array(__CLASS__, 'static_badge_css'));

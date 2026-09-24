@@ -506,6 +506,12 @@ if (!class_exists('Themify_Builder_Options',false)) :
                     'desc' => sprintf(__('Google API key is required to use Builder Map module and Map shortcode. <a href="%s" target="_blank">Generate an API key</a> and insert it here. Also, please ensure you\'ve setup a <a href="%s" target="_blank">billing plan</a>.'), '//developers.google.com/maps/documentation/javascript/get-api-key#key', 'https://support.google.com/googleapi/answer/6158867')
                 ),
                 array(
+                    'label' => __('OpenStreetMap API Key', 'themify'),
+                    'type' => 'text',
+                    'id' => 'builder_settings_openstreetmap_map_key',
+                    'desc' => sprintf(__('CARTO API key is required to use Builder Map module with OpenStreetMap. <a href="%s" target="_blank">Generate an API key</a> and insert it here.', 'themify'), 'https://carto.com/basemaps/apikey')
+                ),
+                array(
                     'label' => __('Bing Map API Key', 'themify'),
                     'type' => 'text',
                     'id' => 'builder_settings_bing_map_key',

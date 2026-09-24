@@ -85,10 +85,10 @@ $notice='';
 $osm_tile_url = '';
 $osm_tile_attribution = '';
 if ( $fields_args['map_provider'] === 'openstreetmap' ) {
-    $osm_tile_url = apply_filters( 'themify_builder_osm_tile_url', 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' );
+    $osm_tile_url = Themify_Builder_Model::getOsmTileUrl();
     $osm_tile_attribution = apply_filters( 'themify_builder_osm_tile_attribution', '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' );
 }
-if ( current_user_can( 'manage_options' ) && $fields_args['map_provider'] !== 'openstreetmap' ) {
+if ( current_user_can( 'manage_options' ) ) {
     $map_key = themify_builder_get( 'setting-' . $fields_args['map_provider'] . '_map_key', 'builder_settings_' . $fields_args['map_provider'] . '_map_key' );
     if ( empty( $map_key ) ) {
         $notice = sprintf( __( 'Missing <a href="%s">API Key</a>', 'themify' ),

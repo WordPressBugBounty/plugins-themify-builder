@@ -365,6 +365,10 @@ function themify_sort_config($themify_config) {
         'function' => 'themify_google_map_key'
         ),
         array(
+        'title' => __('OpenStreetMap API Settings', 'themify'),
+        'function' => 'themify_openstreetmap_map_key'
+        ),
+        array(
         'title' => __('Bing Map API Settings', 'themify'),
         'function' => 'themify_bing_map_key'
         ),
@@ -2735,6 +2739,22 @@ function themify_google_map_key($data=array()){
     <p>
         <span class="label">' . __( 'Google Map Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-google_map_key" value="' . esc_attr( $value ) . '" /> <br />' .
         '<span class="pushlabel"><small>' . sprintf( __( 'Google API key is required to use Builder Map module and Map shortcode. <a href="%s" target="_blank" rel="noopener">Generate an API key</a> and insert it here. Also, please ensure you\'ve setup a <a href="%s" target="_blank" rel="noopener">billing plan</a>.', 'themify' ), '//developers.google.com/maps/documentation/javascript/get-api-key#key', 'https://support.google.com/googleapi/answer/6158867' ) . '</small></span>' .
+        $validate .
+    '</p>';
+}
+
+/**
+ * Display OpenStreetMap api key input
+ * @return String
+ */
+function themify_openstreetmap_map_key($data=array()){
+    $value = themify_get( 'setting-openstreetmap_map_key','',true);
+    $validate = !empty($value) && strip_tags( $value ) !== $value ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
+
+    return '
+    <p>
+        <span class="label">' . __( 'OpenStreetMap Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-openstreetmap_map_key" value="' . esc_attr( $value ) . '" /> <br />' .
+        '<span class="pushlabel"><small>' . sprintf( __( 'CARTO API key is required to use Builder Map module with OpenStreetMap. <a href="%s" target="_blank" rel="noopener">Generate an API key</a> and insert it here.', 'themify' ), 'https://carto.com/basemaps/apikey' ) . '</small></span>' .
         $validate .
     '</p>';
 }
