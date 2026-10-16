@@ -2266,11 +2266,43 @@ if ( ! function_exists( 'themify_search_filter_apply_query' ) ) {
 	/**
 	 * Apply Search & Filter params (Ajax POST or GET fallback) to WP_Query args.
 	 */
-	function themify_search_filter_apply_query( &$args ) {
+	function themify_search_filter_apply_query( &$args, $fields_args = array() ) {
 		$is_ajax = ! empty( $_POST['action'] ) && $_POST['action'] === 'themify_ajax_load_more' && ! empty( $_POST['tf_sf'] );
 		$has_get = ! empty( $_GET['tf_sf_s'] ) || ! empty( $_GET['tf_sf_tax'] ) || ! empty( $_GET['tf_sf_meta'] );
 		if ( ! $is_ajax && ! $has_get ) {
 			return;
+		}
+
+		$allowed_by = array();
+		$allowed_cf = array();
+		$allowed_meta = array();
+		$allow_all_cf = false;
+		if ( ! empty( $fields_args['search_filter_fields'] ) && is_array( $fields_args['search_filter_fields'] ) ) {
+			foreach ( $fields_args['search_filter_fields'] as $field ) {
+				if ( empty( $field['type'] ) ) {
+					continue;
+				}
+				$val = isset( $field['val'] ) && is_array( $field['val'] ) ? $field['val'] : array();
+				if ( $field['type'] === 'search' ) {
+					$search_by = ! empty( $val['search_by'] ) ? $val['search_by'] : 'title|content';
+					foreach ( explode( '|', $search_by ) as $part ) {
+						$part = sanitize_key( $part );
+						if ( $part === 'all_custom_fields' ) {
+							$allow_all_cf = true;
+						} elseif ( $part !== '' ) {
+							$allowed_by[] = $part;
+						}
+					}
+					if ( ! empty( $val['custom_field'] ) ) {
+						$allowed_cf[] = sanitize_text_field( $val['custom_field'] );
+					}
+				} elseif ( $field['type'] === 'custom_field' && ! empty( $val['custom_field'] ) ) {
+					$meta_key = sanitize_text_field( $val['custom_field'] );
+					if ( $meta_key !== '' ) {
+						$allowed_meta[] = $meta_key;
+					}
+				}
+			}
 		}
 
 		$src = $is_ajax ? $_POST : $_GET;
@@ -2278,8 +2310,15 @@ if ( ! function_exists( 'themify_search_filter_apply_query' ) ) {
 		$s = isset( $src['tf_sf_s'] ) ? sanitize_text_field( wp_unslash( $src['tf_sf_s'] ) ) : '';
 		if ( $s !== '' ) {
 			$by = isset( $src['tf_sf_by'] ) ? sanitize_text_field( wp_unslash( $src['tf_sf_by'] ) ) : 'title|content';
-			$by = array_values( array_filter( explode( '|', $by ) ) );
+			$by = array_values( array_intersect( array_filter( explode( '|', $by ) ), $allowed_by ) );
+			if ( $allow_all_cf && isset( $src['tf_sf_by'] ) && strpos( (string) wp_unslash( $src['tf_sf_by'] ), 'all_custom_fields' ) !== false ) {
+				$by[] = 'all_custom_fields';
+			}
 			$cf = isset( $src['tf_sf_cf'] ) ? sanitize_text_field( wp_unslash( $src['tf_sf_cf'] ) ) : '';
+			if ( $cf === '' || ! in_array( $cf, $allowed_cf, true ) ) {
+				$cf = '';
+				$by = array_values( array_diff( $by, array( 'custom_field' ) ) );
+			}
 			$GLOBALS['tf_sf_search'] = array(
 				's' => $s,
 				'by' => $by,
@@ -2338,7 +2377,7 @@ if ( ! function_exists( 'themify_search_filter_apply_query' ) ) {
 		$sf_meta = array();
 		foreach ( $src['tf_sf_meta'] as $meta_key => $values ) {
 			$meta_key = sanitize_text_field( wp_unslash( $meta_key ) );
-			if ( $meta_key === '' ) {
+			if ( $meta_key === '' || ! in_array( $meta_key, $allowed_meta, true ) ) {
 				continue;
 			}
 			$meta_values = array();

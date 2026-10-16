@@ -40,6 +40,13 @@
                     settings[id] = filterEmptySliderRows(settings[id], id);
                 }
             }
+            if (settings.layout_display_slider && settings.layout_display_slider !== 'blog') {
+                delete settings.more_link_slider;
+                delete settings.more_text_slider;
+            } else if (settings.more_link_slider !== 'on') {
+                delete settings.more_link_slider;
+                delete settings.more_text_slider;
+            }
             super.builderSave(settings);
         }
         static getOptions() {
@@ -212,6 +219,34 @@
                             type: 'number',
                             label: 'exclen',
                             help: 'exch'
+                        },
+                        {
+                            id: 'more_link_slider',
+                            type: 'toggle_switch',
+                            label: 'morel',
+                            default: 'off',
+                            wrap_class: 'tb_group_element_blog',
+                            options: {
+                                on: {
+                                    name: 'on',
+                                    value: 'en'
+                                },
+                                off: {
+                                    name: 'off',
+                                    value: 'dis'
+                                }
+                            },
+                            binding: {
+                                checked: { show: 'more_text_slider' },
+                                not_checked: { hide: 'more_text_slider' }
+                            }
+                        },
+                        {
+                            id: 'more_text_slider',
+                            type: 'text',
+                            label: 'moret',
+                            default: i18n.rmore,
+                            wrap_class: 'tb_group_element_blog'
                         },
                         {
                             id: 'hide_post_title_slider',

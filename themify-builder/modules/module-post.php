@@ -32,7 +32,7 @@ class TB_Post_Module extends Themify_Builder_Component_Module {
     }
 
 	public static function get_translatable_text_fields( $module ) : array {
-		return [ 'mod_title_post' ];
+		return [ 'mod_title_post', 'more_text_post' ];
 	}
 
 	public static function get_translatable_textarea_fields( $module ) : array {

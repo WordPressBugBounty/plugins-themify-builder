@@ -23,6 +23,8 @@ $fields_args = $args['settings']+ array(
     'orderby_slider' => 'date',
     'display_slider' => 'content',
     'excerpt_length' => '',
+    'more_link_slider' => 'off',
+    'more_text_slider' => '',
     'hide_post_title_slider' => 'no',
     'hide_feat_img_slider' => 'no'
 );
@@ -138,7 +140,9 @@ if (!empty($posts)):
                     <?php } ?>
                 <?php } ?>
 
-                <?php if ($fields_args['hide_post_title_slider'] !== 'yes' || $fields_args['display_slider'] !== 'none'): ?>
+                <?php
+                $show_more_link = $type === 'blog' && $fields_args['more_link_slider'] === 'on';
+                if ($fields_args['hide_post_title_slider'] !== 'yes' || $fields_args['display_slider'] !== 'none' || $show_more_link): ?>
                     <div class="slide-content tb_text_wrap">
                         <?php if ($fields_args['hide_post_title_slider'] !== 'yes'): ?>
                             <?php themify_before_post_title(); // Hook ?>
@@ -165,11 +169,21 @@ if (!empty($posts)):
                             $more = 0;
                             themify_before_post_content();
                             if ( $fields_args['display_slider'] === 'content' ) {
-                                the_content();
+                                if ( $show_more_link ) {
+                                    add_filter( 'the_content_more_link', '__return_empty_string', 99 );
+                                    the_content();
+                                    remove_filter( 'the_content_more_link', '__return_empty_string', 99 );
+                                } else {
+                                    the_content();
+                                }
                             } else {
                                 the_excerpt();
                             }
                             themify_after_post_content();
+                        }
+                        if ( $show_more_link ) {
+                            $more_text = $fields_args['more_text_slider'] !== '' ? $fields_args['more_text_slider'] : __( 'Read More', 'themify' );
+                            echo '<div class="more-link-wrap"><a href="' . esc_url( $ext_link ) . '" class="more-link">' . wp_kses_post( $more_text ) . '</a></div>';
                         }
                         ?>
                         <?php if ($type === 'testimonial'): ?>

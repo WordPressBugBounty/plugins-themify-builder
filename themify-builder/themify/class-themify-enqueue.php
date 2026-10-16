@@ -390,6 +390,18 @@ class Themify_Enqueue_Assets {
     }
 
     public static function wp_head() {
+        ?>
+        <script id="tf_lb_guard" data-no-optimize="1" data-noptimize="1" data-no-minify="1" data-cfasync="false">
+        document.addEventListener("click",function(e){
+            var b=document.body;
+            if(window.tfLbReady||(b&&b.classList.contains("themify_builder_active")))return;
+            var t=e.target,a=t&&t.closest?t.closest("a"):null;
+            if(!a||!a.closest(".themify_lightbox"))return;
+            e.preventDefault();
+            window.tfLbPending=a;
+        },true);
+        </script>
+        <?php
         if (themify_is_lazyloading() === true) {
             $blur = (int) themify_get('setting-lazy-blur', 25, true);
             ?>
@@ -2500,10 +2512,12 @@ class Themify_Enqueue_Assets {
     public static function body_open(){
         echo '<!--tf_svg_holder-->','<script> </script>';
         $ga=themify_get('setting-ga_m_id', '', true);
+        $ga=is_string($ga)?preg_replace('/[^A-Za-z0-9_-]/', '', $ga):'';
         if($ga!==''){
-            echo '<noscript><iframe data-no-script src="https://www.googletagmanager.com/ns.html?id=GTM-'.$ga.'" height="0" width="0" style="display:none"></iframe></noscript>',
-                 '<script async data-no-optimize="1" data-noptimize="1" data-cfasync="false" data-ga="'.$ga.'" src="data:text/javascript;base64,KGE9PntmdW5jdGlvbiBlKCl7YS5kYXRhTGF5ZXIucHVzaChhcmd1bWVudHMpfWEuZGF0YUxheWVyPWEuZGF0YUxheWVyfHxbXSxlKCJqcyIsbmV3IERhdGUpLGUoImNvbmZpZyIsZG9jdW1lbnQuY3VycmVudFNjcmlwdC5kYXRhc2V0LmdhKSxlKCJldmVudCIsInBhZ2VfdmlldyIpfSkod2luZG93KTs="></script>',
-                '<script async data-no-optimize="1" data-noptimize="1" data-cfasync="false" src="https://www.googletagmanager.com/gtag/js?id='.$ga.'"></script>';
+            $ga_attr=esc_attr($ga);
+            echo '<noscript><iframe data-no-script src="https://www.googletagmanager.com/ns.html?id=GTM-'.$ga_attr.'" height="0" width="0" style="display:none"></iframe></noscript>',
+                 '<script async data-no-optimize="1" data-noptimize="1" data-cfasync="false" data-ga="'.$ga_attr.'">(function(a){function e(){a.dataLayer.push(arguments);}a.dataLayer=a.dataLayer||[];e("js",new Date());e("config",document.currentScript.dataset.ga);e("event","page_view");})(window);</script>',
+                '<script async data-no-optimize="1" data-noptimize="1" data-cfasync="false" src="https://www.googletagmanager.com/gtag/js?id='.$ga_attr.'"></script>';
         }
     }
 

@@ -87,7 +87,7 @@ if(Themify_Builder::$frontedit_active===false){
     echo Themify_Builder_Component_Module::get_module_title($fields_args,'mod_title_slider');
     ?>
     <div class="themify_builder_slider tf_carousel tf_swiper-container tf_rel tf_overflow"<?php if(Themify_Builder::$frontedit_active===false):?> data-lazy="1"<?php endif;?>
-        data-visible="<?php echo $fields_args['visible_opt_slider'] ?>"
+        data-visible="<?php echo esc_attr( $fields_args['visible_opt_slider'] ); ?>"
         data-tab-visible="<?php echo esc_attr( $fields_args['tab_visible_opt_slider'] ); ?>"
         data-mob-visible="<?php echo esc_attr( $fields_args['mob_visible_opt_slider'] ); ?>"
         data-scroll="<?php echo esc_attr( $fields_args['scroll_opt_slider'] ); ?>"

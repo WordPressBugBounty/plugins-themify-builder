@@ -258,15 +258,76 @@ final class Themify_Builder_Stylesheet {
 
     private static function is_builder_css_selector(string $selector): bool {
         $selector = trim($selector);
-        if ($selector === '') {
+        if ($selector === '' || preg_match('/[{};\\\\<>]|url\s*\(|expression\s*\(|javascript\s*:|@import|@charset|@namespace/i', $selector)) {
             return false;
         }
         if ($selector[0] === '@') {
-            return true;
+            return (bool) preg_match('/^@(-webkit-|-moz-)?(media|supports|container|layer|keyframes)\b/i', $selector);
         }
-        return strpos($selector, '.themify_builder') !== false
-            || strpos($selector, '.tb_') !== false
-            || strpos($selector, '#themify_builder') !== false;
+        if (preg_match('/:(?:is|where|has|matches|-webkit-any)\s*\(/i', $selector)) {
+            return false;
+        }
+        foreach (self::split_selector_list($selector) as $part) {
+            if (!preg_match('/(?:^|[^a-zA-Z0-9_-])(?:\.themify_builder(?:[_-][a-zA-Z0-9_-]+)?|\.tb_[a-zA-Z0-9_-]+|#themify_builder(?:[_-][a-zA-Z0-9_-]+)?)/', $part)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static function split_selector_list(string $selector): array {
+        $parts = array();
+        $buf = '';
+        $depth = 0;
+        $quote = '';
+        $len = strlen($selector);
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $selector[$i];
+            if ($quote !== '') {
+                $buf .= $ch;
+                if ($ch === '\\' && $i + 1 < $len) {
+                    $buf .= $selector[++$i];
+                    continue;
+                }
+                if ($ch === $quote) {
+                    $quote = '';
+                }
+                continue;
+            }
+            if ($ch === '"' || $ch === "'") {
+                $quote = $ch;
+                $buf .= $ch;
+                continue;
+            }
+            if ($ch === '(' || $ch === '[') {
+                $depth++;
+                $buf .= $ch;
+                continue;
+            }
+            if ($ch === ')' || $ch === ']') {
+                if ($depth > 0) {
+                    $depth--;
+                }
+                $buf .= $ch;
+                continue;
+            }
+            if ($ch === ',' && $depth === 0) {
+                $part = trim($buf);
+                if ($part === '') {
+                    return array();
+                }
+                $parts[] = $part;
+                $buf = '';
+                continue;
+            }
+            $buf .= $ch;
+        }
+        $part = trim($buf);
+        if ($part === '') {
+            return array();
+        }
+        $parts[] = $part;
+        return $parts;
     }
 
     private static function sanitize_on_the_fly_rules(array $rules): array {

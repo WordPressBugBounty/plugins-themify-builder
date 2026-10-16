@@ -109,6 +109,32 @@
                     help: 'exch'
                 },
                 {
+                    id: 'more_link_post',
+                    type: 'toggle_switch',
+                    label: 'morel',
+                    default: 'off',
+                    options: {
+                        on: {
+                            name: 'on',
+                            value: 'en'
+                        },
+                        off: {
+                            name: 'off',
+                            value: 'dis'
+                        }
+                    },
+                    binding: {
+                        checked: { show: 'more_text_post' },
+                        not_checked: { hide: 'more_text_post' }
+                    }
+                },
+                {
+                    id: 'more_text_post',
+                    type: 'text',
+                    label: 'moret',
+                    default: i18n.rmore
+                },
+                {
                     id: 'hide_feat_img_post',
                     type: 'toggle_switch',
                     label: 'fimg',
@@ -394,6 +420,10 @@
             
             if(settings['display_'+slug]!=='excerpt'){
                 delete settings['excerpt_length_'+slug];
+            }
+            if(settings['more_link_'+slug]!=='on'){
+                delete settings['more_link_'+slug];
+                delete settings['more_text_'+slug];
             }
             if(settings['layout_'+slug]==='list-post' || settings['layout_'+slug]==='auto_tiles'){
                 delete settings.disable_masonry;

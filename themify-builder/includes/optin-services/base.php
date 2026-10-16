@@ -142,14 +142,35 @@ abstract class Builder_Optin_Service {
             }
         }
 
-        $data = array();
-        foreach ($_POST as $key => $value) {
-            // remove "tb_optin_" prefix from the $_POST data
-            $key = preg_replace('/^tb_optin_/', '', $key);
-            $data[$key] = sanitize_text_field(trim($value));
+        $provider_id = isset($module['provider']) ? sanitize_key($module['provider']) : '';
+        $provider = $provider_id !== '' ? self::get_providers($provider_id, true) : null;
+        if (!$provider) {
+            wp_send_json_error(array('error' => __('Unknown provider.', 'themify')));
         }
 
-        if ($provider = self::get_providers($data['provider'],true)) {
+        $email = sanitize_email(wp_unslash($_POST['tb_optin_email']));
+        if (!is_email($email)) {
+            wp_send_json_error(array('error' => __('Required fields are empty.', 'themify')));
+        }
+
+        $data = array(
+            'provider' => $provider_id,
+            'fname' => sanitize_text_field(wp_unslash($_POST['tb_optin_fname'])),
+            'lname' => sanitize_text_field(wp_unslash($_POST['tb_optin_lname'])),
+            'email' => $email,
+            'redirect' => isset($_POST['tb_optin_redirect']) ? esc_url_raw(wp_unslash($_POST['tb_optin_redirect'])) : '',
+        );
+        if ($data['redirect'] === '' && !empty($module['redirect_to']) && is_string($module['redirect_to'])) {
+            $data['redirect'] = esc_url_raw($module['redirect_to']);
+        }
+        foreach ($module as $key => $value) {
+            if (!is_string($key) || is_array($value) || !preg_match('/_(list|form|db_opt)$/', $key)) {
+                continue;
+            }
+            $data[$key] = sanitize_text_field((string) $value);
+        }
+
+        if ($provider) {
             $result = $provider::subscribe($data);
             if (is_wp_error($result)) {
                 wp_send_json_error(array('error' => $result->get_error_message()));

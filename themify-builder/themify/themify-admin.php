@@ -61,6 +61,10 @@ function themify_enqueue_scripts($page){
         Themify_Enqueue_Assets::addLocalization('url', THEMIFY_URI, false);
         
         $admin_vars['empty_li']=__('The fileds could not be empty!','themify');
+        $admin_vars['validating']=__('Validating...','themify');
+        $admin_vars['validate_fail']=__('Could not connect. Please try again.','themify');
+        $admin_vars['invalid_api']=__('The API key is not valid.','themify');
+        $admin_vars['validate_ok']=__('Connection successful.','themify');
         $admin_vars['theme']=get_template();
         $admin_vars['erase']=array(
             'processing'=>__('Erasing... ','themify'),
@@ -103,7 +107,10 @@ function themify_enqueue_scripts($page){
         $license_key = '';
         $license_hide_name = false;
         $license_hide_key = false;
-        if ( class_exists( 'Themify_Updater', false ) ) {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            $admin_vars['license']['username'] = '';
+            $admin_vars['license']['key'] = '';
+        } elseif ( class_exists( 'Themify_Updater', false ) ) {
             $themify_updater = Themify_Updater::get_instance();
             $license_username = (string) $themify_updater->get_setting( 'username' );
             $license_key = (string) $themify_updater->get_setting( 'key' );
@@ -2726,6 +2733,10 @@ function themify_theme_mega_menu_controls( $data = array() ) {
 
 }
 
+function themify_api_validate_button(string $provider):string {
+    return '<p class="pushlabel" style="display:none"><a href="#" class="themify_button tf_validate_api" data-provider="' . esc_attr( $provider ) . '"><span>' . __( 'Validate API', 'themify' ) . '</span></a> <span class="tf_validate_api_result"></span></p>';
+}
+
 /**
  * Display google map api key input
  * @return String
@@ -2740,7 +2751,7 @@ function themify_google_map_key($data=array()){
         <span class="label">' . __( 'Google Map Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-google_map_key" value="' . esc_attr( $value ) . '" /> <br />' .
         '<span class="pushlabel"><small>' . sprintf( __( 'Google API key is required to use Builder Map module and Map shortcode. <a href="%s" target="_blank" rel="noopener">Generate an API key</a> and insert it here. Also, please ensure you\'ve setup a <a href="%s" target="_blank" rel="noopener">billing plan</a>.', 'themify' ), '//developers.google.com/maps/documentation/javascript/get-api-key#key', 'https://support.google.com/googleapi/answer/6158867' ) . '</small></span>' .
         $validate .
-    '</p>';
+    '</p>' . themify_api_validate_button( 'google' );
 }
 
 /**
@@ -2756,7 +2767,7 @@ function themify_openstreetmap_map_key($data=array()){
         <span class="label">' . __( 'OpenStreetMap Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-openstreetmap_map_key" value="' . esc_attr( $value ) . '" /> <br />' .
         '<span class="pushlabel"><small>' . sprintf( __( 'CARTO API key is required to use Builder Map module with OpenStreetMap. <a href="%s" target="_blank" rel="noopener">Generate an API key</a> and insert it here.', 'themify' ), 'https://carto.com/basemaps/apikey' ) . '</small></span>' .
         $validate .
-    '</p>';
+    '</p>' . themify_api_validate_button( 'openstreetmap' );
 }
 
 /**
@@ -2770,7 +2781,7 @@ function themify_bing_map_key($data=array()){
     $dep_notice = '<div class="themify-info-link">' . sprintf( __( 'Bing Map service <a href="%s" target="_blank">ends in June 30, 2028</a>. Please switch to Azure maps instead.', 'themify' ), 'https://www.microsoft.com/en-us/maps/bing-maps/discontinued-services' ) . '</div>';
 
     return '<p><span class="label">' . __( 'Bing Maps Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-bing_map_key" value="' . esc_attr( $value ) . '" /> <br />
-                <span class="pushlabel"><small>' . sprintf( __( 'To use Bing Maps, <a href="%s" target="_blank" rel="noopener">generate an API key</a> and insert it here.', 'themify' ), 'https://msdn.microsoft.com/en-us/library/ff428642.aspx' ) . '</small></span>' . $validate . $dep_notice . '</p>';
+                <span class="pushlabel"><small>' . sprintf( __( 'To use Bing Maps, <a href="%s" target="_blank" rel="noopener">generate an API key</a> and insert it here.', 'themify' ), 'https://msdn.microsoft.com/en-us/library/ff428642.aspx' ) . '</small></span>' . $validate . $dep_notice . '</p>' . themify_api_validate_button( 'bing' );
 }
 
 function themify_azure_map_key($data=array()){
@@ -2784,7 +2795,7 @@ function themify_azure_map_key($data=array()){
         $output .= '<li>' . sprintf( __( 'Get your <a href="%s" target="_blank" rel="noopener">subscription key (Primary Key)</a> and paste it here.', 'themify' ), 'https://learn.microsoft.com/en-us/azure/azure-maps/quick-demo-map-app#get-the-subscription-key-for-your-account' ) . '</li>';
     $output .= '</ol></small></span>' . $validate . '</p>';
 
-    return $output;
+    return $output . themify_api_validate_button( 'azure' );
 }
 
 /**
@@ -2807,7 +2818,7 @@ function themify_cloudflare_setting($data=array()){
         $output .= '<input type="hidden" name="'.$key.'" value="' . esc_attr( $zone ) . '" />';
     }
     $output .= '<p><span class="pushlabel"><small>' .  __( 'To clear Cloudflare cache upon theme update or purge Themify cache, please login to your Cloudflare account and insert your information here.', 'themify' ) . '</small></span></p>';
-    return $output;
+    return $output . themify_api_validate_button( 'cloudflare' );
 }
 
 /**
@@ -2828,7 +2839,7 @@ function themify_recaptcha_setting($data=array()) : string {
 
     $validate = !empty($private_key) && strip_tags( $private_key ) !== $private_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
     $output.='<p><span class="label">' . __( 'ReCaptcha Secret Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-recaptcha_secret_key" value="' . esc_attr( $private_key ) . '" /><br/><span class="pushlabel"><small>'.sprintf( __( 'Go to <a target="_blank" href="%s" rel="noopener">reCAPTCHA Admin Console</a> to create API keys for your domain. A Google account is required.', 'themify' ), 'https://www.google.com/recaptcha/admin' ).'</small></span> ' . $validate . '</p>';
-    return $output;
+    return $output . themify_api_validate_button( 'recaptcha' );
 }
 
 /**
@@ -2842,7 +2853,7 @@ function themify_hcaptcha_setting($data=array()) : string {
 
     $validate = !empty($site_key) && strip_tags( $site_key ) !== $site_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
     $output .= '<p><span class="label">' . __( 'hCaptcha Site Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-hcaptcha_site" value="' . esc_attr( $site_key ) . '" /><br/><span class="pushlabel"><small>' . sprintf( __( 'You can find the site key from the <a href="%s" target="_blank">sites page</a> on your hCaptcha profile. Note that you also need to add your site domain(s) in the site key.', 'themify' ), 'https://dashboard.hcaptcha.com/sites' ) . '</small></span> ' . $validate . '</p>';
-    return $output;
+    return $output . themify_api_validate_button( 'hcaptcha' );
 }
 
 /**
@@ -2856,7 +2867,7 @@ function themify_turnstile_setting($data=array()) : string {
 
     $validate = !empty($site_key) && strip_tags( $site_key ) !== $site_key ? sprintf( '<div class="notice notice-error"><p>%s</p></div>', __( 'This field must not contain HTML tags, please enter just the API key.', 'themify' ) ) : '';
     $output .= '<p><span class="label">' . __( 'Site Key', 'themify' ) . '</span> <input type="text" class="width10" name="setting-turnstile_site" value="' . esc_attr( $site_key ) . '" /><br/><span class="pushlabel"><small>' . sprintf( __( 'Get API keys at Cloudflare Dashboard &gt; Application Security &gt; Turnstile (<a href="%s" target="_blank">more info</a>).', 'themify' ), 'https://developers.cloudflare.com/turnstile/get-started/#get-a-sitekey-and-secret-key' ) . '</small></span> ' . $validate . '</p>';
-    return $output;
+    return $output . themify_api_validate_button( 'turnstile' );
 }
 
 

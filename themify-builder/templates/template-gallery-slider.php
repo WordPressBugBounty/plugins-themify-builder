@@ -72,7 +72,7 @@ foreach ($arr as $mode) :
                     <?php endif ?>
                 <?php endif;?>
              <?php if($is_slider === false ||$showThumbs===false):?>
-                data-visible="<?php echo $thumbLimit ?>" 
+                data-visible="<?php echo esc_attr( $thumbLimit ); ?>"
                 data-tab-visible="<?php echo esc_attr( $settings['tab_visible_opt_slider'] ); ?>"
                 data-mob-visible="<?php echo esc_attr( $settings['mob_visible_opt_slider'] ); ?>"
                 data-scroll="<?php echo esc_attr( $settings['scroll_opt_slider'] ); ?>"

@@ -34,7 +34,9 @@ $themify_ajax_actions = array(
     'news_widget',
     'activate_plugin',
     'update_license',
-    'upload_json'
+    'upload_json',
+    'validate_api',
+    'google_map_frame'
 );
 foreach($themify_ajax_actions as $action){
     add_action('wp_ajax_themify_' . $action, 'themify_' . $action);
@@ -1060,4 +1062,364 @@ function themify_update_license() {
     $row['key']      = $key;
     update_option( 'themify_updater_licence', wp_json_encode( themify_license_sanitize_settings_payload_theme( $row ) ), false );
     wp_send_json_success( array() );
+}
+
+function themify_google_map_frame() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( '', '', array( 'response' => 403 ) );
+    }
+    check_ajax_referer( 'tf_nonce', 'nonce' );
+    nocache_headers();
+    header( 'Content-Type: text/html; charset=utf-8' );
+    header( 'X-Robots-Tag: noindex, nofollow' );
+    ?>
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head><body><script>
+(function(){
+	var settled=false;
+	function msg(type){
+		if(settled){return;}
+		settled=true;
+		parent.postMessage(type,location.origin);
+	}
+	window.gm_authFailure=function(){msg('tf-maps-auth');};
+	function done(status){
+		if(status==='OK'||status==='ZERO_RESULTS'||status==='OVER_QUERY_LIMIT'||status==='OVER_DAILY_LIMIT'){
+			msg('tf-maps-ok');
+		}else if(status==='ERROR'||status==='UNKNOWN_ERROR'){
+			msg('tf-maps-fail');
+		}else{
+			msg('tf-maps-auth');
+		}
+	}
+	var key='';
+	try{key=decodeURIComponent((location.hash||'').replace(/^#/,''));}catch(e){key='';}
+	if(!key){msg('tf-maps-auth');return;}
+	window.tfMapsInit=function(){
+		try{
+			new google.maps.Geocoder().geocode({address:'New York'},function(results,status){done(status);});
+		}catch(e){
+			msg('tf-maps-fail');
+		}
+	};
+	var script=document.createElement('script');
+	script.async=true;
+	script.src='https://maps.googleapis.com/maps/api/js?v=weekly&loading=async&libraries=geocoding&callback=tfMapsInit&key='+encodeURIComponent(key);
+	script.onerror=function(){msg('tf-maps-fail');};
+	document.head.appendChild(script);
+})();
+</script></body></html>
+    <?php
+    exit;
+}
+
+function themify_validate_api() {
+    check_ajax_referer( 'tf_nonce', 'nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( array( 'message' => __( 'Could not connect. Please try again.', 'themify' ) ) );
+    }
+    $provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+    $fields = array();
+    if ( ! empty( $_POST['fields'] ) && is_array( $_POST['fields'] ) ) {
+        foreach ( $_POST['fields'] as $name => $value ) {
+            $name = sanitize_key( wp_unslash( $name ) );
+            if ( $name === '' || ! is_scalar( $value ) ) {
+                continue;
+            }
+            $fields[ $name ] = trim( sanitize_text_field( wp_unslash( $value ) ) );
+        }
+    }
+    $result = themify_validate_api_provider( $provider, $fields );
+    if ( is_wp_error( $result ) ) {
+        wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+    }
+    wp_send_json_success( array( 'message' => __( 'Connection successful.', 'themify' ) ) );
+}
+
+function themify_validate_api_field( array $fields, string $name ): string {
+    return isset( $fields[ $name ] ) ? $fields[ $name ] : '';
+}
+
+function themify_validate_api_fail( string $message = '' ) {
+    $message = trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( $message ) ) );
+    if ( $message === '' || ! preg_match( '/[A-Za-z]{3}/', $message ) ) {
+        $message = __( 'The API key is not valid.', 'themify' );
+    } elseif ( strlen( $message ) > 300 ) {
+        $message = rtrim( substr( $message, 0, 300 ) );
+    }
+    return new WP_Error( 'api', $message );
+}
+
+function themify_validate_api_http( string $url, array $args = array() ) {
+    $args['timeout'] = 15;
+    $response = wp_remote_request( $url, $args );
+    if ( is_wp_error( $response ) ) {
+        return new WP_Error( 'api', __( 'Could not connect. Please try again.', 'themify' ) );
+    }
+    return array(
+        'code' => (int) wp_remote_retrieve_response_code( $response ),
+        'body' => (string) wp_remote_retrieve_body( $response ),
+        'type' => (string) wp_remote_retrieve_header( $response, 'content-type' ),
+        'etag' => (string) wp_remote_retrieve_header( $response, 'etag' ),
+    );
+}
+
+function themify_validate_api_provider( string $provider, array $fields ) {
+    $missing = __( 'Please enter the API key.', 'themify' );
+    if ( $provider === 'openstreetmap' ) {
+        $key = themify_validate_api_field( $fields, 'setting-openstreetmap_map_key' );
+        if ( $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        $http = themify_validate_api_http( 'https://basemaps.cartocdn.com/rastertiles/voyager/0/0/0.png?key=' . rawurlencode( $key ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $etag = strtolower( trim( $http['etag'] ) );
+        if ( $http['code'] === 200 && str_contains( $http['type'], 'image' ) && $etag !== '' && ! str_contains( $etag, 'wm-' ) ) {
+            return true;
+        }
+        return themify_validate_api_fail();
+    }
+    if ( $provider === 'bing' ) {
+        $key = themify_validate_api_field( $fields, 'setting-bing_map_key' );
+        if ( $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        $http = themify_validate_api_http( 'https://dev.virtualearth.net/REST/v1/Locations?q=New%20York&key=' . rawurlencode( $key ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $data = json_decode( $http['body'], true );
+        if ( is_array( $data ) && isset( $data['statusCode'] ) && (int) $data['statusCode'] === 200 ) {
+            return true;
+        }
+        $message = is_array( $data ) && ! empty( $data['statusDescription'] ) ? $data['statusDescription'] : '';
+        return themify_validate_api_fail( $message );
+    }
+    if ( $provider === 'azure' ) {
+        $key = themify_validate_api_field( $fields, 'setting-azure_map_key' );
+        if ( $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        $http = themify_validate_api_http( 'https://atlas.microsoft.com/geocode?api-version=2023-06-01&query=New%20York&subscription-key=' . rawurlencode( $key ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $data = json_decode( $http['body'], true );
+        if ( $http['code'] === 200 && is_array( $data ) && ! empty( $data['features'] ) ) {
+            return true;
+        }
+        $message = is_array( $data ) && isset( $data['error']['message'] ) ? $data['error']['message'] : '';
+        return themify_validate_api_fail( $message );
+    }
+    if ( $provider === 'cloudflare' ) {
+        $email = themify_validate_api_field( $fields, 'setting-clf_email' );
+        $key = themify_validate_api_field( $fields, 'setting-clf_key' );
+        if ( $email === '' || $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        $http = themify_validate_api_http( 'https://api.cloudflare.com/client/v4/user', array(
+            'headers' => array(
+                'X-Auth-Email' => $email,
+                'X-Auth-Key' => $key,
+            ),
+        ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $data = json_decode( $http['body'], true );
+        if ( is_array( $data ) && ! empty( $data['success'] ) ) {
+            return true;
+        }
+        $message = is_array( $data ) && ! empty( $data['errors'][0]['message'] ) ? $data['errors'][0]['message'] : '';
+        return themify_validate_api_fail( $message );
+    }
+    if ( $provider === 'recaptcha' || $provider === 'hcaptcha' || $provider === 'turnstile' ) {
+        $secret_name = $provider === 'recaptcha' ? 'setting-recaptcha_secret_key' : ( $provider === 'hcaptcha' ? 'setting-hcaptcha_secret' : 'setting-turnstile_secret' );
+        $site_name = $provider === 'recaptcha' ? 'setting-recaptcha_site_key' : ( $provider === 'hcaptcha' ? 'setting-hcaptcha_site' : 'setting-turnstile_site' );
+        $secret = themify_validate_api_field( $fields, $secret_name );
+        $site = themify_validate_api_field( $fields, $site_name );
+        $token = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
+        if ( $secret === '' || $site === '' || $token === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        $urls = array(
+            'recaptcha' => 'https://www.google.com/recaptcha/api/siteverify',
+            'hcaptcha' => 'https://hcaptcha.com/siteverify',
+            'turnstile' => 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        );
+        $body = array(
+            'secret' => $secret,
+            'response' => $token,
+        );
+        if ( $provider === 'hcaptcha' ) {
+            $body['sitekey'] = $site;
+        }
+        $http = themify_validate_api_http( $urls[ $provider ], array(
+            'method' => 'POST',
+            'body' => $body,
+        ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $data = json_decode( $http['body'], true );
+        if ( ! is_array( $data ) ) {
+            return themify_validate_api_fail( __( 'Could not connect. Please try again.', 'themify' ) );
+        }
+        if ( ! empty( $data['success'] ) ) {
+            return true;
+        }
+        $codes = isset( $data['error-codes'] ) ? array_map( 'strval', (array) $data['error-codes'] ) : array();
+        if ( in_array( 'sitekey-secret-mismatch', $codes, true ) ) {
+            return themify_validate_api_fail( __( 'The site key and secret key do not match.', 'themify' ) );
+        }
+        return themify_validate_api_fail();
+    }
+    if ( str_starts_with( $provider, 'optin_' ) ) {
+        return themify_validate_api_optin( substr( $provider, 6 ), $fields );
+    }
+    return themify_validate_api_fail();
+}
+
+function themify_validate_api_optin( string $id, array $fields ) {
+    $missing = __( 'Please enter the API key.', 'themify' );
+    if ( $id === 'mailchimp' ) {
+        $key = themify_validate_api_field( $fields, 'setting-mailchimp_key' );
+        $parts = explode( '-', $key );
+        $server = end( $parts );
+        if ( $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        if ( count( $parts ) < 2 || ! preg_match( '/^[a-z]{2}\d+$/i', $server ) ) {
+            return themify_validate_api_fail();
+        }
+        $http = themify_validate_api_http( 'https://' . rawurlencode( $server ) . '.api.mailchimp.com/3.0/ping', array(
+            'headers' => array(
+                'Authorization' => 'Basic ' . base64_encode( 'key:' . $key ),
+            ),
+        ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $data = json_decode( $http['body'], true );
+        if ( is_array( $data ) && ! empty( $data['health_status'] ) ) {
+            return true;
+        }
+        $message = is_array( $data ) && ! empty( $data['detail'] ) ? $data['detail'] : '';
+        return themify_validate_api_fail( $message );
+    }
+    if ( $id === 'activecampaign' ) {
+        $key = themify_validate_api_field( $fields, 'setting-activecampaign_key' );
+        $url = esc_url_raw( themify_validate_api_field( $fields, 'setting-activecampaign_url' ) );
+        $host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+        if ( $key === '' || $url === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        if ( ! str_ends_with( $host, '.api-us1.com' ) ) {
+            return themify_validate_api_fail();
+        }
+        $http = themify_validate_api_http( untrailingslashit( $url ) . '/api/3/users/me', array(
+            'headers' => array(
+                'Api-Token' => $key,
+            ),
+        ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $data = json_decode( $http['body'], true );
+        if ( $http['code'] === 200 && is_array( $data ) && isset( $data['user'] ) ) {
+            return true;
+        }
+        $message = is_array( $data ) && ! empty( $data['message'] ) ? $data['message'] : '';
+        return themify_validate_api_fail( $message );
+    }
+    if ( $id === 'convertkit' ) {
+        $key = themify_validate_api_field( $fields, 'setting-convertkit_key' );
+        if ( $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        $http = themify_validate_api_http( 'https://api.convertkit.com/v3/forms?api_key=' . rawurlencode( $key ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $data = json_decode( $http['body'], true );
+        if ( $http['code'] === 200 && is_array( $data ) && isset( $data['forms'] ) ) {
+            return true;
+        }
+        $message = is_array( $data ) && ! empty( $data['message'] ) ? $data['message'] : ( is_array( $data ) && ! empty( $data['error'] ) ? $data['error'] : '' );
+        return themify_validate_api_fail( is_string( $message ) ? $message : '' );
+    }
+    if ( $id === 'getresponse' ) {
+        $key = themify_validate_api_field( $fields, 'setting-getresponse_key' );
+        if ( $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        $http = themify_validate_api_http( 'https://api.getresponse.com/v3/accounts', array(
+            'headers' => array(
+                'X-Auth-Token' => 'api-key ' . $key,
+            ),
+        ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        if ( $http['code'] === 200 ) {
+            return true;
+        }
+        $data = json_decode( $http['body'], true );
+        $message = is_array( $data ) && ! empty( $data['message'] ) ? $data['message'] : '';
+        return themify_validate_api_fail( $message );
+    }
+    if ( $id === 'brevo' ) {
+        $key = themify_validate_api_field( $fields, 'setting-brevo_key' );
+        if ( $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        $http = themify_validate_api_http( 'https://api.brevo.com/v3/account', array(
+            'headers' => array(
+                'api-key' => $key,
+                'Accept' => 'application/json',
+            ),
+        ) );
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        $data = json_decode( $http['body'], true );
+        if ( $http['code'] === 200 && is_array( $data ) && ! empty( $data['email'] ) ) {
+            return true;
+        }
+        $message = is_array( $data ) && ! empty( $data['message'] ) ? $data['message'] : '';
+        return themify_validate_api_fail( $message );
+    }
+    if ( $id === 'mailerlite' ) {
+        $classic = themify_validate_api_field( $fields, 'setting-mailerlite_version' ) === '';
+        $key = themify_validate_api_field( $fields, $classic ? 'setting-mailerlite_key' : 'setting-mailerlite_key_new' );
+        if ( $key === '' ) {
+            return themify_validate_api_fail( $missing );
+        }
+        if ( $classic ) {
+            $http = themify_validate_api_http( 'https://api.mailerlite.com/api/v2/groups', array(
+                'headers' => array(
+                    'X-MailerLite-ApiKey' => $key,
+                ),
+            ) );
+        } else {
+            $http = themify_validate_api_http( 'https://connect.mailerlite.com/api/groups', array(
+                'headers' => array(
+                    'Authorization' => 'Bearer ' . $key,
+                    'Content-Type' => 'application/json',
+                ),
+            ) );
+        }
+        if ( is_wp_error( $http ) ) {
+            return $http;
+        }
+        if ( $http['code'] === 200 ) {
+            return true;
+        }
+        $data = json_decode( $http['body'], true );
+        $message = is_array( $data ) && isset( $data['error']['message'] ) ? $data['error']['message'] : ( is_array( $data ) && ! empty( $data['message'] ) ? $data['message'] : '' );
+        return themify_validate_api_fail( $message );
+    }
+    return themify_validate_api_fail();
 }

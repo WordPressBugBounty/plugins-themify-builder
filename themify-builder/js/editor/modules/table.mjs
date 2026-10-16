@@ -51,6 +51,7 @@
                 else if (ch === '"') { inQuotes = false; }
                 else { cell += ch; }
             } else if (ch === '"') { inQuotes = true; }
+            else if (ch === ',' && text[i - 1] !== '"' && /\d/.test(cell.slice(-1)) && /^\d{1,2}(?!\d)\s*[^\d\s,.\r\n-]/.test(text.slice(i + 1))) { cell += ch; }
             else if (ch === ',') { row.push(cell); cell = ''; }
             else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
             else if (ch !== '\r') { cell += ch; }

@@ -76,22 +76,19 @@ if($fields_args['link_image'] !== ''){
         $newtab=$fields_args['param_image'] === 'newtab';
     }
 }
-$attachment_id = ! empty( $fields_args['url_image'] ) ? attachment_url_to_postid( $fields_args['url_image'] ) : 0;
-$media_alt_text = $attachment_id ? (string) get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ) : '';
-$media_title_text = $attachment_id ? get_the_title( $attachment_id ) : '';
-$media_caption_text = $attachment_id ? (string) wp_get_attachment_caption( $attachment_id ) : '';
 $use_auto_title_media = 'yes' === $fields_args['auto_title_media'];
 $use_auto_caption_media = 'yes' === $fields_args['auto_caption_media'];
 $use_media_title_attr = 'yes' === $fields_args['media_title_attr'];
+$use_media_alt = '' === $fields_args['alt_image'];
+$needs_attachment = $use_auto_title_media || $use_auto_caption_media || $use_media_title_attr || $use_media_alt;
+$attachment_id = $needs_attachment && ! empty( $fields_args['url_image'] ) ? themify_get_attachment_id_from_url( $fields_args['url_image'] ) : 0;
+$media_title_text = ( $use_auto_title_media || $use_media_title_attr ) && $attachment_id ? get_the_title( $attachment_id ) : '';
+$media_caption_text = $use_auto_caption_media && $attachment_id ? (string) wp_get_attachment_caption( $attachment_id ) : '';
+$media_alt_text = $use_media_alt && $attachment_id ? (string) get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ) : '';
 $display_title = $use_auto_title_media ? $media_title_text : $fields_args['title_image'];
 $display_caption = $use_auto_caption_media ? $media_caption_text : $fields_args['caption_image'];
 $img_html_title_attr = $use_media_title_attr ? $media_title_text : $fields_args['title_image'];
-
-if ( '' !== $fields_args['alt_image'] ) {
-	$image_alt = $fields_args['alt_image'];
-} else {
-	$image_alt = $media_alt_text;
-}
+$image_alt = $use_media_alt ? $media_alt_text : $fields_args['alt_image'];
 
 $image = '';
 if ( ! empty( $fields_args['url_image'] ) ) {

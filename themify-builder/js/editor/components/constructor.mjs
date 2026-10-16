@@ -8209,33 +8209,162 @@ window.ThemifyConstructor = {
         isVariableFont(value) {
             return this.var_fonts.has(value) || !!(this.cf[value]?.variable);
         },
-        updateFontVariant(value, weight, self, type) {
-            if (!weight) {
-                return;
+        _genericWeights: ['100', '200', '300', 'regular', 'italic', '500', '600', '700', '700italic', '800', '900'],
+        cssVarName(value) {
+            const raw = String(value || '').trim(),
+                wrapped = raw.match(/^var\(\s*(--[a-zA-Z0-9_-]+)\s*\)$/i),
+                bare = raw.match(/^(--[a-zA-Z0-9_-]+)$/);
+            return wrapped ? wrapped[1] : (bare ? bare[1] : '');
+        },
+        resolveFamily(value, seen) {
+            value = String(value || '').trim();
+            if (!value) {
+                return '';
             }
-            type = '' === type || type === undefined ? undefined !== this.google[value] ? 'google' : 'cf' : type;
-            type = 'webfont' === type ? 'fonts' : type;
-            const variants = this[type][value]?.v || null;
-            if (!variants || variants.length === 0) {
-                weight.closest('.tb_field').classList.add('_tb_hide_binding');
-                return;
+            if (value.charAt(0) === '{') {
+                try {
+                    const parsed = JSON.parse(value);
+                    if (parsed && parsed.name) {
+                        value = String(parsed.name).trim();
+                    }
+                } catch (e) {}
             }
-
-            let selected = self.getStyleVal(weight.id),
-                fr=createDocumentFragment();
-            if (undefined === selected) {
+            const prop = this.cssVarName(value);
+            if (!prop) {
+                return value.split(',')[0].replace(/["']/g, '').trim();
+            }
+            seen ??= new Set();
+            const key = prop.replace(/^--+/, '').toLowerCase();
+            if (seen.has(key)) {
+                return '';
+            }
+            seen.add(key);
+            const bp = (typeof api !== 'undefined' && api.activeBreakPoint) || 'desktop',
+                order = ['desktop', 'tablet_landscape', 'tablet', 'mobile'],
+                wins = [window];
+            try {
+                if (window.parent && window.parent !== window) {
+                    wins.push(window.parent);
+                }
+            } catch (e1) {}
+            try {
+                if (window.top && window.top !== window) {
+                    wins.push(window.top);
+                }
+            } catch (e2) {}
+            for (let w = 0; w < wins.length; ++w) {
+                const pack = wins[w].tfSVData || (wins[w].themifyBuilder && wins[w].themifyBuilder.tf_sv);
+                if (!pack || !pack.vars) {
+                    continue;
+                }
+                const rows = [].concat(pack.vars.user || [], pack.vars.theme || []);
+                let next = '';
+                for (let i = 0; i < rows.length; ++i) {
+                    const row = rows[i];
+                    if (!row || row.type !== 'font' || !row.name || String(row.name).replace(/^--+/, '').toLowerCase() !== key) {
+                        continue;
+                    }
+                    if (row.values && typeof row.values === 'object') {
+                        let current = '';
+                        for (let b = 0; b < order.length; ++b) {
+                            const rowVal = String(row.values[order[b]] != null ? row.values[order[b]] : '').trim();
+                            if (rowVal) {
+                                current = rowVal;
+                            }
+                            if (order[b] === bp) {
+                                break;
+                            }
+                        }
+                        if (current) {
+                            next = current;
+                        }
+                    }
+                    if (!next && row.value) {
+                        next = String(row.value).trim();
+                    }
+                    if (next) {
+                        break;
+                    }
+                }
+                if (next) {
+                    return this.resolveFamily(next, seen);
+                }
+            }
+            try {
+                const computed = getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
+                if (computed) {
+                    return this.resolveFamily(computed, seen);
+                }
+            } catch (e3) {}
+            return '';
+        },
+        fontRecord(family) {
+            if (!family) {
+                return null;
+            }
+            if (this.google[family]) {
+                return {type: 'google', key: family, entry: this.google[family]};
+            }
+            if (this.cf[family]) {
+                return {type: 'cf', key: family, entry: this.cf[family]};
+            }
+            const lower = family.toLowerCase();
+            for (let k in this.google) {
+                if (k.toLowerCase() === lower || String(this.google[k].n || '').toLowerCase() === lower) {
+                    return {type: 'google', key: k, entry: this.google[k]};
+                }
+            }
+            for (let k in this.cf) {
+                if (k.toLowerCase() === lower || String(this.cf[k].n || '').toLowerCase() === lower) {
+                    return {type: 'cf', key: k, entry: this.cf[k]};
+                }
+            }
+            return null;
+        },
+        _fillFontWeights(weight, self, variants, selectedFont, type) {
+            let selected = typeof self?.getStyleVal === 'function' ? self.getStyleVal(weight.id) : weight.value,
+                fr = createDocumentFragment();
+            if (undefined === selected || selected === '') {
                 selected = 'google' === type ? 'regular' : 'normal';
             }
-            weight.dataset.selected = value;
+            weight.dataset.selected = selectedFont;
             weight.closest('.tb_field').classList.remove('_tb_hide_binding');
             for (let i = 0; i < variants.length; ++i) {
-                let opt = createElement('option',{value:variants[i]},variants[i]);
+                let opt = createElement('option', {value: variants[i]}, variants[i]);
                 if (variants[i] === selected) {
                     opt.selected = true;
                 }
                 fr.appendChild(opt);
             }
             weight.replaceChildren(fr);
+            const stretch = weight.id ? weight.closest('.tb_tab')?.querySelector('#' + CSS.escape(weight.id.replace(/_w$/, '_stretch'))) : null;
+            if (stretch) {
+                stretch.closest('.tb_field')?.classList.toggle('_tb_hide_binding', !this.isVariableFont(selectedFont));
+            }
+        },
+        updateFontVariant(value, weight, self, type) {
+            if (!weight) {
+                return;
+            }
+            const isCssVar = !!this.cssVarName(value),
+                family = isCssVar ? this.resolveFamily(value) : value,
+                record = this.fontRecord(family);
+            if (record) {
+                this._fillFontWeights(weight, self, record.entry.v, record.key, record.type);
+                return;
+            }
+            if (isCssVar) {
+                this._fillFontWeights(weight, self, this._genericWeights, family || value, 'google');
+                return;
+            }
+            type = '' === type || type === undefined ? undefined !== this.google[value] ? 'google' : 'cf' : type;
+            type = 'webfont' === type ? 'fonts' : type;
+            const variants = this[type]?.[value]?.v || null;
+            if (!variants || variants.length === 0) {
+                weight.closest('.tb_field').classList.add('_tb_hide_binding');
+                return;
+            }
+            this._fillFontWeights(weight, self, variants, value, type);
         },
         _getVariableFontCss2Param(name) {
             const enc = name.split(' ').join('+'),
@@ -8329,13 +8458,10 @@ window.ThemifyConstructor = {
                     }
                     if (tab) {
                         _this.updateFontVariant(value, tab.tfClass('font-weight-select')[0], self, type);
-                        const stretchEl = tab.querySelector('[id$="_stretch"]');
-                        if (stretchEl) {
-                            const isVar = _this.isVariableFont(value);
-                            stretchEl.closest('.tb_field').classList.toggle('_tb_hide_binding', !isVar);
-                            if (!isVar) {
-                                stretchEl.value = '';
-                            }
+                        const weightEl = tab.tfClass('font-weight-select')[0],
+                            stretchEl = weightEl?.id ? tab.querySelector('#' + CSS.escape(weightEl.id.replace(/_w$/, '_stretch'))) : null;
+                        if (stretchEl && stretchEl.closest('.tb_field')?.classList.contains('_tb_hide_binding')) {
+                            stretchEl.value = '';
                         }
                     }
                     setTimeout(() => {
@@ -8420,10 +8546,10 @@ window.ThemifyConstructor = {
                     const groups = select.tfTag('optgroup'),
                             opt = createElement('option',{value:v,selected:''}),
                             cfEmpty = Object.keys(this.cf).length < 1,
-                            idxVar = cfEmpty ? 0 : 1,
-                            idxGoogle = cfEmpty ? 1 : 2,
-                            idxSafe = cfEmpty ? 2 : 3,
-                            idxCf = 0;
+                            idxCf = 0,
+                            idxSafe = cfEmpty ? 0 : 1,
+                            idxVar = cfEmpty ? 1 : 2,
+                            idxGoogle = cfEmpty ? 2 : 3;
                     for (let i = groups.length - 1; i > -1; --i) {
                         groups[i]?.replaceChildren();
                     }
@@ -8469,7 +8595,7 @@ window.ThemifyConstructor = {
             if (data.class !== undefined) {
                 select.className += ' ' + data.class;
             }
-            const groupKeys = cfEmpty ? ['var', 'google', 'safe'] : ['cf', 'var', 'google', 'safe'];
+            const groupKeys = cfEmpty ? ['safe', 'var', 'google'] : ['cf', 'safe', 'var', 'google'];
             for (let i = 0; i < groupKeys.length; ++i) {
                 let optgroup = createElement('optgroup',{label:group[groupKeys[i]]});
                 if (v !== undefined) {
@@ -8489,10 +8615,10 @@ window.ThemifyConstructor = {
                 }
                 d.appendChild(optgroup);
             }
-            const idxVar = cfEmpty ? 0 : 1,
-                    idxGoogle = cfEmpty ? 1 : 2,
-                    idxSafe = cfEmpty ? 2 : 3,
-                    idxCf = 0;
+            const idxCf = 0,
+                    idxSafe = cfEmpty ? 0 : 1,
+                    idxVar = cfEmpty ? 1 : 2,
+                    idxGoogle = cfEmpty ? 2 : 3;
             const focusIn = function () {
                 this.tfOff('focusin tf_init', focusIn, {once: true, passive: true});
                 const fonts = _this.safe,
@@ -8573,11 +8699,13 @@ window.ThemifyConstructor = {
                         id: data.id + '_stretch',
                         prop: 'font-stretch',
                         units: {'%': {min: 50, max: 200, increment: 1}},
+                        default: 100,
                         default_unit: '%'
                     }]),
                         stretchField = stretch.querySelector('.tb_field');
                 if (stretchField) {
-                    stretchField.classList.toggle('_tb_hide_binding', !_this.isVariableFont(v));
+                    const family = _this.cssVarName(v) ? (_this.resolveFamily(v) || v) : v;
+                    stretchField.classList.toggle('_tb_hide_binding', !_this.isVariableFont(family));
                     weightField.after(stretchField);
                 }
             });

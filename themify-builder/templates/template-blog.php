@@ -27,6 +27,8 @@ $fields_args=$args['mod_settings']+array(
     'meta_key_' . $mod_name => '',
     'display_' . $mod_name => 'content',
     'excerpt_length_' . $mod_name => '',
+    'more_link_' . $mod_name => 'off',
+    'more_text_' . $mod_name => '',
     'hide_feat_img_' . $mod_name => 'no',
     'image_size_' . $mod_name => 'large',
     'img_width_' . $mod_name => '',
@@ -189,7 +191,7 @@ if ($mod_name === 'post' && !isset($args['post__in']) && false !== ($id = get_th
 
 Themify_Builder_Model::parse_query_filter($fields_args, $args);
 if ( $search_filter_enabled ) {
-    themify_search_filter_apply_query( $args );
+    themify_search_filter_apply_query( $args, $fields_args );
 }
 if ( $ajax_filter_enabled ) {
     if ( $is_ajax_filter && $ajax_filter_term > 0 && ! $ajax_filter_within ) {
@@ -372,7 +374,21 @@ $container_props['class'] = implode(' ', $container_props['class']);
                 $fields_args
             ));
             Themify_Builder::$is_loop = true;
+            $tb_more_link = null;
+            if ($fields_args['more_link_' . $mod_name] === 'on') {
+                $tb_more_text = $fields_args['more_text_' . $mod_name] !== '' ? $fields_args['more_text_' . $mod_name] : __('Read More', 'themify');
+                $tb_more_link = static function () use ($tb_more_text) {
+                    $link = themify_permalink_attr(array(), false);
+                    echo '<div class="more-link-wrap"><a href="' . esc_url($link['href']) . '" class="more-link">' . wp_kses_post($tb_more_text) . '</a></div>';
+                };
+                add_action('themify_post_end_module', $tb_more_link);
+                add_filter('the_content_more_link', '__return_empty_string', 99);
+            }
             echo themify_get_shortcode_template($posts, 'includes/loop', $mod_name);
+            if ($tb_more_link) {
+                remove_action('themify_post_end_module', $tb_more_link);
+                remove_filter('the_content_more_link', '__return_empty_string', 99);
+            }
         } else {
             // use builder template
             global $post;
@@ -475,6 +491,7 @@ $container_props['class'] = implode(' ', $container_props['class']);
                                 <?php endif; //post meta    ?>
 
                                 <?php
+                                $show_more_link = $fields_args['more_link_' . $mod_name] === 'on';
                                 if ($fields_args['display_' . $mod_name] !== 'none') {
                                     // fix the issue more link doesn't output
                                     global $more;
@@ -482,6 +499,10 @@ $container_props['class'] = implode(' ', $container_props['class']);
                                     themify_before_post_content();
                                     if ($fields_args['display_' . $mod_name] === 'excerpt') {
                                         the_excerpt();
+                                    } elseif ($show_more_link) {
+                                        add_filter('the_content_more_link', '__return_empty_string', 99);
+                                        the_content();
+                                        remove_filter('the_content_more_link', '__return_empty_string', 99);
                                     } else {
                                         $moreText = themify_builder_get('setting-default_more_text');
                                         if (!$moreText) {
@@ -490,6 +511,11 @@ $container_props['class'] = implode(' ', $container_props['class']);
                                         the_content($moreText);
                                     }
                                     themify_after_post_content();
+                                }
+                                if ($show_more_link) {
+                                    $more_text = $fields_args['more_text_' . $mod_name] !== '' ? $fields_args['more_text_' . $mod_name] : __('Read More', 'themify');
+                                    $more_link = themify_permalink_attr(array(), false);
+                                    echo '<div class="more-link-wrap"><a href="' . esc_url($more_link['href']) . '" class="more-link">' . wp_kses_post($more_text) . '</a></div>';
                                 }
                                 ?>
                             <?php if ($mod_name === 'testimonial'): ?>

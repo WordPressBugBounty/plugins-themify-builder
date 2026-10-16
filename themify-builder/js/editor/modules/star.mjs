@@ -85,6 +85,10 @@
                     if(rate.ic==='fas fullstar'){
                         delete rate.ic;
                     }
+                    // Keep the default star item from being removed as an empty repeater entry.
+                    if(Object.keys(rate).length===0){
+                        rate.rating=5;
+                    }
                 }
             }
             super.builderSave(settings);

@@ -133,12 +133,45 @@ function themify_get_variable_fonts_wdth_ranges() {
 }
 
 function themify_get_variable_font_css2_param( string $name ): string {
+    $fonts = themify_get_variable_fonts_list();
+    $weights = array();
+    $has_italic = false;
+    foreach ( $fonts[ $name ] ?? array() as $variant ) {
+        if ( 'i' === $variant ) {
+            $has_italic = true;
+            $weights[] = 400;
+            continue;
+        }
+        if ( is_string( $variant ) && substr( $variant, -1 ) === 'i' ) {
+            $has_italic = true;
+            $variant = substr( $variant, 0, -1 );
+        }
+        if ( 'r' === $variant ) {
+            $weights[] = 400;
+        } elseif ( is_numeric( $variant ) ) {
+            $weights[] = (int) $variant;
+        }
+    }
+    if ( empty( $weights ) ) {
+        $weights = array( 400 );
+    }
+    $min = min( $weights );
+    $max = max( $weights );
     $wdth = themify_get_variable_fonts_wdth_ranges();
-    $wdth_min = $wdth[ $name ][0] ?? 75;
-    $wdth_max = $wdth[ $name ][1] ?? 125;
     $enc = str_replace( ' ', '+', $name );
+    if ( isset( $wdth[ $name ] ) ) {
+        $axis = 'ital,wdth,wght@0,' . (int) $wdth[ $name ][0] . '..' . (int) $wdth[ $name ][1] . ',' . $min . '..' . $max;
+        if ( $has_italic ) {
+            $axis .= ';1,' . (int) $wdth[ $name ][0] . '..' . (int) $wdth[ $name ][1] . ',' . $min . '..' . $max;
+        }
+    } else {
+        $axis = 'ital,wght@0,' . $min . '..' . $max;
+        if ( $has_italic ) {
+            $axis .= ';1,' . $min . '..' . $max;
+        }
+    }
 
-    return 'family=' . $enc . ':ital,wdth,wght@0,' . $wdth_min . '..' . $wdth_max . ',100..900;1,' . $wdth_min . '..' . $wdth_max . ',100..900';
+    return 'family=' . $enc . ':' . $axis;
 }
 
 /**

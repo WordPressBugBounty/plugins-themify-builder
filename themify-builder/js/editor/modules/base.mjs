@@ -347,6 +347,10 @@
                         k =  this.type === 'module' ? 'mod_settings' : 'styling',
                         res = this.getData(),
                         checkIsStyle = i=> {
+                            if (i.indexOf('tf_sv_') === 0) {
+                                const base = i.substring(6);
+                                return stOptions[base] !== undefined || checkIsStyle(base);
+                            }
                             let key = i.includes('_color') ? 'color' : (i.includes('_style') ? 'style' : false),
                                 type=stOptions[key]?.type;
                             if (type === 'radio' || i.includes('breakpoint_')  || i.includes('_apply_all') ) {

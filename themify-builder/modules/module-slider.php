@@ -110,7 +110,7 @@ class TB_Slider_Module extends Themify_Builder_Component_Module {
                 'img_w_slider' => $atts['image_w'],
                 'img_fullwidth_slider' => $atts['image_fullwidth'],
                 'img_h_slider' => $atts['image_h'],
-                'visible_opt_slider' => $atts['visible'],
+                'visible_opt_slider' => max( 1, absint( $atts['visible'] ) ),
                 'auto_scroll_opt_slider' => $atts['auto'],
                 'scroll_opt_slider' => $atts['scroll'],
                 'speed_opt_slider' => $atts['speed'],
@@ -156,7 +156,7 @@ class TB_Slider_Module extends Themify_Builder_Component_Module {
     }
 
 	public static function get_translatable_text_fields( $module ) : array {
-		return [ 'mod_title_slider' ];
+		return [ 'mod_title_slider', 'more_text_slider' ];
 	}
 
 	public static function get_translatable_repeatable_fields( $module ) {

@@ -908,6 +908,9 @@ class Themify_Builder_Active{
                 }
                 if (!empty($query->posts)) {
                     foreach ($query->posts as $id) {
+                        if ( ! current_user_can( 'edit_post', $id ) ) {
+                            continue;
+                        }
                         $result['posts'][] = array('data' => ThemifyBuilder_Data_Manager::get_data($id), 'title' => get_the_title($id), 'id' => $id);
                     }
                 }

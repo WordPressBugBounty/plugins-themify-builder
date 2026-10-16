@@ -2130,6 +2130,13 @@ class Themify_Builder_Component_Module {
 	 * Translate module data
 	 */
 	public static function translate_module( $module, $translations ) {
+		if ( ! isset( $module['mod_settings'] ) || ! is_array( $module['mod_settings'] ) ) {
+			$module['mod_settings'] = [];
+		}
+		if ( ! is_array( $translations ) ) {
+			$translations = [];
+		}
+
 		/* convert $translation array for repeatable fields */
 		$m = Themify_Builder_WPML_Integration::get_module( $module['mod_name'] );
 		if ( $m ) {
